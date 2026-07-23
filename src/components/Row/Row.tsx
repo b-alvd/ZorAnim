@@ -15,6 +15,7 @@ export default function Row({
   cardWidth?: number;
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const indexRef = useRef(0);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
 
@@ -23,6 +24,12 @@ export default function Row({
     if (!el) return;
     setAtStart(el.scrollLeft <= 0);
     setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
+    const firstSlot = el.firstElementChild as HTMLElement | null;
+    if (firstSlot) {
+      const gap = parseFloat(getComputedStyle(el).columnGap || "0");
+      const step = firstSlot.getBoundingClientRect().width + gap;
+      if (step > 0) indexRef.current = Math.round(el.scrollLeft / step);
+    }
   };
 
   useEffect(() => {
@@ -44,7 +51,11 @@ export default function Row({
     if (!firstSlot) return;
     const gap = parseFloat(getComputedStyle(el).columnGap || "0");
     const step = firstSlot.getBoundingClientRect().width + gap;
-    el.scrollBy({ left: dir * step, behavior: "smooth" });
+    const maxIndex = films.length - 1;
+    const nextIndex = Math.min(Math.max(indexRef.current + dir, 0), maxIndex);
+    indexRef.current = nextIndex;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    el.scrollTo({ left: Math.min(nextIndex * step, maxScroll), behavior: "smooth" });
   };
 
   return (

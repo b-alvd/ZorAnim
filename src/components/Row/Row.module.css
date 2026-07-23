@@ -32,12 +32,6 @@
   flex: 0 0 var(--card-width);
 }
 
-@media (max-width: 720px) {
-  .slot {
-    flex: 0 0 160px;
-  }
-}
-
 .arrow {
   position: absolute;
   top: 0;
@@ -63,4 +57,20 @@
 
 .right {
   right: 0;
+}
+
+@media (max-width: 720px) {
+  .track {
+    gap: 0.75rem;
+    scroll-snap-type: x mandatory;
+  }
+
+  .slot {
+    flex: 0 0 62vw;
+    scroll-snap-align: start;
+  }
+
+  .arrow {
+    display: none;
+  }
 }
