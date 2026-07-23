@@ -53,7 +53,9 @@ export default function Row({
       <div className={styles.wrap}>
         {!atStart && (
           <button className={`${styles.arrow} ${styles.left}`} onClick={() => scroll(-1)} aria-label="Précédent">
-            ‹
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
           </button>
         )}
         <div className={styles.track} ref={trackRef}>
@@ -69,7 +71,9 @@ export default function Row({
         </div>
         {!atEnd && (
           <button className={`${styles.arrow} ${styles.right}`} onClick={() => scroll(1)} aria-label="Suivant">
-            ›
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
           </button>
         )}
       </div>
