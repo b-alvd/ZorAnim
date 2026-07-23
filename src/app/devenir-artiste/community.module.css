@@ -1,0 +1,21 @@
+.ctaBlock {
+  padding-top: 0.5rem;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 2rem;
+  border-radius: 4px;
+  background: var(--accent, #e50914);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.cta:hover {
+  background: #ff1a25;
+  transform: scale(1.02);
+}

@@ -1,0 +1,36 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: #0e0e0e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 1.25rem;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(229, 9, 20, 0.15);
+  color: var(--accent, #e50914);
+  margin-bottom: 0.9rem;
+}
+
+.title {
+  color: #fff;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.description {
+  color: #a0a0a0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}

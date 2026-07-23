@@ -1,21 +1,35 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import Logo from "@/components/Logo/Logo";
 import styles from "./Footer.module.css";
 
 const columns = [
   {
     title: "Explorer",
-    links: ["Accueil", "Catalogue", "Nouveautés", "Catégories"],
+    links: [
+      { label: "Accueil", href: "/" },
+      { label: "Catalogue", href: "/catalogue" },
+      { label: "Nouveautés", href: "/nouveautes" },
+      { label: "Catégories", href: "/categories" },
+    ],
   },
   {
     title: "Communauté",
-    links: ["Soumettre un film", "Devenir artiste"],
+    links: [
+      { label: "Soumettre un film", href: "/soumettre-un-film" },
+      { label: "Devenir artiste", href: "/devenir-artiste" },
+    ],
   },
   {
     title: "Support",
-    links: ["Aide", "Conditions d'utilisation", "Confidentialité"],
+    links: [
+      { label: "Aide", href: "/aide" },
+      { label: "Contact", href: "/contact" },
+      { label: "Conditions d'utilisation", href: "/conditions-utilisation" },
+      { label: "Confidentialité", href: "/confidentialite" },
+    ],
   },
 ];
 
@@ -36,8 +50,8 @@ export default function Footer() {
             <h3 className={styles.colTitle}>{col.title}</h3>
             <ul className={styles.list}>
               {col.links.map((l) => (
-                <li key={l}>
-                  <a href="#">{l}</a>
+                <li key={l.href}>
+                  <Link href={l.href}>{l.label}</Link>
                 </li>
               ))}
             </ul>

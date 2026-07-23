@@ -5,10 +5,37 @@
   height: 68px;
   display: flex;
   align-items: center;
+  gap: 2.5rem;
   padding: 0 clamp(1rem, 4vw, 3.5rem);
   background: var(--background, #070707);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+.nav {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.link {
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  transition: color 0.15s ease;
+}
+
+.link:hover {
+  color: #fff;
+}
+
+.active {
+  color: #fff;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .nav {
+    display: none;
+  }
 }
 
 .scrolled {

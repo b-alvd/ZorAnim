@@ -184,7 +184,7 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
               Revoir
             </button>
           </div>
-          <p className={styles.endedSubtitle}>Quelques suggestions pour vous</p>
+          <p className={styles.endedSubtitle}>Quelques suggestions pour toi</p>
           <div className={styles.suggestions}>
             {suggestions.map((s) => (
               <Link key={s.id} href={`/watch/${s.id}`} className={styles.suggestionCard}>

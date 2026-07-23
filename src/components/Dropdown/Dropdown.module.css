@@ -1,0 +1,70 @@
+.dropdown {
+  position: relative;
+}
+
+.trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0.75rem 0.9rem;
+  color: #fff;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.trigger:hover,
+.trigger[aria-expanded="true"] {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: #808080;
+  transition: transform 0.2s ease;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+  list-style: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.option {
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  background: none;
+  border: none;
+  color: #d2d2d2;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.optionActive {
+  color: #fff;
+  font-weight: 600;
+}

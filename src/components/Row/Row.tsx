@@ -5,7 +5,15 @@ import Card from "@/components/Card/Card";
 import type { Film } from "@/data/mock";
 import styles from "./Row.module.css";
 
-export default function Row({ title, films }: { title: string; films: Film[] }) {
+export default function Row({
+  title,
+  films,
+  cardWidth,
+}: {
+  title: string;
+  films: Film[];
+  cardWidth?: number;
+}) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
@@ -50,7 +58,11 @@ export default function Row({ title, films }: { title: string; films: Film[] }) 
         )}
         <div className={styles.track} ref={trackRef}>
           {films.map((f) => (
-            <div key={f.id} className={styles.slot}>
+            <div
+              key={f.id}
+              className={styles.slot}
+              style={cardWidth ? { flex: `0 0 ${cardWidth}px` } : undefined}
+            >
               <Card film={f} />
             </div>
           ))}

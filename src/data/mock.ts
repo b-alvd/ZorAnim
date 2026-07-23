@@ -5,6 +5,7 @@ export type Film = {
   year: number;
   duration: string;
   rating: string;
+  category: string;
   isNew?: boolean;
   poster: string;
   videoUrl: string;
@@ -46,6 +47,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     year: 2024,
     duration: "12 min",
     rating: "Tout public",
+    category: "Fantastique & Onirique",
     isNew: true,
   },
   {
@@ -55,6 +57,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     year: 2023,
     duration: "18 min",
     rating: "12+",
+    category: "Science-Fiction",
   },
   {
     id: "3",
@@ -63,6 +66,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     year: 2022,
     duration: "9 min",
     rating: "Tout public",
+    category: "Drame",
   },
   {
     id: "4",
@@ -71,6 +75,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     year: 2024,
     duration: "7 min",
     rating: "Tout public",
+    category: "Comédie",
     isNew: true,
   },
   {
@@ -80,6 +85,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     year: 2021,
     duration: "15 min",
     rating: "Tout public",
+    category: "Fantastique & Onirique",
   },
   {
     id: "6",
@@ -88,6 +94,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     year: 2023,
     duration: "22 min",
     rating: "14+",
+    category: "Science-Fiction",
   },
 ];
 
@@ -100,3 +107,5 @@ export const films: Film[] = rawFilms.map((f, i) => ({
 export function getFilm(id: string): Film | undefined {
   return films.find((f) => f.id === id);
 }
+
+export const categories: string[] = Array.from(new Set(films.map((f) => f.category)));

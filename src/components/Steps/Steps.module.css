@@ -1,0 +1,37 @@
+.steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.step {
+  display: flex;
+  gap: 1rem;
+}
+
+.number {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(229, 9, 20, 0.15);
+  color: var(--accent, #e50914);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.title {
+  color: #fff;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.description {
+  color: #a0a0a0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
