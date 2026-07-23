@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import type { Film } from "@/data/mock";
+import FilmModal from "@/components/FilmModal/FilmModal";
 import styles from "./Hero.module.css";
 
 const INTERVAL_MS = 6000;
@@ -11,6 +12,7 @@ const FADE_MS = 500;
 export default function Hero({ films }: { films: Film[] }) {
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     if (films.length <= 1) return;
@@ -49,9 +51,12 @@ export default function Hero({ films }: { films: Film[] }) {
         <p className={styles.synopsis}>{film.synopsis}</p>
         <div className={styles.actions}>
           <button className={styles.playBtn}>▶ Lecture</button>
-          <button className={styles.infoBtn}>ⓘ Plus d&apos;infos</button>
+          <button className={styles.infoBtn} onClick={() => setShowModal(true)}>
+            ⓘ Plus d&apos;infos
+          </button>
         </div>
       </div>
+      {showModal && <FilmModal film={film} onClose={() => setShowModal(false)} />}
     </section>
   );
 }

@@ -3,6 +3,12 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  display: block;
+  font: inherit;
 }
 
 .bg {
