@@ -19,17 +19,46 @@
   z-index: 1;
   padding: 0 clamp(1rem, 4vw, 3.5rem) 4rem;
   max-width: 620px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.content.visible {
+  opacity: 1;
 }
 
 .title {
-  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-size: clamp(1.8rem, 5vw, 4rem);
   font-weight: 900;
   font-style: italic;
   margin-bottom: 0.75rem;
+  white-space: nowrap;
 }
 
-.tagline {
-  font-size: 1.1rem;
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e5e5e5;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+}
+
+.newBadge {
+  color: #fff;
+  background: var(--accent, #e50914);
+}
+
+.synopsis {
+  font-size: 1.05rem;
+  line-height: 1.5;
   color: #e5e5e5;
   margin-bottom: 1.5rem;
 }

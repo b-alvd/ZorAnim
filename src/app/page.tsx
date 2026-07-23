@@ -5,7 +5,7 @@ import { films } from "@/data/mock";
 export default function Home() {
   return (
     <main>
-      <Hero />
+      <Hero films={films} />
       <Row title="Nouveautés" films={films} />
     </main>
   );
