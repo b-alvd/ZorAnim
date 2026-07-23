@@ -8,8 +8,53 @@
   margin-bottom: 0.75rem;
 }
 
+.wrap {
+  position: relative;
+}
+
 .track {
   display: flex;
-  gap: 0.6rem;
+  gap: 1.5rem;
   overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+.slot {
+  flex: 0 0 calc((100% - 4 * 1.5rem) / 4.5);
+}
+
+@media (max-width: 720px) {
+  .slot {
+    flex: 0 0 160px;
+  }
+}
+
+.arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 44px;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.arrow:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.left {
+  left: 0;
+}
+
+.right {
+  right: 0;
 }

@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <main>
       <Hero />
-      <Row title="Populaires en ce moment" films={films} />
+      <Row title="Nouveautés" films={films} />
     </main>
   );
 }
