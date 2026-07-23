@@ -7,8 +7,6 @@
 html {
   height: 100%;
   color-scheme: dark;
-  max-width: 100vw;
-  overflow-x: hidden;
 }
 
 body {
