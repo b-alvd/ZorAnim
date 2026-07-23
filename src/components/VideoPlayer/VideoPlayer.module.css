@@ -9,15 +9,6 @@
   overflow: hidden;
 }
 
-.pseudoFullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-}
-
 .video {
   width: 100%;
   height: 100%;
