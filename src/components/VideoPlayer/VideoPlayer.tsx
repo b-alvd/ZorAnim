@@ -30,15 +30,6 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 720px), (pointer: coarse)");
-    setIsMobile(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
 
   const suggestions = films.filter((f) => f.id !== film.id).slice(0, 4);
   const artist = getArtist(film.artistId);
@@ -130,9 +121,21 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
 
   const toggleFullscreen = () => {
     const container = containerRef.current;
-    if (!container) return;
+    const video = videoRef.current as HTMLVideoElement & {
+      webkitEnterFullscreen?: () => void;
+      webkitDisplayingFullscreen?: boolean;
+    };
+    if (!container || !video) return;
+
+    // iOS Safari doesn't support Element.requestFullscreen() reliably; it
+    // exposes fullscreen only on the <video> element itself.
+    if (typeof video.webkitEnterFullscreen === "function" && !container.requestFullscreen) {
+      video.webkitEnterFullscreen();
+      return;
+    }
+
     if (document.fullscreenElement) document.exitFullscreen();
-    else container.requestFullscreen();
+    else container.requestFullscreen().catch(() => video.webkitEnterFullscreen?.());
   };
 
   const progressPct = duration ? (current / duration) * 100 : 0;
@@ -145,10 +148,9 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
         src={film.videoUrl}
         poster={film.poster}
         className={styles.video}
-        onClick={isMobile ? undefined : togglePlay}
+        onClick={togglePlay}
         autoPlay={autoplay}
         playsInline
-        controls={isMobile}
       />
 
       <button className={styles.backBtn} onClick={() => router.back()} aria-label="Retour">
@@ -219,7 +221,7 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
         </div>
       )}
 
-      {!isPaused && !ended && !isMobile && (
+      {!isPaused && !ended && (
         <div className={styles.controls}>
           <div className={styles.progressWrap}>
             <input
