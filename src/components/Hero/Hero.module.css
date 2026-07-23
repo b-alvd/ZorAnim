@@ -76,6 +76,7 @@
   font-size: 1rem;
   border: none;
   cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .playBtn {
@@ -83,7 +84,17 @@
   color: #111;
 }
 
+.playBtn:hover {
+  background: rgba(255, 255, 255, 0.75);
+  transform: scale(1.03);
+}
+
 .infoBtn {
   background: rgba(109, 109, 110, 0.5);
   color: #fff;
+}
+
+.infoBtn:hover {
+  background: rgba(109, 109, 110, 0.75);
+  transform: scale(1.03);
 }
