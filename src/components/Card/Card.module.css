@@ -8,7 +8,7 @@
 .bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(160deg, #3a0ca3, #7209b7);
+  object-fit: cover;
   transition: transform 0.2s ease;
 }
 
