@@ -235,4 +235,16 @@
   .fieldRow {
     grid-template-columns: 1fr;
   }
+
+  .header {
+    padding: 3rem clamp(1rem, 4vw, 3.5rem) 2rem;
+  }
+
+  .panel {
+    padding: 1.25rem;
+  }
+
+  .cta {
+    width: 100%;
+  }
 }

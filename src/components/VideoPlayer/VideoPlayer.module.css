@@ -355,6 +355,14 @@
   margin-left: 0.5rem;
 }
 
+@media (hover: none) {
+  .volumeSlider {
+    width: 60px;
+    opacity: 1;
+    margin-left: 0.5rem;
+  }
+}
+
 .volumeSlider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
@@ -376,4 +384,61 @@
   font-size: 0.85rem;
   color: #d2d2d2;
   white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .backBtn {
+    top: 0.75rem;
+    left: 0.75rem;
+    width: 34px;
+    height: 34px;
+  }
+
+  .controls {
+    padding: 0 0.75rem 0.6rem;
+  }
+
+  .rowLeft,
+  .rowRight {
+    gap: 0.6rem;
+  }
+
+  .time {
+    font-size: 0.72rem;
+  }
+
+  .volumeSlider {
+    width: 40px;
+  }
+
+  .pauseInfo {
+    padding: 0 1rem;
+  }
+
+  .pauseSynopsis {
+    font-size: 0.85rem;
+    -webkit-line-clamp: 4;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .resumeBtn {
+    width: 100%;
+    justify-content: center;
+    margin-top: 1.25rem;
+  }
+
+  .endedOverlay {
+    padding: 1.5rem 1rem;
+  }
+
+  .endedTop {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .suggestionCard {
+    width: 220px;
+  }
 }

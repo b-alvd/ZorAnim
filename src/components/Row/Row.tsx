@@ -60,8 +60,8 @@ export default function Row({
           {films.map((f) => (
             <div
               key={f.id}
-              className={styles.slot}
-              style={cardWidth ? { flex: `0 0 ${cardWidth}px` } : undefined}
+              className={`${styles.slot} ${cardWidth ? styles.slotFixed : ""}`}
+              style={cardWidth ? { ["--card-width" as string]: `${cardWidth}px` } : undefined}
             >
               <Card film={f} />
             </div>

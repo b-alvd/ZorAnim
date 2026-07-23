@@ -141,3 +141,28 @@
   background: rgba(255, 255, 255, 0.75);
   transform: scale(1.03);
 }
+
+@media (max-width: 560px) {
+  .overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal {
+    max-height: 92vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .body {
+    padding: 1.25rem 1.25rem 1.75rem;
+  }
+
+  .title {
+    font-size: 1.35rem;
+  }
+
+  .playBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

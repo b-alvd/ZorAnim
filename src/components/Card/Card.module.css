@@ -25,15 +25,22 @@
 .title {
   position: absolute;
   left: 1rem;
+  right: 1rem;
   bottom: 0.75rem;
   font-weight: 700;
   font-size: 1.1rem;
   color: #fff;
   z-index: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-@media (max-width: 720px) {
-  .card {
-    aspect-ratio: 2 / 3;
+@media (max-width: 400px) {
+  .title {
+    font-size: 0.9rem;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.5rem;
   }
 }

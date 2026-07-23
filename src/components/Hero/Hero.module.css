@@ -110,3 +110,38 @@
   background: rgba(109, 109, 110, 0.75);
   transform: scale(1.03);
 }
+
+@media (max-width: 640px) {
+  .hero {
+    height: 78vh;
+    min-height: 420px;
+  }
+
+  .content {
+    padding-bottom: 2rem;
+    max-width: 100%;
+  }
+
+  .title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .synopsis {
+    font-size: 0.92rem;
+    -webkit-line-clamp: 3;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .playBtn,
+  .infoBtn {
+    justify-content: center;
+  }
+}

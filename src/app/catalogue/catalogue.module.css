@@ -31,3 +31,13 @@
   color: #a0a0a0;
   font-size: 0.95rem;
 }
+
+@media (max-width: 640px) {
+  .header {
+    padding: 2.5rem clamp(1rem, 4vw, 3.5rem) 1.5rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

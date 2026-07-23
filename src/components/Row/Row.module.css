@@ -28,6 +28,10 @@
   flex: 0 0 calc((100% - 4 * 1.5rem) / 4.5);
 }
 
+.slotFixed {
+  flex: 0 0 var(--card-width);
+}
+
 @media (max-width: 720px) {
   .slot {
     flex: 0 0 160px;
