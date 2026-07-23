@@ -1,0 +1,15 @@
+.row {
+  padding: 1.25rem clamp(1rem, 4vw, 3.5rem);
+}
+
+.heading {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.track {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+}
