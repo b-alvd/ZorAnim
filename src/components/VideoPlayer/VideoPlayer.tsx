@@ -30,6 +30,7 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
+  const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
 
   const suggestions = films.filter((f) => f.id !== film.id).slice(0, 4);
   const artist = getArtist(film.artistId);
@@ -121,28 +122,36 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
 
   const toggleFullscreen = () => {
     const container = containerRef.current;
-    const video = videoRef.current as HTMLVideoElement & {
-      webkitEnterFullscreen?: () => void;
-      webkitDisplayingFullscreen?: boolean;
-    };
-    if (!container || !video) return;
+    if (!container) return;
 
-    // iOS Safari doesn't support Element.requestFullscreen() reliably; it
-    // exposes fullscreen only on the <video> element itself.
-    if (typeof video.webkitEnterFullscreen === "function" && !container.requestFullscreen) {
-      video.webkitEnterFullscreen();
+    // iPhone Safari has no API to fullscreen an arbitrary element with our
+    // own controls still showing (only the native <video> player can go
+    // fullscreen there, which replaces our UI). Simulate fullscreen with
+    // CSS instead so our custom controls stay visible everywhere.
+    if (typeof container.requestFullscreen !== "function") {
+      setPseudoFullscreen((v) => !v);
       return;
     }
 
     if (document.fullscreenElement) document.exitFullscreen();
-    else container.requestFullscreen().catch(() => video.webkitEnterFullscreen?.());
+    else container.requestFullscreen();
   };
+
+  useEffect(() => {
+    if (!pseudoFullscreen) return;
+    const { body } = document;
+    const prevOverflow = body.style.overflow;
+    body.style.overflow = "hidden";
+    return () => {
+      body.style.overflow = prevOverflow;
+    };
+  }, [pseudoFullscreen]);
 
   const progressPct = duration ? (current / duration) * 100 : 0;
   const isPaused = !playing && !ended;
 
   return (
-    <div className={styles.player} ref={containerRef}>
+    <div className={`${styles.player} ${pseudoFullscreen ? styles.pseudoFullscreen : ""}`} ref={containerRef}>
       <video
         ref={videoRef}
         src={film.videoUrl}
@@ -290,7 +299,7 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
             </div>
             <div className={styles.rowRight}>
               <button className={styles.iconBtn} onClick={toggleFullscreen} aria-label="Plein écran">
-                {fullscreen ? (
+                {fullscreen || pseudoFullscreen ? (
                   <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.75">
                     <path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M9 21H5a2 2 0 0 1-2-2v-4M15 21h4a2 2 0 0 0 2-2v-4" />
                   </svg>
