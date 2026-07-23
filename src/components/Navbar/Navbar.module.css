@@ -1,0 +1,8 @@
+.header {
+  height: 68px;
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(1rem, 4vw, 3.5rem);
+  background: #141414;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
