@@ -30,6 +30,15 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 720px), (pointer: coarse)");
+    setIsMobile(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   const suggestions = films.filter((f) => f.id !== film.id).slice(0, 4);
   const artist = getArtist(film.artistId);
@@ -136,9 +145,10 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
         src={film.videoUrl}
         poster={film.poster}
         className={styles.video}
-        onClick={togglePlay}
+        onClick={isMobile ? undefined : togglePlay}
         autoPlay={autoplay}
         playsInline
+        controls={isMobile}
       />
 
       <button className={styles.backBtn} onClick={() => router.back()} aria-label="Retour">
@@ -209,7 +219,7 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
         </div>
       )}
 
-      {!isPaused && !ended && (
+      {!isPaused && !ended && !isMobile && (
         <div className={styles.controls}>
           <div className={styles.progressWrap}>
             <input
