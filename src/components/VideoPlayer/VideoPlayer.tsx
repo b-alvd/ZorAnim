@@ -142,8 +142,13 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
     const { body } = document;
     const prevOverflow = body.style.overflow;
     body.style.overflow = "hidden";
+    // Nudge Safari into collapsing its address bar so the player truly
+    // fills the screen instead of leaving browser chrome visible.
+    window.scrollTo(0, 1);
+    const id = window.setTimeout(() => window.scrollTo(0, 1), 300);
     return () => {
       body.style.overflow = prevOverflow;
+      window.clearTimeout(id);
     };
   }, [pseudoFullscreen]);
 
