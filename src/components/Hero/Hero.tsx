@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import type { Film } from "@/data/mock";
 import styles from "./Hero.module.css";
 
@@ -27,6 +28,15 @@ export default function Hero({ films }: { films: Film[] }) {
 
   return (
     <section className={styles.hero}>
+      <Image
+        src={film.poster}
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className={`${styles.backdrop} ${visible ? styles.visible : ""}`}
+        unoptimized
+      />
       <div className={styles.shade} />
       <div className={`${styles.content} ${visible ? styles.visible : ""}`}>
         <h1 className={styles.title}>{film.title}</h1>
