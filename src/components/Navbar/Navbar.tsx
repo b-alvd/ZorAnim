@@ -11,6 +11,7 @@ const links = [
   { href: "/catalogue", label: "Catalogue" },
   { href: "/nouveautes", label: "Nouveautés" },
   { href: "/categories", label: "Catégories" },
+  { href: "/artistes", label: "Artistes" },
 ];
 
 export default function Navbar() {

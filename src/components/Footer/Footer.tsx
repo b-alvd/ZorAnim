@@ -13,6 +13,7 @@ const columns = [
       { label: "Catalogue", href: "/catalogue" },
       { label: "Nouveautés", href: "/nouveautes" },
       { label: "Catégories", href: "/categories" },
+      { label: "Artistes", href: "/artistes" },
     ],
   },
   {

@@ -1,0 +1,58 @@
+.page {
+  padding-bottom: 4rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  padding: 3.5rem clamp(1rem, 4vw, 3.5rem) 2.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 2.5rem;
+  background: linear-gradient(180deg, #140404 0%, #070707 100%);
+  flex-wrap: wrap;
+}
+
+.avatarWrap {
+  position: relative;
+  flex: 0 0 auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.name {
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  margin-bottom: 0.6rem;
+}
+
+.bio {
+  font-size: 0.98rem;
+  color: #d2d2d2;
+  line-height: 1.6;
+  max-width: 520px;
+  margin-bottom: 0.6rem;
+}
+
+.count {
+  font-size: 0.85rem;
+  color: #808080;
+}
+
+.filmsSection {
+  padding: 0 clamp(1rem, 4vw, 3.5rem);
+}
+
+.filmsTitle {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 300px);
+  gap: 1rem;
+}

@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import type { Film } from "@/data/mock";
+import { getArtist, type Film } from "@/data/mock";
 import styles from "./FilmModal.module.css";
 
 const ANIM_MS = 250;
 
 export default function FilmModal({ film, onClose }: { film: Film; onClose: () => void }) {
+  const artist = getArtist(film.artistId);
   const [shown, setShown] = useState(false);
 
   useEffect(() => {
@@ -46,6 +47,11 @@ export default function FilmModal({ film, onClose }: { film: Film; onClose: () =
         </div>
         <div className={styles.body}>
           <h2 className={styles.title}>{film.title}</h2>
+          {artist && (
+            <Link href={`/artistes/${artist.id}`} className={styles.artist}>
+              Par {artist.name}
+            </Link>
+          )}
           <div className={styles.badges}>
             {film.isNew && <span className={`${styles.badge} ${styles.newBadge}`}>Nouveau</span>}
             <span className={styles.badge}>{film.year}</span>

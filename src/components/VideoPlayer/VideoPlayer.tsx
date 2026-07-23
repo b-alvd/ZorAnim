@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { films, type Film } from "@/data/mock";
+import { films, getArtist, type Film } from "@/data/mock";
 import styles from "./VideoPlayer.module.css";
 
 function formatTime(seconds: number) {
@@ -32,6 +32,7 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
   const [fullscreen, setFullscreen] = useState(false);
 
   const suggestions = films.filter((f) => f.id !== film.id).slice(0, 4);
+  const artist = getArtist(film.artistId);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -155,6 +156,11 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
               <Image src={film.poster} alt="" fill sizes="520px" className={styles.posterImg} unoptimized />
             </div>
             <h1 className={styles.pauseTitle}>{film.title}</h1>
+            {artist && (
+              <Link href={`/artistes/${artist.id}`} className={styles.pauseArtist}>
+                Par {artist.name}
+              </Link>
+            )}
             <div className={styles.pauseBadges}>
               {film.isNew && <span className={`${styles.badge} ${styles.newBadge}`}>Nouveau</span>}
               <span className={styles.badge}>{film.year}</span>

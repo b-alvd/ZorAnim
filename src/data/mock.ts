@@ -1,3 +1,10 @@
+export type Artist = {
+  id: string;
+  name: string;
+  bio: string;
+  avatar: string;
+};
+
 export type Film = {
   id: string;
   title: string;
@@ -6,6 +13,7 @@ export type Film = {
   duration: string;
   rating: string;
   category: string;
+  artistId: string;
   isNew?: boolean;
   poster: string;
   videoUrl: string;
@@ -39,6 +47,54 @@ function placeholderPoster(seed: number, title: string) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function placeholderAvatar(seed: number, name: string) {
+  const [c1, c2] = posterColors[seed % posterColors.length];
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'>
+    <defs>
+      <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+        <stop offset='0' stop-color='${c1}'/>
+        <stop offset='1' stop-color='${c2}'/>
+      </linearGradient>
+    </defs>
+    <rect width='100%' height='100%' fill='url(#g)'/>
+    <text x='50%' y='50%' fill='rgba(255,255,255,0.9)' font-family='Helvetica, Arial, sans-serif'
+      font-size='72' font-weight='700' text-anchor='middle' dominant-baseline='middle'>${initials(name)}</text>
+  </svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
+const rawArtists: Omit<Artist, "avatar">[] = [
+  {
+    id: "camille-roux",
+    name: "Camille Roux",
+    bio: "Réalisatrice indépendante passionnée par les histoires oniriques et les ambiances nocturnes.",
+  },
+  {
+    id: "studio-kaira",
+    name: "Studio Kaira",
+    bio: "Petit studio d'animation spécialisé dans la science-fiction et les mondes rétro-futuristes.",
+  },
+  {
+    id: "nadia-ferrand",
+    name: "Nadia Ferrand",
+    bio: "Autrice et animatrice, elle raconte des histoires intimes ancrées dans le quotidien.",
+  },
+];
+
+export const artists: Artist[] = rawArtists.map((a, i) => ({
+  ...a,
+  avatar: placeholderAvatar(i, a.name),
+}));
+
 const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
   {
     id: "1",
@@ -48,6 +104,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     duration: "12 min",
     rating: "Tout public",
     category: "Fantastique & Onirique",
+    artistId: "camille-roux",
     isNew: true,
   },
   {
@@ -58,6 +115,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     duration: "18 min",
     rating: "12+",
     category: "Science-Fiction",
+    artistId: "studio-kaira",
   },
   {
     id: "3",
@@ -67,6 +125,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     duration: "9 min",
     rating: "Tout public",
     category: "Drame",
+    artistId: "nadia-ferrand",
   },
   {
     id: "4",
@@ -76,6 +135,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     duration: "7 min",
     rating: "Tout public",
     category: "Comédie",
+    artistId: "studio-kaira",
     isNew: true,
   },
   {
@@ -86,6 +146,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     duration: "15 min",
     rating: "Tout public",
     category: "Fantastique & Onirique",
+    artistId: "camille-roux",
   },
   {
     id: "6",
@@ -95,6 +156,7 @@ const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
     duration: "22 min",
     rating: "14+",
     category: "Science-Fiction",
+    artistId: "nadia-ferrand",
   },
 ];
 
@@ -106,6 +168,14 @@ export const films: Film[] = rawFilms.map((f, i) => ({
 
 export function getFilm(id: string): Film | undefined {
   return films.find((f) => f.id === id);
+}
+
+export function getArtist(id: string): Artist | undefined {
+  return artists.find((a) => a.id === id);
+}
+
+export function filmsByArtist(artistId: string): Film[] {
+  return films.filter((f) => f.artistId === artistId);
 }
 
 export const categories: string[] = Array.from(new Set(films.map((f) => f.category)));

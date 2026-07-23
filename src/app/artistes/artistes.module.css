@@ -1,0 +1,27 @@
+.page {
+  padding-bottom: 4rem;
+}
+
+.header {
+  padding: 3rem clamp(1rem, 4vw, 3.5rem) 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: #a0a0a0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.25rem;
+  padding: 0 clamp(1rem, 4vw, 3.5rem);
+}
