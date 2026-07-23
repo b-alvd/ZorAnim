@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { Film } from "@/data/mock";
 import styles from "./FilmModal.module.css";
 
@@ -53,7 +54,9 @@ export default function FilmModal({ film, onClose }: { film: Film; onClose: () =
           </div>
           <p className={styles.synopsis}>{film.synopsis}</p>
           <div className={styles.actions}>
-            <button className={styles.playBtn}>▶ Lecture</button>
+            <Link href={`/watch/${film.id}?autoplay=1`} className={styles.playBtn}>
+              ▶ Lecture
+            </Link>
           </div>
         </div>
       </div>

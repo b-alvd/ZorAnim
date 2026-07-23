@@ -7,7 +7,11 @@ export type Film = {
   rating: string;
   isNew?: boolean;
   poster: string;
+  videoUrl: string;
 };
+
+// Placeholder video until real content is hooked up.
+const PLACEHOLDER_VIDEO = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
 
 const posterColors = [
   ["#3a0ca3", "#7209b7"],
@@ -34,7 +38,7 @@ function placeholderPoster(seed: number, title: string) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
-const rawFilms: Omit<Film, "poster">[] = [
+const rawFilms: Omit<Film, "poster" | "videoUrl">[] = [
   {
     id: "1",
     title: "Lueur de Nuit",
@@ -90,4 +94,9 @@ const rawFilms: Omit<Film, "poster">[] = [
 export const films: Film[] = rawFilms.map((f, i) => ({
   ...f,
   poster: placeholderPoster(i, f.title),
+  videoUrl: PLACEHOLDER_VIDEO,
 }));
+
+export function getFilm(id: string): Film | undefined {
+  return films.find((f) => f.id === id);
+}

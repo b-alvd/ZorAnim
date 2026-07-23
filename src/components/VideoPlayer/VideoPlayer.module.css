@@ -1,0 +1,367 @@
+.player {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.endedOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  padding: clamp(2rem, 6vw, 4rem);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.endedTop {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.endedTitle {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 800;
+}
+
+.replayBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.replayBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.endedSubtitle {
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  margin-bottom: 1.25rem;
+}
+
+.suggestions {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+}
+
+.suggestionCard {
+  flex: 0 0 auto;
+  width: 300px;
+}
+
+.suggestionPoster {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.suggestionPoster img {
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.suggestionCard:hover .suggestionPoster img {
+  transform: scale(1.1);
+}
+
+.suggestionTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e5e5e5;
+}
+
+.suggestionBadges {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.backBtn {
+  position: absolute;
+  top: 1.25rem;
+  left: 1.25rem;
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.backBtn:hover {
+  background: rgba(0, 0, 0, 0.75);
+  transform: scale(1.08);
+}
+
+.pauseOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.pauseShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.95) 25%,
+    rgba(0, 0, 0, 0.7) 50%,
+    rgba(0, 0, 0, 0.35) 70%,
+    rgba(0, 0, 0, 0) 90%
+  );
+}
+
+.pauseInfo {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  width: 100%;
+  max-width: 520px;
+  padding: 0 clamp(1.5rem, 5vw, 3.5rem);
+}
+
+.posterWrap {
+  position: relative;
+  width: 100%;
+  margin-bottom: 1.25rem;
+  aspect-ratio: 16 / 9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.posterImg {
+  object-fit: cover;
+}
+
+.pauseTitle {
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 800;
+  margin-bottom: 1.25rem;
+}
+
+.pauseBadges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e5e5e5;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+}
+
+.newBadge {
+  color: #fff;
+  background: var(--accent, #e50914);
+}
+
+.pauseSynopsis {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #e5e5e5;
+}
+
+.resumeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 2rem;
+  padding: 0.65rem 1.4rem;
+  border-radius: 4px;
+  border: none;
+  background: #fff;
+  color: #111;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.resumeBtn:hover {
+  background: rgba(255, 255, 255, 0.8);
+  transform: scale(1.03);
+}
+
+.controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 1.5rem 1rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.85) 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  z-index: 1;
+}
+
+.progressWrap {
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.progress {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  cursor: pointer;
+  background: linear-gradient(
+    to right,
+    var(--accent, #e50914) var(--pct, 0%),
+    rgba(255, 255, 255, 0.25) var(--pct, 0%)
+  );
+}
+
+.progress::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent, #e50914);
+  box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.25);
+}
+
+.progress::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent, #e50914);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.rowLeft,
+.rowRight {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.iconBtn {
+  position: relative;
+  border: none;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s ease;
+}
+
+.iconBtn:hover {
+  opacity: 0.75;
+}
+
+.skipLabel {
+  position: absolute;
+  font-size: 0.7rem;
+  font-weight: 700;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.volumeGroup {
+  display: flex;
+  align-items: center;
+}
+
+.volumeSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 0;
+  height: 3px;
+  border-radius: 2px;
+  margin-left: 0;
+  opacity: 0;
+  cursor: pointer;
+  background: linear-gradient(
+    to right,
+    #fff calc(var(--pct, 100%)),
+    rgba(255, 255, 255, 0.25) calc(var(--pct, 100%))
+  );
+  transition: width 0.2s ease, opacity 0.2s ease, margin-left 0.2s ease;
+}
+
+.volumeGroup:hover .volumeSlider {
+  width: 70px;
+  opacity: 1;
+  margin-left: 0.5rem;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.volumeSlider::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.time {
+  font-size: 0.85rem;
+  color: #d2d2d2;
+  white-space: nowrap;
+}

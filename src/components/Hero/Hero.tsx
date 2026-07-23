@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { Film } from "@/data/mock";
 import FilmModal from "@/components/FilmModal/FilmModal";
 import styles from "./Hero.module.css";
@@ -50,7 +51,9 @@ export default function Hero({ films }: { films: Film[] }) {
         </div>
         <p className={styles.synopsis}>{film.synopsis}</p>
         <div className={styles.actions}>
-          <button className={styles.playBtn}>▶ Lecture</button>
+          <Link href={`/watch/${film.id}?autoplay=1`} className={styles.playBtn}>
+            ▶ Lecture
+          </Link>
           <button className={styles.infoBtn} onClick={() => setShowModal(true)}>
             ⓘ Plus d&apos;infos
           </button>
