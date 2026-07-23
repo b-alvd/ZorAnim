@@ -1,8 +1,18 @@
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
   height: 68px;
   display: flex;
   align-items: center;
   padding: 0 clamp(1rem, 4vw, 3.5rem);
-  background: #141414;
+  background: var(--background, #070707);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+.scrolled {
+  background: rgba(7, 7, 7, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
