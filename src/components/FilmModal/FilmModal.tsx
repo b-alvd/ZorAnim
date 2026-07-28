@@ -38,6 +38,7 @@ export default function FilmModal({
   const [canModerate, setCanModerate] = useState(false);
   const [creatorUserIds, setCreatorUserIds] = useState<string[]>([]);
   const [commentText, setCommentText] = useState("");
+  const [commentError, setCommentError] = useState<string | null>(null);
   const [isRating, startRating] = useTransition();
   const [isCommenting, startCommenting] = useTransition();
 
@@ -89,17 +90,27 @@ export default function FilmModal({
   const handleAddComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
+    setCommentError(null);
     startCommenting(async () => {
-      const updated = await addCommentAction(film.id, commentText);
-      setComments(updated);
-      setCommentText("");
+      try {
+        const updated = await addCommentAction(film.id, commentText);
+        setComments(updated);
+        setCommentText("");
+      } catch (err) {
+        setCommentError(err instanceof Error ? err.message : "Une erreur est survenue.");
+      }
     });
   };
 
   const handleReplyToComment = (parentId: string, body: string) => {
+    setCommentError(null);
     startCommenting(async () => {
-      const updated = await addCommentAction(film.id, body, parentId);
-      setComments(updated);
+      try {
+        const updated = await addCommentAction(film.id, body, parentId);
+        setComments(updated);
+      } catch (err) {
+        setCommentError(err instanceof Error ? err.message : "Une erreur est survenue.");
+      }
     });
   };
 
@@ -111,9 +122,14 @@ export default function FilmModal({
   };
 
   const handleReactComment = (commentId: string, type: "up" | "down") => {
+    setCommentError(null);
     startCommenting(async () => {
-      const updated = await toggleCommentReactionAction(commentId, film.id, type);
-      setComments(updated);
+      try {
+        const updated = await toggleCommentReactionAction(commentId, film.id, type);
+        setComments(updated);
+      } catch (err) {
+        setCommentError(err instanceof Error ? err.message : "Une erreur est survenue.");
+      }
     });
   };
 
@@ -214,6 +230,7 @@ export default function FilmModal({
                 Publier
               </button>
             </form>
+            {commentError && <p className={styles.commentError}>{commentError}</p>}
             <div className={styles.commentsList}>
               {topLevelComments.map((c) => (
                 <CommentItem

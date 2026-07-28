@@ -5,6 +5,7 @@ import { getFavoriteFilmIds, getFilms, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { matchesQuery } from "@/lib/search";
 import SearchBar from "./SearchBar";
+import Filters from "./Filters";
 import styles from "./catalogue.module.css";
 
 const PAGE_SIZE = 24;
@@ -12,19 +13,30 @@ const PAGE_SIZE = 24;
 export default async function CataloguePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; category?: string; year?: string; minRating?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
 
-  const { q, page: pageParam } = await searchParams;
+  const { q, page: pageParam, category, year, minRating } = await searchParams;
   const query = q ?? "";
   const [allFilms, favoriteIds, watchedIds] = await Promise.all([
     getFilms(),
     getFavoriteFilmIds(user.id),
     getWatchedFilmIds(user.id),
   ]);
-  const matched = allFilms.filter((f) => matchesQuery(query, f.title, f.artistName, f.category, f.synopsis));
+
+  const categories = [...new Set(allFilms.map((f) => f.category))].sort((a, b) => a.localeCompare(b));
+  const years = [...new Set(allFilms.map((f) => f.year))].sort((a, b) => b - a);
+
+  const minRatingValue = minRating ? Number(minRating) : 0;
+  const matched = allFilms.filter((f) => {
+    if (!matchesQuery(query, f.title, f.artistName, f.category, f.synopsis)) return false;
+    if (category && f.category !== category) return false;
+    if (year && f.year !== Number(year)) return false;
+    if (minRatingValue > 0 && (f.avgRating ?? 0) < minRatingValue) return false;
+    return true;
+  });
 
   const totalPages = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
   const page = Math.min(Math.max(1, Number(pageParam) || 1), totalPages);
@@ -38,6 +50,7 @@ export default async function CataloguePage({
           {matched.length} film{matched.length > 1 ? "s" : ""} disponible{matched.length > 1 ? "s" : ""}
         </p>
         <SearchBar />
+        <Filters categories={categories} years={years} />
       </div>
       {films.length > 0 ? (
         <>
@@ -46,10 +59,15 @@ export default async function CataloguePage({
               <Card key={f.id} film={f} isFavorite={favoriteIds.has(f.id)} isWatched={watchedIds.has(f.id)} />
             ))}
           </div>
-          <Pagination page={page} totalPages={totalPages} basePath="/catalogue" params={{ q: query || undefined }} />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            basePath="/catalogue"
+            params={{ q: query || undefined, category, year, minRating }}
+          />
         </>
       ) : (
-        <p className={styles.empty}>Aucun résultat pour &quot;{query}&quot;.</p>
+        <p className={styles.empty}>Aucun résultat pour ces critères.</p>
       )}
     </main>
   );

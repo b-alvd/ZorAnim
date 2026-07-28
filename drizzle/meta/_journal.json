@@ -120,6 +120,13 @@
       "when": 1785275324770,
       "tag": "0016_add_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1785277486631,
+      "tag": "0017_add_watch_position",
+      "breakpoints": true
     }
   ]
 }

@@ -118,6 +118,7 @@ export const watchHistory = sqliteTable(
     watchedAt: text("watched_at")
       .notNull()
       .default(sql`(current_timestamp)`),
+    positionSeconds: integer("position_seconds").notNull().default(0),
   },
   (table) => [uniqueIndex("watch_history_user_film_unique").on(table.userId, table.filmId)]
 );

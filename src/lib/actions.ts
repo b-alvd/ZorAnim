@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { isRateLimited } from "@/lib/rateLimit";
 import {
   addComment,
   deleteComment,
@@ -31,6 +32,9 @@ export async function rateFilmAction(filmId: string, value: number): Promise<voi
   const user = await getCurrentUser();
   if (!user) throw new Error("Non authentifié.");
   if (!Number.isInteger(value) || value < 1 || value > 5) throw new Error("Note invalide.");
+  if (isRateLimited(`rate:${user.id}`, 20, 5 * 60 * 1000)) {
+    throw new Error("Trop de notes envoyées, réessaie dans quelques minutes.");
+  }
 
   await upsertRating(user.id, filmId, value);
   revalidatePath("/", "layout");
@@ -63,6 +67,9 @@ export async function addCommentAction(filmId: string, body: string, parentId?: 
   const user = await getCurrentUser();
   if (!user) throw new Error("Non authentifié.");
   if (!body.trim()) throw new Error("Le commentaire ne peut pas être vide.");
+  if (isRateLimited(`comment:${user.id}`, 8, 5 * 60 * 1000)) {
+    throw new Error("Trop de commentaires envoyés, réessaie dans quelques minutes.");
+  }
 
   await addComment(user.id, filmId, body.trim(), parentId ?? null);
   return getFilmComments(filmId, user.id);
@@ -83,6 +90,9 @@ export async function toggleCommentReactionAction(
 ): Promise<Comment[]> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Non authentifié.");
+  if (isRateLimited(`reaction:${user.id}`, 40, 60 * 1000)) {
+    throw new Error("Trop de réactions envoyées, réessaie dans un instant.");
+  }
 
   await toggleCommentReaction(user.id, commentId, type);
   return getFilmComments(filmId, user.id);
