@@ -1,8 +1,13 @@
+import { redirect } from "next/navigation";
 import ArtistCard from "@/components/ArtistCard/ArtistCard";
 import { getArtists, getFilms } from "@/db/queries";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import styles from "./artistes.module.css";
 
 export default async function ArtistesPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/connexion");
+
   const [artists, films] = await Promise.all([getArtists(), getFilms()]);
 
   return (

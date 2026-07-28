@@ -11,6 +11,7 @@ export type Film = {
   synopsis: string;
   year: number;
   duration: string;
+  durationMinutes: number;
   rating: string;
   category: string;
   artistId: string;

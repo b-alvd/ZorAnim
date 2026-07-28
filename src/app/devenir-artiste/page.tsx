@@ -2,6 +2,8 @@ import Link from "next/link";
 import InfoPage from "@/components/InfoPage/InfoPage";
 import FeatureGrid from "@/components/FeatureGrid/FeatureGrid";
 import Steps from "@/components/Steps/Steps";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import BecomeArtistForm from "./BecomeArtistForm";
 import styles from "./community.module.css";
 
 const features = [
@@ -53,7 +55,9 @@ const steps = [
   },
 ];
 
-export default function DevenirArtistePage() {
+export default async function DevenirArtistePage() {
+  const user = await getCurrentUser();
+
   return (
     <InfoPage
       title="Devenir artiste"
@@ -64,11 +68,17 @@ export default function DevenirArtistePage() {
       <h2>Comment ça marche</h2>
       <Steps steps={steps} />
 
-      <div className={styles.ctaBlock}>
-        <Link href="/contact" className={styles.cta}>
-          Rejoindre ZorAnim
-        </Link>
-      </div>
+      {user ? (
+        <BecomeArtistForm />
+      ) : (
+        <div className={styles.success}>
+          <p className={styles.successTitle}>Connexion requise</p>
+          <p className={styles.successText}>Tu dois être connecté pour envoyer ta candidature.</p>
+          <Link href="/connexion" className={styles.loginCta}>
+            Se connecter
+          </Link>
+        </div>
+      )}
     </InfoPage>
   );
 }

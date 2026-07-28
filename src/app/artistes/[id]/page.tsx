@@ -1,7 +1,8 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Card from "@/components/Card/Card";
 import { getArtist, getArtists, getFilmsByArtist } from "@/db/queries";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import styles from "./artist.module.css";
 
 export async function generateStaticParams() {
@@ -10,6 +11,9 @@ export async function generateStaticParams() {
 }
 
 export default async function ArtistPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/connexion");
+
   const { id } = await params;
   const artist = await getArtist(id);
   if (!artist) notFound();

@@ -4,7 +4,6 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
-const MAX_AVATAR_BYTES = 1_500_000; // ~1.5MB, comfortably under Turso row limits
 const NAME_COOLDOWN_MS = 3 * 24 * 60 * 60 * 1000; // 3 days
 
 export async function PATCH(request: Request) {
@@ -15,13 +14,8 @@ export async function PATCH(request: Request) {
   const avatarUrl = typeof body?.avatarUrl === "string" ? body.avatarUrl : undefined;
   const name = typeof body?.name === "string" ? body.name.trim() : undefined;
 
-  if (avatarUrl !== undefined) {
-    if (!avatarUrl.startsWith("data:image/")) {
-      return NextResponse.json({ error: "Format d'image invalide." }, { status: 400 });
-    }
-    if (avatarUrl.length > MAX_AVATAR_BYTES) {
-      return NextResponse.json({ error: "Image trop lourde (1.5 Mo max)." }, { status: 400 });
-    }
+  if (avatarUrl !== undefined && !avatarUrl.startsWith("https://")) {
+    return NextResponse.json({ error: "URL d'image invalide." }, { status: 400 });
   }
 
   if (name !== undefined && !name) {

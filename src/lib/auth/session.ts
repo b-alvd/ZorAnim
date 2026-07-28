@@ -11,6 +11,7 @@ export type SessionUser = {
   name: string;
   nameChangedAt: string | null;
   avatarUrl: string | null;
+  role: string;
   createdAt: string;
 };
 
@@ -30,6 +31,7 @@ export async function validateSession(sessionId: string): Promise<SessionUser | 
       name: users.name,
       nameChangedAt: users.nameChangedAt,
       avatarUrl: users.avatarUrl,
+      role: users.role,
       createdAt: users.createdAt,
     })
     .from(sessions)
@@ -48,6 +50,7 @@ export async function validateSession(sessionId: string): Promise<SessionUser | 
     name: row.name,
     nameChangedAt: row.nameChangedAt,
     avatarUrl: row.avatarUrl,
+    role: row.role,
     createdAt: row.createdAt,
   };
 }

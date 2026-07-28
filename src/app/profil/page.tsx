@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPendingArtistSubmissionsByUser, getPendingFilmSubmissionsByUser } from "@/db/queries";
 import AvatarUpload from "./AvatarUpload";
 import LogoutButton from "./LogoutButton";
 import SettingsGrid from "./SettingsGrid";
@@ -16,6 +17,11 @@ function formatJoinDate(createdAt: string) {
 export default async function ProfilPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
+
+  const [filmSubmissions, artistSubmissions] = await Promise.all([
+    getPendingFilmSubmissionsByUser(user.id),
+    getPendingArtistSubmissionsByUser(user.id),
+  ]);
 
   const initials = user.name
     .split(" ")
@@ -38,7 +44,13 @@ export default async function ProfilPage() {
 
       <div className={styles.settingsWrap}>
         <h2 className={styles.settingsTitle}>Paramètres du compte</h2>
-        <SettingsGrid name={user.name} email={user.email} nameChangedAt={user.nameChangedAt} />
+        <SettingsGrid
+          name={user.name}
+          email={user.email}
+          nameChangedAt={user.nameChangedAt}
+          filmSubmissions={filmSubmissions}
+          artistSubmissions={artistSubmissions}
+        />
       </div>
     </main>
   );

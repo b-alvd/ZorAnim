@@ -1,6 +1,10 @@
 import Link from "next/link";
 import InfoPage from "@/components/InfoPage/InfoPage";
 import Steps from "@/components/Steps/Steps";
+import { getCategories } from "@/db/queries";
+import { mergeCategories } from "@/lib/categories";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import SubmitFilmForm from "./SubmitFilmForm";
 import styles from "../devenir-artiste/community.module.css";
 
 const steps = [
@@ -23,27 +27,35 @@ const steps = [
   },
 ];
 
-export default function SoumettreFilmPage() {
+export default async function SoumettreFilmPage() {
+  const [categories, user] = await Promise.all([getCategories().then(mergeCategories), getCurrentUser()]);
+
   return (
     <InfoPage
       title="Soumettre un film"
-      subtitle="Le formulaire de soumission en ligne arrive bientôt. En attendant, voici comment ça se passe."
+      subtitle="Remplis le formulaire ci-dessous, on regarde ta soumission et on revient vers toi."
     >
       <Steps steps={steps} />
 
       <h2>Ce qu&apos;il te faut</h2>
       <ul>
-        <li>Le fichier vidéo de ton court-métrage, dans un format courant</li>
-        <li>Une affiche (image de couverture)</li>
+        <li>Un lien vers le fichier vidéo de ton court-métrage</li>
+        <li>Un lien vers une affiche (image de couverture)</li>
         <li>Un résumé de quelques phrases</li>
         <li>Ton nom ou celui de ton studio</li>
       </ul>
 
-      <div className={styles.ctaBlock}>
-        <Link href="/contact" className={styles.cta}>
-          Proposer mon film
-        </Link>
-      </div>
+      {user ? (
+        <SubmitFilmForm categories={categories} />
+      ) : (
+        <div className={styles.success}>
+          <p className={styles.successTitle}>Connexion requise</p>
+          <p className={styles.successText}>Tu dois être connecté pour soumettre un film.</p>
+          <Link href="/connexion" className={styles.loginCta}>
+            Se connecter
+          </Link>
+        </div>
+      )}
     </InfoPage>
   );
 }

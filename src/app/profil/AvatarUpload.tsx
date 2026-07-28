@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./profil.module.css";
 
+const MAX_AVATAR_BYTES = 8_000_000;
+
 export default function AvatarUpload({
   avatarUrl,
   initials,
@@ -24,31 +26,45 @@ export default function AvatarUpload({
       setError("Choisis un fichier image.");
       return;
     }
-    if (file.size > 1_500_000) {
-      setError("Image trop lourde (1.5 Mo max).");
+    if (file.size > MAX_AVATAR_BYTES) {
+      setError("Image trop lourde (8 Mo max).");
       return;
     }
 
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-
     setUploading(true);
     try {
+      const signRes = await fetch("/api/upload", { method: "POST" });
+      const signed = await signRes.json();
+      if (!signRes.ok) {
+        setError(signed.error ?? "Échec de la préparation de l'envoi.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("api_key", signed.apiKey);
+      formData.append("timestamp", String(signed.timestamp));
+      formData.append("signature", signed.signature);
+      formData.append("folder", signed.folder);
+
+      const uploadRes = await fetch(signed.uploadUrl, { method: "POST", body: formData });
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok || !uploadData.secure_url) {
+        setError("Échec de l'envoi du fichier.");
+        return;
+      }
+
       const res = await fetch("/api/auth/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatarUrl: dataUrl }),
+        body: JSON.stringify({ avatarUrl: uploadData.secure_url }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "Échec de l'envoi.");
+        setError(data.error ?? "Échec de l'enregistrement.");
         return;
       }
-      setPreview(dataUrl);
+      setPreview(uploadData.secure_url);
       router.refresh();
     } catch {
       setError("Impossible de contacter le serveur.");

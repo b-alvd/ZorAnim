@@ -1,8 +1,13 @@
+import { redirect } from "next/navigation";
 import Card from "@/components/Card/Card";
 import { getFilms } from "@/db/queries";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import styles from "./catalogue.module.css";
 
 export default async function CataloguePage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/connexion");
+
   const films = await getFilms();
 
   return (
