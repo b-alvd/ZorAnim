@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { films, getArtist, type Film } from "@/data/mock";
+import type { Film } from "@/data/types";
 import styles from "./VideoPlayer.module.css";
 
 function formatTime(seconds: number) {
@@ -17,7 +17,15 @@ function formatTime(seconds: number) {
   return h > 0 ? `${h}:${m.toString().padStart(2, "0")}:${s}` : `${m}:${s}`;
 }
 
-export default function VideoPlayer({ film, autoplay = false }: { film: Film; autoplay?: boolean }) {
+export default function VideoPlayer({
+  film,
+  suggestions,
+  autoplay = false,
+}: {
+  film: Film;
+  suggestions: Film[];
+  autoplay?: boolean;
+}) {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -30,9 +38,6 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
-
-  const suggestions = films.filter((f) => f.id !== film.id).slice(0, 4);
-  const artist = getArtist(film.artistId);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -165,11 +170,9 @@ export default function VideoPlayer({ film, autoplay = false }: { film: Film; au
               <Image src={film.poster} alt="" fill sizes="520px" className={styles.posterImg} unoptimized />
             </div>
             <h1 className={styles.pauseTitle}>{film.title}</h1>
-            {artist && (
-              <Link href={`/artistes/${artist.id}`} className={styles.pauseArtist}>
-                Par {artist.name}
-              </Link>
-            )}
+            <Link href={`/artistes/${film.artistId}`} className={styles.pauseArtist}>
+              Par {film.artistName}
+            </Link>
             <div className={styles.pauseBadges}>
               {film.isNew && <span className={`${styles.badge} ${styles.newBadge}`}>Nouveau</span>}
               <span className={styles.badge}>{film.year}</span>

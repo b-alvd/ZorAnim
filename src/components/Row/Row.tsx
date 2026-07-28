@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Card from "@/components/Card/Card";
-import type { Film } from "@/data/mock";
+import type { Film } from "@/data/types";
 import styles from "./Row.module.css";
 
 export default function Row({

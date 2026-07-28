@@ -1,8 +1,10 @@
 import Card from "@/components/Card/Card";
-import { films } from "@/data/mock";
+import { getFilms } from "@/db/queries";
 import styles from "./catalogue.module.css";
 
-export default function CataloguePage() {
+export default async function CataloguePage() {
+  const films = await getFilms();
+
   return (
     <main className={styles.page}>
       <div className={styles.header}>

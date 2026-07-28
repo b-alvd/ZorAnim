@@ -1,9 +1,11 @@
 import Card from "@/components/Card/Card";
-import { categories, films } from "@/data/mock";
+import { getCategories, getFilms } from "@/db/queries";
 import gridStyles from "../catalogue/catalogue.module.css";
 import styles from "./categories.module.css";
 
-export default function CategoriesPage() {
+export default async function CategoriesPage() {
+  const [categories, films] = await Promise.all([getCategories(), getFilms()]);
+
   return (
     <main className={styles.page}>
       <div className={styles.header}>

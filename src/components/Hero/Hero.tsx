@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import type { Film } from "@/data/mock";
+import type { Film } from "@/data/types";
 import FilmModal from "@/components/FilmModal/FilmModal";
 import styles from "./Hero.module.css";
 

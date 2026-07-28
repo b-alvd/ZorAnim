@@ -1,8 +1,10 @@
 import ArtistCard from "@/components/ArtistCard/ArtistCard";
-import { artists, filmsByArtist } from "@/data/mock";
+import { getArtists, getFilms } from "@/db/queries";
 import styles from "./artistes.module.css";
 
-export default function ArtistesPage() {
+export default async function ArtistesPage() {
+  const [artists, films] = await Promise.all([getArtists(), getFilms()]);
+
   return (
     <main className={styles.page}>
       <div className={styles.header}>
@@ -14,7 +16,11 @@ export default function ArtistesPage() {
       </div>
       <div className={styles.grid}>
         {artists.map((a) => (
-          <ArtistCard key={a.id} artist={a} filmCount={filmsByArtist(a.id).length} />
+          <ArtistCard
+            key={a.id}
+            artist={a}
+            filmCount={films.filter((f) => f.artistId === a.id).length}
+          />
         ))}
       </div>
     </main>

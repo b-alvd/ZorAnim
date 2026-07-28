@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { Artist } from "@/data/mock";
+import type { Artist } from "@/data/types";
 import styles from "./ArtistCard.module.css";
 
 export default function ArtistCard({ artist, filmCount }: { artist: Artist; filmCount: number }) {

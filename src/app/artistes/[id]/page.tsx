@@ -1,19 +1,20 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Card from "@/components/Card/Card";
-import { artists, filmsByArtist, getArtist } from "@/data/mock";
+import { getArtist, getArtists, getFilmsByArtist } from "@/db/queries";
 import styles from "./artist.module.css";
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const artists = await getArtists();
   return artists.map((a) => ({ id: a.id }));
 }
 
 export default async function ArtistPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const artist = getArtist(id);
+  const artist = await getArtist(id);
   if (!artist) notFound();
 
-  const artistFilms = filmsByArtist(artist.id);
+  const artistFilms = await getFilmsByArtist(artist.id);
 
   return (
     <main className={styles.page}>

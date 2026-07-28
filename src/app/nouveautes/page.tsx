@@ -1,9 +1,9 @@
 import Card from "@/components/Card/Card";
-import { films } from "@/data/mock";
+import { getNewFilms } from "@/db/queries";
 import styles from "../catalogue/catalogue.module.css";
 
-export default function NouveautesPage() {
-  const newFilms = films.filter((f) => f.isNew);
+export default async function NouveautesPage() {
+  const newFilms = await getNewFilms();
 
   return (
     <main className={styles.page}>

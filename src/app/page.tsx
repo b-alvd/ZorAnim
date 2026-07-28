@@ -1,8 +1,10 @@
 import Hero from "@/components/Hero/Hero";
 import Row from "@/components/Row/Row";
-import { films } from "@/data/mock";
+import { getFilms } from "@/db/queries";
 
-export default function Home() {
+export default async function Home() {
+  const films = await getFilms();
+
   return (
     <main>
       <Hero films={films} />
