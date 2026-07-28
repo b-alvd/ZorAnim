@@ -79,7 +79,9 @@ export default function Navbar({ user }: { user: NavbarUser }) {
         <div className={styles.account}>
           {user ? (
             <>
-              <span className={styles.userName}>{user.name}</span>
+              <Link href="/profil" className={styles.userName}>
+                {user.name}
+              </Link>
               <button className={styles.logoutBtn} onClick={handleLogout}>
                 Déconnexion
               </button>
@@ -116,7 +118,9 @@ export default function Navbar({ user }: { user: NavbarUser }) {
         <div className={styles.mobileAccount}>
           {user ? (
             <>
-              <span className={styles.userName}>{user.name}</span>
+              <Link href="/profil" className={styles.userName}>
+                {user.name}
+              </Link>
               <button className={styles.logoutBtn} onClick={handleLogout}>
                 Déconnexion
               </button>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import PasswordField from "@/components/PasswordField/PasswordField";
 import styles from "./auth.module.css";
 
 export default function InscriptionPage() {
@@ -68,12 +69,10 @@ export default function InscriptionPage() {
           </label>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Mot de passe</span>
-            <input
-              type="password"
-              required
-              minLength={8}
+            <PasswordField
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
+              minLength={8}
               className={styles.input}
               placeholder="8 caractères minimum"
             />

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import PasswordField from "@/components/PasswordField/PasswordField";
 import styles from "../inscription/auth.module.css";
 
 export default function ConnexionPage() {
@@ -56,11 +57,9 @@ export default function ConnexionPage() {
           </label>
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Mot de passe</span>
-            <input
-              type="password"
-              required
+            <PasswordField
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={setPassword}
               className={styles.input}
               placeholder="••••••••"
             />
