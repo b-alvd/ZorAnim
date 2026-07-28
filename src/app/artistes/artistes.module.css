@@ -25,3 +25,9 @@
   gap: 1.25rem;
   padding: 0 clamp(1rem, 4vw, 3.5rem);
 }
+
+.empty {
+  padding: 0 clamp(1rem, 4vw, 3.5rem);
+  color: #808080;
+  font-size: 0.95rem;
+}

@@ -6,17 +6,24 @@
 }
 
 .sidebar {
-  width: 220px;
+  width: 240px;
   flex-shrink: 0;
   background: #0e0e0e;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   padding: 24px 16px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   position: sticky;
   top: 0;
   height: 100vh;
+  overflow-y: auto;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .logo {
@@ -26,39 +33,100 @@
   letter-spacing: 0.02em;
 }
 
-.nav {
+.backBtn {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.navLink {
-  padding: 10px 12px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border-radius: 4px;
-  color: #b3b3b3;
-  text-decoration: none;
-  font-size: 0.95rem;
+  color: #808080;
+  flex-shrink: 0;
   transition: background 0.15s, color 0.15s;
 }
 
-.navLink:hover {
+.backBtn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
 
-.back {
-  margin-top: auto;
-  padding: 10px 12px;
-  color: #808080;
-  text-decoration: none;
-  font-size: 0.9rem;
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  flex: 1;
 }
 
-.back:hover {
+.navGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navGroupTitle {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666;
+  padding: 0 12px;
+  margin-bottom: 6px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 4px;
+  color: #b3b3b3;
+  text-decoration: none;
+  font-size: 0.92rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.navIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: #666;
+  transition: color 0.15s;
+}
+
+.navLink:hover {
+  background: rgba(255, 255, 255, 0.06);
   color: #fff;
+}
+
+.navLink:hover .navIcon {
+  color: #b3b3b3;
+}
+
+.navLinkActive {
+  background: rgba(229, 9, 20, 0.12);
+  color: #fff;
+}
+
+.navLinkActive .navIcon {
+  color: var(--accent, #e50914);
+}
+
+.navLinkActive:hover {
+  background: rgba(229, 9, 20, 0.18);
+}
+
+.navBadge {
+  margin-left: auto;
+  background: var(--accent, #e50914);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 1px 7px;
+  flex-shrink: 0;
 }
 
 .content {
   flex: 1;
   padding: 32px 40px;
+  min-width: 0;
 }

@@ -6,27 +6,22 @@ import Link from "next/link";
 import Logo from "@/components/Logo/Logo";
 import styles from "./Navbar.module.css";
 
-const baseLinks = [
+const links = [
   { href: "/", label: "Accueil" },
   { href: "/catalogue", label: "Catalogue" },
   { href: "/nouveautes", label: "Nouveautés" },
   { href: "/categories", label: "Catégories" },
   { href: "/artistes", label: "Artistes" },
+  { href: "/studios", label: "Studios" },
 ];
 
-const loggedInLinks = [
-  { href: "/ma-liste", label: "Ma liste" },
-  { href: "/historique", label: "Historique" },
-];
-
-type NavbarUser = { id: string; email: string; name: string } | null;
+type NavbarUser = { id: string; email: string; name: string; role?: string } | null;
 
 export default function Navbar({ user }: { user: NavbarUser }) {
   const pathname = usePathname();
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const links = user ? [...baseLinks, ...loggedInLinks] : baseLinks;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -62,7 +57,7 @@ export default function Navbar({ user }: { user: NavbarUser }) {
     router.refresh();
   };
 
-  if (pathname.startsWith("/watch/")) return null;
+  if (pathname.startsWith("/watch/") || pathname.startsWith("/admin")) return null;
 
   return (
     <header className={styles.header}>
@@ -85,6 +80,11 @@ export default function Navbar({ user }: { user: NavbarUser }) {
         <div className={styles.account}>
           {user ? (
             <>
+              {user.role === "admin" && (
+                <Link href="/admin" className={styles.adminLink}>
+                  Admin
+                </Link>
+              )}
               <Link href="/profil" className={styles.userName}>
                 {user.name}
               </Link>
@@ -124,6 +124,11 @@ export default function Navbar({ user }: { user: NavbarUser }) {
         <div className={styles.mobileAccount}>
           {user ? (
             <>
+              {user.role === "admin" && (
+                <Link href="/admin" className={styles.mobileLink}>
+                  Admin
+                </Link>
+              )}
               <Link href="/profil" className={styles.userName}>
                 {user.name}
               </Link>

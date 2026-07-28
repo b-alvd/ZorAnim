@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Dropdown from "@/components/Dropdown/Dropdown";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import { RATING_OPTIONS } from "@/lib/ratings";
@@ -22,13 +22,21 @@ export default function FilmSubmissionForm({
   const [category, setCategory] = useState(initial.category);
   const [poster, setPoster] = useState(initial.poster);
   const [videoUrl, setVideoUrl] = useState(initial.videoUrl);
+  const [valid, setValid] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
+  useEffect(updateValidity, []);
 
   return (
     <form
+      ref={formRef}
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit(new FormData(e.currentTarget));
       }}
+      onChange={updateValidity}
+      onInput={updateValidity}
       className={styles.form}
     >
       <div className={styles.row2}>
@@ -100,7 +108,7 @@ export default function FilmSubmissionForm({
           maxSizeMB={100}
         />
       </div>
-      <button type="submit" className={styles.submitBtn} disabled={pending || !poster || !videoUrl}>
+      <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !poster || !videoUrl}>
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>
     </form>

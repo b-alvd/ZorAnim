@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   films,
@@ -11,6 +11,9 @@ import {
   watchHistory,
   contactMessages,
   studioMembers,
+  filmRatings,
+  comments,
+  commentReactions,
 } from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
@@ -52,37 +55,61 @@ function mapFilm(row: FilmRow): Film {
     isNew: isNewActive(row.markedNewAt),
     poster: row.poster,
     videoUrl: row.videoUrl,
+    avgRating: null,
+    ratingCount: 0,
   };
+}
+
+async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
+  if (filmsList.length === 0) return filmsList;
+  const ids = filmsList.map((f) => f.id);
+  const rows = await db
+    .select({
+      filmId: filmRatings.filmId,
+      avg: sql<number>`avg(${filmRatings.value})`,
+      count: sql<number>`count(*)`,
+    })
+    .from(filmRatings)
+    .where(inArray(filmRatings.filmId, ids))
+    .groupBy(filmRatings.filmId);
+
+  const map = new Map(rows.map((r) => [r.filmId, { avg: r.avg, count: r.count }]));
+  return filmsList.map((f) => {
+    const summary = map.get(f.id);
+    return { ...f, avgRating: summary ? summary.avg : null, ratingCount: summary?.count ?? 0 };
+  });
 }
 
 export async function getFilms(): Promise<Film[]> {
   const rows = await filmsQuery();
-  return rows.map(mapFilm);
+  return attachRatingSummaries(rows.map(mapFilm));
 }
 
 export async function getFilm(id: string): Promise<Film | undefined> {
   const [row] = await filmsQuery().where(eq(films.id, id));
-  return row ? mapFilm(row) : undefined;
+  if (!row) return undefined;
+  const [withRating] = await attachRatingSummaries([mapFilm(row)]);
+  return withRating;
 }
 
 export async function getNewFilms(): Promise<Film[]> {
   const rows = await filmsQuery();
-  return rows.map(mapFilm).filter((f) => f.isNew);
+  return attachRatingSummaries(rows.map(mapFilm).filter((f) => f.isNew));
 }
 
 export async function getFilmsByCategory(category: string): Promise<Film[]> {
   const rows = await filmsQuery().where(eq(films.category, category));
-  return rows.map(mapFilm);
+  return attachRatingSummaries(rows.map(mapFilm));
 }
 
 export async function getFilmsByArtist(artistId: string): Promise<Film[]> {
   const rows = await filmsQuery().where(eq(films.artistId, artistId));
-  return rows.map(mapFilm);
+  return attachRatingSummaries(rows.map(mapFilm));
 }
 
 export async function getSuggestions(excludeId: string, limit = 4): Promise<Film[]> {
   const rows = await filmsQuery().where(ne(films.id, excludeId));
-  return rows.slice(0, limit).map(mapFilm);
+  return attachRatingSummaries(rows.slice(0, limit).map(mapFilm));
 }
 
 export async function getCategories(): Promise<string[]> {
@@ -311,7 +338,7 @@ export async function getFavoriteFilms(userId: string): Promise<Film[]> {
     .innerJoin(artists, eq(films.artistId, artists.id))
     .innerJoin(favorites, eq(favorites.filmId, films.id))
     .where(eq(favorites.userId, userId));
-  return rows.map(mapFilm);
+  return attachRatingSummaries(rows.map(mapFilm));
 }
 
 export async function markWatched(userId: string, filmId: string): Promise<void> {
@@ -340,7 +367,8 @@ export async function getWatchHistory(userId: string): Promise<(Film & { watched
     .innerJoin(watchHistory, eq(watchHistory.filmId, films.id))
     .where(eq(watchHistory.userId, userId))
     .orderBy(desc(watchHistory.watchedAt));
-  return rows.map((r) => ({ ...mapFilm(r), watchedAt: r.watchedAt }));
+  const withRatings = await attachRatingSummaries(rows.map(mapFilm));
+  return withRatings.map((f, i) => ({ ...f, watchedAt: rows[i].watchedAt }));
 }
 
 export type ContactMessage = typeof contactMessages.$inferSelect;
@@ -522,4 +550,235 @@ export async function deleteStudio(studioId: string, requesterUserId: string): P
   if (filmRow) throw new Error("Impossible de supprimer un studio qui a des films au catalogue.");
 
   await db.delete(artists).where(eq(artists.id, studioId));
+}
+
+export async function upsertRating(userId: string, filmId: string, value: number): Promise<void> {
+  const [existing] = await db
+    .select({ id: filmRatings.id })
+    .from(filmRatings)
+    .where(and(eq(filmRatings.userId, userId), eq(filmRatings.filmId, filmId)));
+
+  if (existing) {
+    await db.update(filmRatings).set({ value }).where(eq(filmRatings.id, existing.id));
+  } else {
+    await db.insert(filmRatings).values({ id: randomUUID(), userId, filmId, value });
+  }
+}
+
+export async function getUserRating(userId: string, filmId: string): Promise<number | null> {
+  const [row] = await db
+    .select({ value: filmRatings.value })
+    .from(filmRatings)
+    .where(and(eq(filmRatings.userId, userId), eq(filmRatings.filmId, filmId)));
+  return row?.value ?? null;
+}
+
+export type Comment = {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatarUrl: string | null;
+  body: string;
+  createdAt: string;
+  parentId: string | null;
+  upCount: number;
+  downCount: number;
+  myReaction: "up" | "down" | null;
+};
+
+export async function getFilmComments(filmId: string, currentUserId?: string): Promise<Comment[]> {
+  const rows = await db
+    .select({
+      id: comments.id,
+      userId: comments.userId,
+      userName: users.name,
+      userAvatarUrl: users.avatarUrl,
+      body: comments.body,
+      createdAt: comments.createdAt,
+      parentId: comments.parentId,
+    })
+    .from(comments)
+    .innerJoin(users, eq(comments.userId, users.id))
+    .where(eq(comments.filmId, filmId))
+    .orderBy(desc(comments.createdAt));
+
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((r) => r.id);
+  const reactionRows = await db
+    .select({ commentId: commentReactions.commentId, type: commentReactions.type, userId: commentReactions.userId })
+    .from(commentReactions)
+    .where(inArray(commentReactions.commentId, ids));
+
+  const summaries = new Map<string, { up: number; down: number; mine: "up" | "down" | null }>();
+  for (const r of reactionRows) {
+    const entry = summaries.get(r.commentId) ?? { up: 0, down: 0, mine: null };
+    if (r.type === "up") entry.up += 1;
+    else entry.down += 1;
+    if (currentUserId && r.userId === currentUserId) entry.mine = r.type as "up" | "down";
+    summaries.set(r.commentId, entry);
+  }
+
+  return rows.map((r) => {
+    const s = summaries.get(r.id) ?? { up: 0, down: 0, mine: null };
+    return { ...r, upCount: s.up, downCount: s.down, myReaction: s.mine };
+  });
+}
+
+export async function addComment(
+  userId: string,
+  filmId: string,
+  body: string,
+  parentId?: string | null
+): Promise<void> {
+  await db.insert(comments).values({ id: randomUUID(), userId, filmId, body, parentId: parentId ?? null });
+}
+
+export async function deleteComment(commentId: string, userId: string, isAdmin: boolean): Promise<void> {
+  const [row] = await db.select({ userId: comments.userId }).from(comments).where(eq(comments.id, commentId));
+  if (!row) return;
+  if (row.userId !== userId && !isAdmin) throw new Error("Non autorisé.");
+  await db.delete(comments).where(eq(comments.id, commentId));
+}
+
+export async function toggleCommentReaction(userId: string, commentId: string, type: "up" | "down"): Promise<void> {
+  const [existing] = await db
+    .select()
+    .from(commentReactions)
+    .where(and(eq(commentReactions.commentId, commentId), eq(commentReactions.userId, userId)));
+
+  if (existing) {
+    if (existing.type === type) {
+      await db.delete(commentReactions).where(eq(commentReactions.id, existing.id));
+    } else {
+      await db.update(commentReactions).set({ type }).where(eq(commentReactions.id, existing.id));
+    }
+  } else {
+    await db.insert(commentReactions).values({ id: randomUUID(), commentId, userId, type });
+  }
+}
+
+export type AdminComment = {
+  id: string;
+  userId: string;
+  userName: string;
+  body: string;
+  createdAt: string;
+  parentId: string | null;
+  filmTitle: string;
+  upCount: number;
+  downCount: number;
+};
+
+export async function getAllCommentsWithStats(): Promise<AdminComment[]> {
+  const rows = await db
+    .select({
+      id: comments.id,
+      userId: comments.userId,
+      userName: users.name,
+      body: comments.body,
+      createdAt: comments.createdAt,
+      parentId: comments.parentId,
+      filmTitle: films.title,
+    })
+    .from(comments)
+    .innerJoin(users, eq(comments.userId, users.id))
+    .innerJoin(films, eq(comments.filmId, films.id))
+    .orderBy(desc(comments.createdAt));
+
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((r) => r.id);
+  const reactionRows = await db
+    .select({ commentId: commentReactions.commentId, type: commentReactions.type })
+    .from(commentReactions)
+    .where(inArray(commentReactions.commentId, ids));
+
+  const counts = new Map<string, { up: number; down: number }>();
+  for (const r of reactionRows) {
+    const entry = counts.get(r.commentId) ?? { up: 0, down: 0 };
+    if (r.type === "up") entry.up += 1;
+    else entry.down += 1;
+    counts.set(r.commentId, entry);
+  }
+
+  return rows.map((r) => {
+    const c = counts.get(r.id) ?? { up: 0, down: 0 };
+    return { ...r, upCount: c.up, downCount: c.down };
+  });
+}
+
+export async function getFilmCreatorUserIds(filmId: string): Promise<string[]> {
+  const [film] = await db.select({ artistId: films.artistId }).from(films).where(eq(films.id, filmId));
+  if (!film) return [];
+
+  const [artist] = await db.select().from(artists).where(eq(artists.id, film.artistId));
+  if (!artist) return [];
+
+  if (!artist.isStudio) {
+    return artist.userId ? [artist.userId] : [];
+  }
+
+  const ids = new Set<string>();
+  if (artist.ownerId) ids.add(artist.ownerId);
+
+  const members = await db
+    .select({ userId: studioMembers.userId })
+    .from(studioMembers)
+    .where(and(eq(studioMembers.studioId, artist.id), eq(studioMembers.status, "active")));
+  for (const m of members) ids.add(m.userId);
+
+  return [...ids];
+}
+
+export async function getStudios(): Promise<Artist[]> {
+  return db.select().from(artists).where(eq(artists.isStudio, true));
+}
+
+export type AdminStudio = Artist & {
+  ownerName: string | null;
+  ownerEmail: string | null;
+  memberCount: number;
+  filmCount: number;
+};
+
+export async function getAllStudiosWithDetails(): Promise<AdminStudio[]> {
+  const studios = await getStudios();
+  if (studios.length === 0) return [];
+
+  const ids = studios.map((s) => s.id);
+
+  const owners = await db
+    .select({ id: artists.id, ownerName: users.name, ownerEmail: users.email })
+    .from(artists)
+    .leftJoin(users, eq(artists.ownerId, users.id))
+    .where(inArray(artists.id, ids));
+  const ownerMap = new Map(owners.map((o) => [o.id, o]));
+
+  const memberRows = await db
+    .select({ studioId: studioMembers.studioId })
+    .from(studioMembers)
+    .where(and(inArray(studioMembers.studioId, ids), eq(studioMembers.status, "active")));
+  const memberCounts = new Map<string, number>();
+  for (const m of memberRows) memberCounts.set(m.studioId, (memberCounts.get(m.studioId) ?? 0) + 1);
+
+  const filmRows = await db.select({ artistId: films.artistId }).from(films).where(inArray(films.artistId, ids));
+  const filmCounts = new Map<string, number>();
+  for (const f of filmRows) filmCounts.set(f.artistId, (filmCounts.get(f.artistId) ?? 0) + 1);
+
+  return studios.map((s) => ({
+    ...s,
+    ownerName: ownerMap.get(s.id)?.ownerName ?? null,
+    ownerEmail: ownerMap.get(s.id)?.ownerEmail ?? null,
+    memberCount: memberCounts.get(s.id) ?? 0,
+    filmCount: filmCounts.get(s.id) ?? 0,
+  }));
+}
+
+export async function adminDeleteStudio(studioId: string): Promise<void> {
+  await db.delete(artists).where(and(eq(artists.id, studioId), eq(artists.isStudio, true)));
+}
+
+export async function adminRemoveStudioMember(memberRowId: string): Promise<void> {
+  await db.delete(studioMembers).where(eq(studioMembers.id, memberRowId));
 }

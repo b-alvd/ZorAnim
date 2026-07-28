@@ -116,6 +116,18 @@
   background: var(--accent, #e50914);
 }
 
+.ratingRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.ratingMeta {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+}
+
 .synopsis {
   font-size: 1rem;
   line-height: 1.55;
@@ -177,6 +189,352 @@
 
 .favActive {
   border-color: var(--accent, #e50914);
+  color: var(--accent, #e50914);
+}
+
+.myRating {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.myRatingLabel {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  font-weight: 600;
+}
+
+.commentsSection {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.commentsTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.9rem;
+}
+
+.commentForm {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  align-items: flex-start;
+}
+
+.commentInput {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+  color: #fff;
+  font-size: 0.9rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.commentInput:focus {
+  outline: none;
+  border-color: var(--accent, #e50914);
+}
+
+.commentSubmit {
+  flex-shrink: 0;
+  background: var(--accent, #e50914);
+  border: none;
+  border-radius: 4px;
+  padding: 0.6rem 1rem;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.commentSubmit:hover:not(:disabled) {
+  background: #ff1a25;
+}
+
+.commentSubmit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.commentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.comment {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.commentsList > .comment {
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.commentsList > .comment:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.repliesList > .comment {
+  margin-left: -1.25rem;
+  padding-left: 1.25rem;
+}
+
+.repliesList > .comment:not(:last-child) {
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.commentAvatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--accent, #e50914);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.commentReply .commentAvatar {
+  width: 28px;
+  height: 28px;
+}
+
+.commentAvatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.commentAvatarInitials {
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.commentMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.replyToggle {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-top: 0.15rem;
+}
+
+.replyToggle:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.replyForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.replyInput {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  padding: 0.55rem 0.7rem;
+  color: #fff;
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.replyInput:focus {
+  outline: none;
+  border-color: var(--accent, #e50914);
+}
+
+.replyFormActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.replyCancel {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+}
+
+.replyCancel:hover {
+  color: #fff;
+}
+
+.repliesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  padding-left: 1.25rem;
+  border-left: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.commentHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.commentAuthor {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.creatorBadge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent, #e50914);
+  background: rgba(229, 9, 20, 0.12);
+  border: 1px solid rgba(229, 9, 20, 0.3);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  flex-shrink: 0;
+}
+
+.commentDate {
+  font-size: 0.75rem;
+  color: #808080;
+  margin-right: auto;
+}
+
+.commentBody {
+  font-size: 0.9rem;
+  color: #d2d2d2;
+  line-height: 1.5;
+  margin-bottom: 0.35rem;
+}
+
+.commentMenu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.commentMenuBtn {
+  background: none;
+  border: none;
+  color: #808080;
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  border-radius: 4px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.commentMenuBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.commentMenuDropdown {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  z-index: 5;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  overflow: hidden;
+  min-width: 120px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.commentMenuItem {
+  width: 100%;
+  text-align: left;
+  background: #1a1a1a;
+  border: none;
+  color: var(--accent, #e50914);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.55rem 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.commentMenuItem:hover {
+  background: var(--accent, #e50914);
+  color: #fff;
+}
+
+.commentMenuItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.commentReactions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.reactBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.reactBtn:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.reactBtn:disabled {
+  cursor: not-allowed;
+}
+
+.reactActiveUp {
+  color: #4ade80;
+}
+
+.reactActiveUp:hover:not(:disabled) {
+  color: #4ade80;
+}
+
+.reactActiveDown {
+  color: var(--accent, #e50914);
+}
+
+.reactActiveDown:hover:not(:disabled) {
   color: var(--accent, #e50914);
 }
 

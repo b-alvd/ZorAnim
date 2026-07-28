@@ -1,20 +1,18 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import { submitArtistAction } from "./actions";
 import styles from "./community.module.css";
 
-export default function BecomeArtistForm({
-  initialName,
-  initialEmail,
-}: {
-  initialName: string;
-  initialEmail: string;
-}) {
+export default function BecomeArtistForm({ initialEmail }: { initialEmail: string }) {
   const [avatar, setAvatar] = useState("");
   const [sent, setSent] = useState(false);
+  const [valid, setValid] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -37,11 +35,17 @@ export default function BecomeArtistForm({
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
+    <form
+      ref={formRef}
+      className={styles.form}
+      onSubmit={handleSubmit}
+      onChange={updateValidity}
+      onInput={updateValidity}
+    >
       <div className={styles.fieldRow}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Nom / nom de studio</span>
-          <input name="name" required defaultValue={initialName} className={styles.input} placeholder="Ton nom" />
+          <span className={styles.fieldLabel}>Nom</span>
+          <input name="name" required className={styles.input} placeholder="Ton nom" />
         </label>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Email de contact</span>
@@ -49,9 +53,9 @@ export default function BecomeArtistForm({
             name="contactEmail"
             type="email"
             required
+            readOnly
             defaultValue={initialEmail}
-            className={styles.input}
-            placeholder="ton@email.com"
+            className={`${styles.input} ${styles.inputMuted}`}
           />
         </label>
       </div>
@@ -67,7 +71,7 @@ export default function BecomeArtistForm({
         <span className={styles.fieldLabel}>Lien vers ton travail (optionnel)</span>
         <input name="portfolioUrl" className={styles.input} placeholder="https://..." />
       </label>
-      <button type="submit" className={styles.cta} disabled={isPending}>
+      <button type="submit" className={styles.cta} disabled={isPending || !valid}>
         {isPending ? "Envoi..." : "Envoyer ma présentation"}
       </button>
     </form>

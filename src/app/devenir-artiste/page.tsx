@@ -2,6 +2,7 @@ import Link from "next/link";
 import InfoPage from "@/components/InfoPage/InfoPage";
 import FeatureGrid from "@/components/FeatureGrid/FeatureGrid";
 import Steps from "@/components/Steps/Steps";
+import { getArtistByUserId } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import BecomeArtistForm from "./BecomeArtistForm";
 import styles from "./community.module.css";
@@ -57,6 +58,7 @@ const steps = [
 
 export default async function DevenirArtistePage() {
   const user = await getCurrentUser();
+  const personalArtist = user ? await getArtistByUserId(user.id) : null;
 
   return (
     <InfoPage
@@ -68,9 +70,7 @@ export default async function DevenirArtistePage() {
       <h2>Comment ça marche</h2>
       <Steps steps={steps} />
 
-      {user ? (
-        <BecomeArtistForm initialName={user.name} initialEmail={user.email} />
-      ) : (
+      {!user ? (
         <div className={styles.success}>
           <p className={styles.successTitle}>Connexion requise</p>
           <p className={styles.successText}>Tu dois être connecté pour envoyer ta candidature.</p>
@@ -78,6 +78,15 @@ export default async function DevenirArtistePage() {
             Se connecter
           </Link>
         </div>
+      ) : personalArtist ? (
+        <div className={styles.success}>
+          <p className={styles.successTitle}>Tu es déjà artiste</p>
+          <p className={styles.successText}>
+            Ton profil artiste (<strong>{personalArtist.name}</strong>) est déjà actif sur ZorAnim.
+          </p>
+        </div>
+      ) : (
+        <BecomeArtistForm initialEmail={user.email} />
       )}
     </InfoPage>
   );

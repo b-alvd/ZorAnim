@@ -1,0 +1,107 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty {
+  color: #808080;
+  font-size: 0.9rem;
+}
+
+.row {
+  background: #0e0e0e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 14px 16px;
+}
+
+.rowHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.expandBtn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #808080;
+  cursor: pointer;
+  display: flex;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.expandBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.expandSpacer {
+  display: inline-block;
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.replyTag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #808080;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+.filmTitle {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #fff;
+}
+
+.author {
+  font-size: 0.85rem;
+  color: #b3b3b3;
+}
+
+.date {
+  font-size: 0.78rem;
+  color: #666;
+  margin-right: auto;
+}
+
+.stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: #808080;
+}
+
+.body {
+  font-size: 0.9rem;
+  color: #d2d2d2;
+  line-height: 1.5;
+  padding-left: 24px;
+}
+
+.replies {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}

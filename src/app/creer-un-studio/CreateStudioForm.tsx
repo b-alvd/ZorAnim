@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import { createStudioAction } from "./actions";
 import styles from "../devenir-artiste/community.module.css";
@@ -8,7 +8,11 @@ import styles from "../devenir-artiste/community.module.css";
 export default function CreateStudioForm() {
   const [avatar, setAvatar] = useState("");
   const [sent, setSent] = useState(false);
+  const [valid, setValid] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,7 +35,13 @@ export default function CreateStudioForm() {
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
+    <form
+      ref={formRef}
+      className={styles.form}
+      onSubmit={handleSubmit}
+      onChange={updateValidity}
+      onInput={updateValidity}
+    >
       <label className={styles.field}>
         <span className={styles.fieldLabel}>Nom du studio</span>
         <input name="name" required className={styles.input} placeholder="Nom du studio" />
@@ -44,7 +54,7 @@ export default function CreateStudioForm() {
         <span className={styles.fieldLabel}>Avatar</span>
         <FileUpload name="avatar" label="Choisir une image" accept="image/*" value={avatar} onChange={setAvatar} preview />
       </div>
-      <button type="submit" className={styles.cta} disabled={isPending || !avatar}>
+      <button type="submit" className={styles.cta} disabled={isPending || !valid || !avatar}>
         {isPending ? "Création..." : "Créer le studio"}
       </button>
     </form>

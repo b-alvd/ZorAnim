@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import styles from "../shared.module.css";
 
@@ -20,13 +20,21 @@ export default function ArtistForm({
   pending?: boolean;
 }) {
   const [avatar, setAvatar] = useState(initial?.avatar ?? "");
+  const [valid, setValid] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
+  useEffect(updateValidity, []);
 
   return (
     <form
+      ref={formRef}
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit(new FormData(e.currentTarget));
       }}
+      onChange={updateValidity}
+      onInput={updateValidity}
       className={styles.form}
     >
       <div className={styles.field}>
@@ -41,7 +49,7 @@ export default function ArtistForm({
         <label>Avatar</label>
         <FileUpload name="avatar" label="Choisir une image" accept="image/*" value={avatar} onChange={setAvatar} preview />
       </div>
-      <button type="submit" className={styles.submitBtn} disabled={pending || !avatar}>
+      <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !avatar}>
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>
     </form>

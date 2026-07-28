@@ -1,0 +1,22 @@
+.stars {
+  display: inline-flex;
+  gap: 0.15rem;
+}
+
+.star {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.25);
+  transition: color 0.1s ease;
+  display: flex;
+}
+
+.star:disabled {
+  cursor: default;
+}
+
+.star.filled {
+  color: var(--accent, #e50914);
+}

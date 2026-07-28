@@ -5,11 +5,11 @@ import Dropdown from "@/components/Dropdown/Dropdown";
 import { submitContactAction } from "./actions";
 import styles from "./contact.module.css";
 
-const subjects = ["Question générale", "Bug ou problème technique", "Proposer un film", "Partenariat"];
+const subjects = ["Question générale", "Bug ou problème technique", "Faire une suggestion", "Partenariat"];
 
 export default function ContactForm({ initialName, initialEmail }: { initialName: string; initialEmail: string }) {
-  const [name, setName] = useState(initialName);
-  const [email, setEmail] = useState(initialEmail);
+  const name = initialName;
+  const email = initialEmail;
   const [subject, setSubject] = useState(subjects[0]);
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
@@ -43,25 +43,11 @@ export default function ContactForm({ initialName, initialEmail }: { initialName
       <div className={styles.fieldRow}>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Nom</span>
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={styles.input}
-            placeholder="Ton nom"
-          />
+          <input type="text" readOnly value={name} className={`${styles.input} ${styles.inputMuted}`} />
         </label>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Email</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={styles.input}
-            placeholder="ton@email.com"
-          />
+          <input type="email" readOnly value={email} className={`${styles.input} ${styles.inputMuted}`} />
         </label>
       </div>
       <div className={styles.field}>
@@ -80,7 +66,7 @@ export default function ContactForm({ initialName, initialEmail }: { initialName
         />
       </label>
       {error && <p className={styles.successText}>{error}</p>}
-      <button type="submit" className={styles.cta} disabled={isPending}>
+      <button type="submit" className={styles.cta} disabled={isPending || !message.trim()}>
         {isPending ? "Envoi..." : "Envoyer"}
       </button>
     </form>

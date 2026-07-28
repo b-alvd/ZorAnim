@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Dropdown from "@/components/Dropdown/Dropdown";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import { RATING_OPTIONS } from "@/lib/ratings";
@@ -23,10 +23,14 @@ export default function SubmitFilmForm({
   const [poster, setPoster] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [sent, setSent] = useState(false);
+  const [valid, setValid] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
 
   const identityNames = identities.map((a) => a.name);
   const selectedIdentityName = identities.find((a) => a.id === artistId)?.name ?? identityNames[0];
+
+  const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -49,7 +53,13 @@ export default function SubmitFilmForm({
   }
 
   return (
-    <form className={styles.form} onSubmit={handleSubmit}>
+    <form
+      ref={formRef}
+      className={styles.form}
+      onSubmit={handleSubmit}
+      onChange={updateValidity}
+      onInput={updateValidity}
+    >
       <div className={styles.fieldRow}>
         <div className={styles.field}>
           <span className={styles.fieldLabel}>Nom d&apos;artiste / studio</span>
@@ -69,9 +79,9 @@ export default function SubmitFilmForm({
             name="contactEmail"
             type="email"
             required
+            readOnly
             defaultValue={initialEmail}
-            className={styles.input}
-            placeholder="ton@email.com"
+            className={`${styles.input} ${styles.inputMuted}`}
           />
         </label>
       </div>
@@ -120,7 +130,7 @@ export default function SubmitFilmForm({
           maxSizeMB={100}
         />
       </div>
-      <button type="submit" className={styles.cta} disabled={isPending || !poster || !videoUrl}>
+      <button type="submit" className={styles.cta} disabled={isPending || !valid || !poster || !videoUrl}>
         {isPending ? "Envoi..." : "Envoyer ma demande"}
       </button>
     </form>

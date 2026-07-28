@@ -14,6 +14,9 @@ const columns = [
       { label: "Nouveautés", href: "/nouveautes" },
       { label: "Catégories", href: "/categories" },
       { label: "Artistes", href: "/artistes" },
+      { label: "Studios", href: "/studios" },
+      { label: "Ma liste", href: "/ma-liste" },
+      { label: "Historique", href: "/historique" },
     ],
   },
   {
@@ -37,7 +40,7 @@ const columns = [
 
 export default function Footer() {
   const pathname = usePathname();
-  if (pathname.startsWith("/watch/")) return null;
+  if (pathname.startsWith("/watch/") || pathname.startsWith("/admin")) return null;
 
   return (
     <footer className={styles.footer}>

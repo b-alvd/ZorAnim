@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Dropdown from "@/components/Dropdown/Dropdown";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import type { Artist } from "@/data/types";
@@ -38,16 +38,24 @@ export default function FilmForm({
   const [artistId, setArtistId] = useState(initial?.artistId ?? artists[0]?.id ?? "");
   const [poster, setPoster] = useState(initial?.poster ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
+  const [valid, setValid] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const artistNames = artists.map((a) => a.name);
   const selectedArtistName = artists.find((a) => a.id === artistId)?.name ?? artistNames[0];
 
+  const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
+  useEffect(updateValidity, []);
+
   return (
     <form
+      ref={formRef}
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit(new FormData(e.currentTarget));
       }}
+      onChange={updateValidity}
+      onInput={updateValidity}
       className={styles.form}
     >
       <div className={styles.field}>
@@ -126,7 +134,7 @@ export default function FilmForm({
         <span className={styles.checkboxBox} />
         Marquer comme nouveauté (visible 7 jours)
       </label>
-      <button type="submit" className={styles.submitBtn} disabled={pending || !poster || !videoUrl}>
+      <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !poster || !videoUrl}>
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>
     </form>

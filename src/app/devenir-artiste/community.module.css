@@ -67,6 +67,11 @@
   resize: vertical;
 }
 
+.inputMuted {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 button.cta {
   border: none;
   cursor: pointer;

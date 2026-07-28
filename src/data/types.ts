@@ -20,4 +20,6 @@ export type Film = {
   isNew: boolean;
   poster: string;
   videoUrl: string;
+  avgRating: number | null;
+  ratingCount: number;
 };

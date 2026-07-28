@@ -128,9 +128,9 @@
 .dangerBtn {
   padding: 0.6rem 1.25rem;
   border-radius: 4px;
-  border: 1px solid rgba(255, 107, 107, 0.4);
-  background: rgba(255, 107, 107, 0.1);
-  color: #ff6b6b;
+  border: 1px solid rgba(229, 9, 20, 0.4);
+  background: rgba(229, 9, 20, 0.1);
+  color: var(--accent, #e50914);
   font-weight: 600;
   font-size: 0.88rem;
   cursor: pointer;
@@ -138,7 +138,7 @@
 }
 
 .dangerBtn:hover:not(:disabled) {
-  background: rgba(255, 107, 107, 0.2);
+  background: rgba(229, 9, 20, 0.2);
 }
 
 .dangerBtn:disabled {

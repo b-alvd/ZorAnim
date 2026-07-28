@@ -4,7 +4,17 @@ import { useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Film } from "@/data/types";
-import { toggleFavoriteAction } from "@/lib/actions";
+import type { Comment } from "@/db/queries";
+import {
+  addCommentAction,
+  deleteCommentAction,
+  getFilmSocialDataAction,
+  rateFilmAction,
+  toggleCommentReactionAction,
+  toggleFavoriteAction,
+} from "@/lib/actions";
+import StarRating from "@/components/StarRating/StarRating";
+import CommentItem from "./CommentItem";
 import styles from "./FilmModal.module.css";
 
 const ANIM_MS = 250;
@@ -22,10 +32,29 @@ export default function FilmModal({
   const [favorite, setFavorite] = useState(isFavorite);
   const [isPending, startTransition] = useTransition();
 
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [canModerate, setCanModerate] = useState(false);
+  const [creatorUserIds, setCreatorUserIds] = useState<string[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [isRating, startRating] = useTransition();
+  const [isCommenting, startCommenting] = useTransition();
+
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  useEffect(() => {
+    getFilmSocialDataAction(film.id).then((data) => {
+      setComments(data.comments);
+      setUserRating(data.userRating);
+      setCurrentUserId(data.currentUserId);
+      setCanModerate(data.canModerate);
+      setCreatorUserIds(data.creatorUserIds);
+    });
+  }, [film.id]);
 
   const requestClose = () => {
     setShown(false);
@@ -52,6 +81,55 @@ export default function FilmModal({
     });
   };
 
+  const handleRate = (value: number) => {
+    setUserRating(value);
+    startRating(() => rateFilmAction(film.id, value));
+  };
+
+  const handleAddComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    startCommenting(async () => {
+      const updated = await addCommentAction(film.id, commentText);
+      setComments(updated);
+      setCommentText("");
+    });
+  };
+
+  const handleReplyToComment = (parentId: string, body: string) => {
+    startCommenting(async () => {
+      const updated = await addCommentAction(film.id, body, parentId);
+      setComments(updated);
+    });
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    startCommenting(async () => {
+      const updated = await deleteCommentAction(commentId, film.id);
+      setComments(updated);
+    });
+  };
+
+  const handleReactComment = (commentId: string, type: "up" | "down") => {
+    startCommenting(async () => {
+      const updated = await toggleCommentReactionAction(commentId, film.id, type);
+      setComments(updated);
+    });
+  };
+
+  const topLevelComments = comments.filter((c) => !c.parentId);
+  const repliesByParent = new Map<string, Comment[]>();
+  for (const c of comments) {
+    if (c.parentId) {
+      const arr = repliesByParent.get(c.parentId) ?? [];
+      arr.push(c);
+      repliesByParent.set(c.parentId, arr);
+    }
+  }
+  for (const arr of repliesByParent.values()) {
+    arr.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  }
+
   return (
     <div className={`${styles.overlay} ${shown ? styles.shown : ""}`} onClick={requestClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -76,6 +154,16 @@ export default function FilmModal({
             <span className={styles.badge}>{film.duration}</span>
             <span className={styles.badge}>{film.rating}</span>
           </div>
+
+          <div className={styles.ratingRow}>
+            <StarRating value={film.avgRating ?? 0} readOnly />
+            <span className={styles.ratingMeta}>
+              {film.ratingCount > 0
+                ? `${film.avgRating!.toFixed(1)} (${film.ratingCount} avis)`
+                : "Aucune note pour l'instant"}
+            </span>
+          </div>
+
           <p className={styles.synopsis}>{film.synopsis}</p>
           <div className={styles.actions}>
             <Link href={`/watch/${film.id}?autoplay=1`} className={styles.playBtn}>
@@ -98,10 +186,51 @@ export default function FilmModal({
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <path d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2.3 5 5.6 5c1.9 0 3.4 1 4.4 2.4C11 6 12.5 5 14.4 5c3.3 0 5.1 3.4 3.6 6.7C19.5 16.3 12 21 12 21z" />
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
               </svg>
               {favorite ? "Dans ma liste" : "Ajouter à ma liste"}
             </button>
+          </div>
+
+          <div className={styles.myRating}>
+            <span className={styles.myRatingLabel}>Ta note</span>
+            <StarRating value={userRating ?? 0} onRate={handleRate} readOnly={isRating} />
+          </div>
+
+          <div className={styles.commentsSection}>
+            <h3 className={styles.commentsTitle}>
+              Commentaires {comments.length > 0 && `(${comments.length})`}
+            </h3>
+
+            <form className={styles.commentForm} onSubmit={handleAddComment}>
+              <textarea
+                className={styles.commentInput}
+                rows={2}
+                placeholder="Ton avis sur ce film..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+              />
+              <button type="submit" className={styles.commentSubmit} disabled={isCommenting || !commentText.trim()}>
+                Publier
+              </button>
+            </form>
+            <div className={styles.commentsList}>
+              {topLevelComments.map((c) => (
+                <CommentItem
+                  key={c.id}
+                  comment={c}
+                  currentUserId={currentUserId}
+                  canModerate={canModerate}
+                  disabled={isCommenting}
+                  onReact={handleReactComment}
+                  onDelete={handleDeleteComment}
+                  onReply={handleReplyToComment}
+                  replies={repliesByParent.get(c.id)}
+                  repliesByParent={repliesByParent}
+                  creatorUserIds={creatorUserIds}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>

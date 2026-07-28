@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import type { ArtistSubmission } from "@/db/queries";
 import styles from "../shared.module.css";
@@ -15,13 +15,21 @@ export default function ArtistSubmissionForm({
   pending?: boolean;
 }) {
   const [avatar, setAvatar] = useState(initial.avatar ?? "");
+  const [valid, setValid] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
+  useEffect(updateValidity, []);
 
   return (
     <form
+      ref={formRef}
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit(new FormData(e.currentTarget));
       }}
+      onChange={updateValidity}
+      onInput={updateValidity}
       className={styles.form}
     >
       <div className={styles.row2}>
@@ -46,7 +54,7 @@ export default function ArtistSubmissionForm({
         <label htmlFor="portfolioUrl">Lien portfolio (optionnel)</label>
         <input id="portfolioUrl" name="portfolioUrl" defaultValue={initial.portfolioUrl ?? ""} />
       </div>
-      <button type="submit" className={styles.submitBtn} disabled={pending}>
+      <button type="submit" className={styles.submitBtn} disabled={pending || !valid}>
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>
     </form>

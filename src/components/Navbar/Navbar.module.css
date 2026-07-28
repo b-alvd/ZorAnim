@@ -72,6 +72,21 @@
   background: #ff1a25;
 }
 
+.adminLink {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b3b3b3;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.35rem 0.85rem;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.adminLink:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .userName {
   font-size: 0.9rem;
   color: #d2d2d2;

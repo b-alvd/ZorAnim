@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex, type AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const users = sqliteTable("users", {
@@ -135,6 +135,57 @@ export const studioMembers = sqliteTable(
       .default(sql`(current_timestamp)`),
   },
   (table) => [uniqueIndex("studio_members_studio_user_unique").on(table.studioId, table.userId)]
+);
+
+export const filmRatings = sqliteTable(
+  "film_ratings",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    filmId: text("film_id")
+      .notNull()
+      .references(() => films.id, { onDelete: "cascade" }),
+    value: integer("value").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => [uniqueIndex("film_ratings_user_film_unique").on(table.userId, table.filmId)]
+);
+
+export const comments = sqliteTable("comments", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  filmId: text("film_id")
+    .notNull()
+    .references(() => films.id, { onDelete: "cascade" }),
+  parentId: text("parent_id").references((): AnySQLiteColumn => comments.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
+});
+
+export const commentReactions = sqliteTable(
+  "comment_reactions",
+  {
+    id: text("id").primaryKey(),
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => [uniqueIndex("comment_reactions_comment_user_unique").on(table.commentId, table.userId)]
 );
 
 export const contactMessages = sqliteTable("contact_messages", {

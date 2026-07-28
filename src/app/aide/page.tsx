@@ -4,34 +4,56 @@ import Faq from "@/components/Faq/Faq";
 
 const faqItems = [
   {
+    question: "Faut-il un compte pour regarder des films ?",
+    answer:
+      "Oui. Il faut créer un compte gratuit pour parcourir le catalogue et lancer la lecture d'un film. Sans compte, tu ne vois que la page d'accueil publique.",
+  },
+  {
     question: "Comment regarder un film ?",
     answer:
-      "Parcours le catalogue ou les nouveautés, clique sur une affiche pour voir sa fiche, puis sur « Lecture » pour lancer la vidéo en plein écran.",
+      "Une fois connecté, parcours le catalogue ou les nouveautés, clique sur une affiche pour voir sa fiche, puis sur « Lecture » pour lancer la vidéo.",
   },
   {
     question: "Le site est-il gratuit ?",
+    answer: "Oui, ZorAnim est en accès libre et gratuit, création de compte comprise.",
+  },
+  {
+    question: "Comment ajouter un film à ma liste ou retrouver ce que j'ai déjà vu ?",
     answer:
-      "Oui, ZorAnim est actuellement en accès libre et gratuit.",
+      "Depuis la fiche d'un film, clique sur « Ajouter à ma liste ». Retrouve ensuite tes films dans « Ma liste » et l'historique de tout ce que tu as regardé dans « Historique », tous deux accessibles depuis ton profil.",
+  },
+  {
+    question: "Comment devenir artiste sur ZorAnim ?",
+    answer:
+      "Rends-toi sur la page « Devenir artiste » et présente-toi. Une fois ta candidature acceptée, tu peux soumettre des films et créer un studio.",
+  },
+  {
+    question: "Qu'est-ce qu'un studio ?",
+    answer:
+      "Un studio regroupe plusieurs artistes sous une même fiche. Seul un artiste déjà accepté peut en créer un, depuis la page « Créer un studio », puis inviter d'autres artistes à le rejoindre depuis son profil.",
   },
   {
     question: "Puis-je proposer mon propre court-métrage ?",
     answer:
-      "Bien sûr ! Rends-toi sur la page « Soumettre un film » pour connaître les prochaines étapes.",
+      "Oui, si tu es artiste (ou membre d'un studio). Rends-toi sur « Soumettre un film », choisis l'identité (ton nom d'artiste ou un studio) sous laquelle le film sera publié, et envoie ta demande. On te tient au courant depuis ton profil.",
+  },
+  {
+    question: "Où sont hébergées les images et vidéos que j'envoie ?",
+    answer:
+      "Les fichiers envoyés (posters, vidéos, avatars) sont hébergés chez Cloudinary, un prestataire tiers spécialisé et sécurisé.",
+  },
+  {
+    question: "Comment contacter l'équipe ?",
+    answer:
+      "Via la page Contact (connexion requise). Ton message et notre réponse restent visibles dans la section « Mes messages » de ton profil.",
   },
   {
     question: "Sur quels appareils puis-je utiliser ZorAnim ?",
-    answer:
-      "Le site fonctionne sur ordinateur, tablette et mobile, directement depuis ton navigateur, sans installation.",
-  },
-  {
-    question: "Comment retrouver un film que j'ai déjà vu ?",
-    answer:
-      "Utilise le catalogue ou les catégories pour naviguer par thème ; une fonctionnalité « Ma liste » arrivera prochainement.",
+    answer: "Le site fonctionne sur ordinateur, tablette et mobile, directement depuis ton navigateur, sans installation.",
   },
   {
     question: "J'ai trouvé un bug, que faire ?",
-    answer:
-      "Décris-nous le problème via la page Contact, avec le film et le navigateur concernés si possible.",
+    answer: "Décris-nous le problème via la page Contact, avec le film et le navigateur concernés si possible.",
   },
 ];
 

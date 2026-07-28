@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   getActiveStudioMembershipsDetailed,
@@ -61,6 +62,14 @@ export default async function ProfilPage() {
           <h1 className={styles.name}>{user.name}</h1>
           <p className={styles.email}>{user.email}</p>
           <span className={styles.joinedBadge}>Membre depuis le {formatJoinDate(user.createdAt)}</span>
+        </div>
+        <div className={styles.quickLinks}>
+          <Link href="/ma-liste" className={styles.quickLink}>
+            Ma liste
+          </Link>
+          <Link href="/historique" className={styles.quickLink}>
+            Historique
+          </Link>
         </div>
         <LogoutButton />
       </div>
