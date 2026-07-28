@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Logo from "@/components/Logo/Logo";
 import styles from "./Navbar.module.css";
@@ -14,8 +14,11 @@ const links = [
   { href: "/artistes", label: "Artistes" },
 ];
 
-export default function Navbar() {
+type NavbarUser = { id: string; email: string; name: string } | null;
+
+export default function Navbar({ user }: { user: NavbarUser }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -47,6 +50,12 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/");
+    router.refresh();
+  };
+
   if (pathname.startsWith("/watch/")) return null;
 
   return (
@@ -67,6 +76,20 @@ export default function Navbar() {
             </Link>
           ))}
         </nav>
+        <div className={styles.account}>
+          {user ? (
+            <>
+              <span className={styles.userName}>{user.name}</span>
+              <button className={styles.logoutBtn} onClick={handleLogout}>
+                Déconnexion
+              </button>
+            </>
+          ) : (
+            <Link href="/connexion" className={styles.loginLink}>
+              Connexion
+            </Link>
+          )}
+        </div>
         <button
           className={styles.menuBtn}
           onClick={() => setMenuOpen((o) => !o)}
@@ -90,6 +113,20 @@ export default function Navbar() {
             {l.label}
           </Link>
         ))}
+        <div className={styles.mobileAccount}>
+          {user ? (
+            <>
+              <span className={styles.userName}>{user.name}</span>
+              <button className={styles.logoutBtn} onClick={handleLogout}>
+                Déconnexion
+              </button>
+            </>
+          ) : (
+            <Link href="/connexion" className={styles.mobileLink}>
+              Connexion
+            </Link>
+          )}
+        </div>
       </nav>
     </header>
   );

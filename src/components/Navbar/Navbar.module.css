@@ -52,6 +52,47 @@
   font-weight: 600;
 }
 
+.account {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.loginLink {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  padding: 0.4rem 1rem;
+  border-radius: 4px;
+  background: var(--accent, #e50914);
+  transition: background-color 0.15s ease;
+}
+
+.loginLink:hover {
+  background: #ff1a25;
+}
+
+.userName {
+  font-size: 0.9rem;
+  color: #d2d2d2;
+}
+
+.logoutBtn {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.logoutBtn:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .menuBtn {
   display: none;
   flex-direction: column;
@@ -93,6 +134,10 @@
 
 @media (max-width: 640px) {
   .nav {
+    display: none;
+  }
+
+  .account {
     display: none;
   }
 
@@ -156,5 +201,13 @@
   .mobileActive {
     color: #fff;
     font-weight: 600;
+  }
+
+  .mobileAccount {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 0.25rem 0.5rem;
   }
 }
