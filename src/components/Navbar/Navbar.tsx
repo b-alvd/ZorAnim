@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Logo from "@/components/Logo/Logo";
+import NavSearch from "./NavSearch";
+import NotificationBell from "./NotificationBell";
+import type { Notification } from "@/db/queries";
 import styles from "./Navbar.module.css";
 
 const links = [
@@ -17,7 +20,15 @@ const links = [
 
 type NavbarUser = { id: string; email: string; name: string; role?: string } | null;
 
-export default function Navbar({ user }: { user: NavbarUser }) {
+export default function Navbar({
+  user,
+  notifications = [],
+  unreadCount = 0,
+}: {
+  user: NavbarUser;
+  notifications?: Notification[];
+  unreadCount?: number;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
@@ -79,15 +90,21 @@ export default function Navbar({ user }: { user: NavbarUser }) {
             </Link>
           ))}
         </nav>
+        <NavSearch />
         <div className={styles.account}>
           {user ? (
             <>
+              <NotificationBell initialNotifications={notifications} initialUnreadCount={unreadCount} />
               {user.role === "admin" && (
                 <Link href="/admin" className={styles.adminLink}>
                   Admin
                 </Link>
               )}
               <Link href="/profil" className={styles.userName}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" className={styles.userIcon}>
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
                 {user.name}
               </Link>
               <button className={styles.logoutBtn} onClick={handleLogout}>
@@ -100,20 +117,24 @@ export default function Navbar({ user }: { user: NavbarUser }) {
             </Link>
           )}
         </div>
-        <button
-          className={styles.menuBtn}
-          onClick={() => setMenuOpen((o) => !o)}
-          aria-label="Menu"
-          aria-expanded={menuOpen}
-        >
-          <span className={`${styles.bun} ${menuOpen ? styles.bunOpenTop : ""}`} />
-          <span className={`${styles.bun} ${menuOpen ? styles.bunOpenMid : ""}`} />
-          <span className={`${styles.bun} ${menuOpen ? styles.bunOpenBottom : ""}`} />
-        </button>
+        <div className={styles.mobileActions}>
+          {user && <NotificationBell initialNotifications={notifications} initialUnreadCount={unreadCount} />}
+          <button
+            className={styles.menuBtn}
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+          >
+            <span className={`${styles.bun} ${menuOpen ? styles.bunOpenTop : ""}`} />
+            <span className={`${styles.bun} ${menuOpen ? styles.bunOpenMid : ""}`} />
+            <span className={`${styles.bun} ${menuOpen ? styles.bunOpenBottom : ""}`} />
+          </button>
+        </div>
       </div>
 
       <div className={styles.backdrop} data-open={menuOpen} onClick={() => setMenuOpen(false)} aria-hidden="true" />
       <nav className={styles.mobileMenu} data-open={menuOpen}>
+        <NavSearch mobile onNavigate={() => setMenuOpen(false)} />
         {links.map((l) => (
           <Link
             key={l.href}
@@ -127,11 +148,15 @@ export default function Navbar({ user }: { user: NavbarUser }) {
           {user ? (
             <>
               {user.role === "admin" && (
-                <Link href="/admin" className={styles.mobileLink}>
+                <Link href="/admin" className={styles.adminLink}>
                   Admin
                 </Link>
               )}
               <Link href="/profil" className={styles.userName}>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" className={styles.userIcon}>
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                </svg>
                 {user.name}
               </Link>
               <button className={styles.logoutBtn} onClick={handleLogout}>

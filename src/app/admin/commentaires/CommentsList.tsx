@@ -27,7 +27,7 @@ function CommentRow({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className={styles.row} style={{ marginLeft: depth * 24 }}>
+    <div className={styles.row} style={{ marginLeft: Math.min(depth, 4) * 16 }}>
       <div className={styles.rowHeader}>
         {replies.length > 0 ? (
           <button type="button" className={styles.expandBtn} onClick={() => setExpanded((e) => !e)}>

@@ -21,6 +21,7 @@ export default async function AdminDemandesPage() {
       {filmSubmissions.length === 0 ? (
         <p className={styles.confirmText}>Aucune demande de film en attente.</p>
       ) : (
+        <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -45,6 +46,7 @@ export default async function AdminDemandesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
 
       <div className={styles.header} style={{ marginTop: 40 }}>
@@ -53,6 +55,7 @@ export default async function AdminDemandesPage() {
       {artistSubmissions.length === 0 ? (
         <p className={styles.confirmText}>Aucune demande d&apos;artiste en attente.</p>
       ) : (
+        <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -75,6 +78,7 @@ export default async function AdminDemandesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </main>
   );

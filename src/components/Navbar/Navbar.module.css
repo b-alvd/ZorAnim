@@ -65,34 +65,89 @@
   background: var(--accent, #e50914);
 }
 
+.navSearch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 180px;
+  flex-shrink: 0;
+  transition: width 0.2s ease;
+}
+
+.navSearch:focus-within:not(.navSearchMobile) {
+  width: 240px;
+}
+
+.navSearchIcon {
+  position: absolute;
+  left: 10px;
+  color: #808080;
+  pointer-events: none;
+}
+
+.navSearchInput {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem 0.45rem 2rem;
+  color: #fff;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.navSearchInput::placeholder {
+  color: #707070;
+}
+
+.navSearchInput:focus {
+  outline: none;
+  border-color: var(--accent, #e50914);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.navSearchMobile {
+  display: none;
+}
+
 .account {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-.loginLink {
-  font-size: 0.9rem;
+.navBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 36px;
+  box-sizing: border-box;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #fff;
-  padding: 0.4rem 1rem;
+  padding: 0 0.9rem;
   border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: none;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.loginLink {
+  composes: navBtn;
+  color: #fff;
+  border-color: var(--accent, #e50914);
   background: var(--accent, #e50914);
-  transition: background-color 0.15s ease;
 }
 
 .loginLink:hover {
   background: #ff1a25;
+  border-color: #ff1a25;
 }
 
 .adminLink {
-  font-size: 0.85rem;
-  font-weight: 600;
+  composes: navBtn;
   color: #b3b3b3;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  padding: 0.35rem 0.85rem;
-  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .adminLink:hover {
@@ -101,30 +156,39 @@
 }
 
 .userName {
-  font-size: 0.9rem;
+  composes: navBtn;
   color: #d2d2d2;
-  transition: color 0.15s ease;
 }
 
 .userName:hover {
   color: #fff;
-  text-decoration: underline;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.userIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: #808080;
+}
+
+.userName:hover .userIcon {
+  color: #d2d2d2;
 }
 
 .logoutBtn {
-  font-size: 0.85rem;
+  composes: navBtn;
   color: #a0a0a0;
-  background: none;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  padding: 0.35rem 0.85rem;
-  cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
 }
 
 .logoutBtn:hover {
   color: #fff;
   border-color: rgba(255, 255, 255, 0.4);
+}
+
+.mobileActions {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
 }
 
 .menuBtn {
@@ -171,8 +235,22 @@
     display: none;
   }
 
+  .navSearch:not(.navSearchMobile) {
+    display: none;
+  }
+
+  .navSearchMobile {
+    display: flex;
+    width: 100%;
+    margin: 0.5rem 0 0.75rem;
+  }
+
   .account {
     display: none;
+  }
+
+  .mobileActions {
+    display: flex;
   }
 
   .menuBtn {

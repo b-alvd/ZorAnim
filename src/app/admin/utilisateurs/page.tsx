@@ -1,17 +1,30 @@
 import { getUsers } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import Pagination from "@/components/Pagination/Pagination";
 import { deleteUserAction, toggleRoleAction } from "./actions";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
 import styles from "../shared.module.css";
 
-export default async function AdminUsersPage() {
-  const [users, me] = await Promise.all([getUsers(), getCurrentUser()]);
+const PAGE_SIZE = 20;
+
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const [allUsers, me] = await Promise.all([getUsers(), getCurrentUser()]);
+
+  const { page: pageParam } = await searchParams;
+  const totalPages = Math.max(1, Math.ceil(allUsers.length / PAGE_SIZE));
+  const page = Math.min(Math.max(1, Number(pageParam) || 1), totalPages);
+  const users = allUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <main>
       <div className={styles.header}>
         <h1 className={styles.title}>Utilisateurs</h1>
       </div>
+      <div className={styles.tableWrap}>
       <table className={styles.table}>
         <thead>
           <tr>
@@ -53,6 +66,8 @@ export default async function AdminUsersPage() {
           })}
         </tbody>
       </table>
+      </div>
+      <Pagination page={page} totalPages={totalPages} basePath="/admin/utilisateurs" />
     </main>
   );
 }

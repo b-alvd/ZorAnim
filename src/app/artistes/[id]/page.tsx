@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Image from "next/image";
 import Card from "@/components/Card/Card";
@@ -15,6 +16,24 @@ import styles from "./artist.module.css";
 export async function generateStaticParams() {
   const artists = await getArtists();
   return artists.map((a) => ({ id: a.id }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const artist = await getArtist(id);
+  if (!artist) return { title: "Artiste introuvable | ZorAnim" };
+
+  const description = artist.bio.length > 160 ? `${artist.bio.slice(0, 157)}...` : artist.bio;
+  return {
+    title: `${artist.name} | ZorAnim`,
+    description,
+    openGraph: {
+      title: artist.name,
+      description,
+      images: [{ url: artist.avatar }],
+      type: "profile",
+    },
+  };
 }
 
 export default async function ArtistPage({ params }: { params: Promise<{ id: string }> }) {

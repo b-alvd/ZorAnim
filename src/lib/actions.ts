@@ -7,11 +7,15 @@ import {
   deleteComment,
   getFilmComments,
   getFilmCreatorUserIds,
+  getNotifications,
+  getUnreadNotificationCount,
   getUserRating,
+  markAllNotificationsRead,
   toggleCommentReaction,
   toggleFavorite,
   upsertRating,
   type Comment,
+  type Notification,
 } from "@/db/queries";
 
 export async function toggleFavoriteAction(filmId: string): Promise<boolean> {
@@ -82,4 +86,18 @@ export async function toggleCommentReactionAction(
 
   await toggleCommentReaction(user.id, commentId, type);
   return getFilmComments(filmId, user.id);
+}
+
+export async function getNotificationsAction(): Promise<{ notifications: Notification[]; unreadCount: number }> {
+  const user = await getCurrentUser();
+  if (!user) return { notifications: [], unreadCount: 0 };
+
+  const [list, unreadCount] = await Promise.all([getNotifications(user.id), getUnreadNotificationCount(user.id)]);
+  return { notifications: list, unreadCount };
+}
+
+export async function markAllNotificationsReadAction(): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) return;
+  await markAllNotificationsRead(user.id);
 }

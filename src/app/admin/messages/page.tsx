@@ -13,6 +13,7 @@ export default async function AdminMessagesPage() {
       {messages.length === 0 ? (
         <p className={styles.confirmText}>Aucun message pour l&apos;instant.</p>
       ) : (
+        <div className={styles.tableWrap}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -43,6 +44,7 @@ export default async function AdminMessagesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </main>
   );

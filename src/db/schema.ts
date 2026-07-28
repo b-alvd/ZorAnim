@@ -191,6 +191,20 @@ export const commentReactions = sqliteTable(
   (table) => [uniqueIndex("comment_reactions_comment_user_unique").on(table.commentId, table.userId)]
 );
 
+export const notifications = sqliteTable("notifications", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  message: text("message").notNull(),
+  link: text("link"),
+  read: integer("read", { mode: "boolean" }).notNull().default(false),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
+});
+
 export const contactMessages = sqliteTable("contact_messages", {
   id: text("id").primaryKey(),
   userId: text("user_id")

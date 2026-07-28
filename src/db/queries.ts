@@ -14,6 +14,7 @@ import {
   filmRatings,
   comments,
   commentReactions,
+  notifications,
 } from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
@@ -249,10 +250,29 @@ export async function acceptFilmSubmission(id: string, artistId?: string): Promi
   });
 
   await db.update(filmSubmissions).set({ status: "accepted" }).where(eq(filmSubmissions.id, id));
+
+  if (submission.userId) {
+    await createNotification(
+      submission.userId,
+      "film_submission_accepted",
+      `Ton film "${submission.title}" a été accepté et ajouté au catalogue.`,
+      "/profil"
+    );
+  }
 }
 
 export async function refuseFilmSubmission(id: string): Promise<void> {
+  const submission = await getFilmSubmission(id);
   await db.update(filmSubmissions).set({ status: "refused" }).where(eq(filmSubmissions.id, id));
+
+  if (submission?.userId) {
+    await createNotification(
+      submission.userId,
+      "film_submission_refused",
+      `Ta soumission "${submission.title}" a été refusée.`,
+      "/profil"
+    );
+  }
 }
 
 export async function getPendingFilmSubmissionsByUser(userId: string): Promise<FilmSubmission[]> {
@@ -298,10 +318,29 @@ export async function acceptArtistSubmission(id: string): Promise<void> {
   );
 
   await db.update(artistSubmissions).set({ status: "accepted" }).where(eq(artistSubmissions.id, id));
+
+  if (submission.userId) {
+    await createNotification(
+      submission.userId,
+      "artist_submission_accepted",
+      `Ta demande pour devenir artiste a été acceptée !`,
+      "/profil"
+    );
+  }
 }
 
 export async function refuseArtistSubmission(id: string): Promise<void> {
+  const submission = await getArtistSubmission(id);
   await db.update(artistSubmissions).set({ status: "refused" }).where(eq(artistSubmissions.id, id));
+
+  if (submission?.userId) {
+    await createNotification(
+      submission.userId,
+      "artist_submission_refused",
+      `Ta demande pour devenir artiste a été refusée.`,
+      "/profil"
+    );
+  }
 }
 
 export async function getPendingArtistSubmissionsByUser(userId: string): Promise<ArtistSubmission[]> {
@@ -402,6 +441,16 @@ export async function replyToContactMessage(id: string, reply: string): Promise<
     .update(contactMessages)
     .set({ adminReply: reply, repliedAt: new Date().toISOString(), status: "replied" })
     .where(eq(contactMessages.id, id));
+
+  const [message] = await db.select({ userId: contactMessages.userId, subject: contactMessages.subject }).from(contactMessages).where(eq(contactMessages.id, id));
+  if (message) {
+    await createNotification(
+      message.userId,
+      "message_reply",
+      `L'équipe a répondu à ton message "${message.subject}".`,
+      "/profil"
+    );
+  }
 }
 
 export async function getArtistByUserId(userId: string): Promise<Artist | undefined> {
@@ -489,6 +538,16 @@ export async function inviteToStudio(studioId: string, artistId: string): Promis
   if (existing) return;
 
   await db.insert(studioMembers).values({ id: randomUUID(), studioId, userId: artist.userId, status: "invited" });
+
+  const [studio] = await db.select({ name: artists.name }).from(artists).where(eq(artists.id, studioId));
+  if (studio) {
+    await createNotification(
+      artist.userId,
+      "studio_invite",
+      `Tu as été invité à rejoindre le studio "${studio.name}".`,
+      "/profil"
+    );
+  }
 }
 
 export async function getPendingStudioInvites(userId: string): Promise<(StudioMember & { studioName: string })[]> {
@@ -514,6 +573,19 @@ export async function respondToStudioInvite(memberId: string, userId: string, ac
     await db.update(studioMembers).set({ status: "active" }).where(eq(studioMembers.id, memberId));
   } else {
     await db.delete(studioMembers).where(eq(studioMembers.id, memberId));
+  }
+
+  const [studio] = await db.select({ name: artists.name, ownerId: artists.ownerId }).from(artists).where(eq(artists.id, row.studioId));
+  const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId));
+  if (studio?.ownerId && user) {
+    await createNotification(
+      studio.ownerId,
+      "studio_invite_response",
+      accept
+        ? `${user.name} a rejoint le studio "${studio.name}".`
+        : `${user.name} a refusé de rejoindre le studio "${studio.name}".`,
+      "/profil"
+    );
   }
 }
 
@@ -632,6 +704,24 @@ export async function addComment(
   parentId?: string | null
 ): Promise<void> {
   await db.insert(comments).values({ id: randomUUID(), userId, filmId, body, parentId: parentId ?? null });
+
+  const [author] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId));
+  const [film] = await db.select({ title: films.title }).from(films).where(eq(films.id, filmId));
+  const authorName = author?.name ?? "Quelqu'un";
+  const link = `/watch/${filmId}`;
+
+  if (parentId) {
+    const [parent] = await db.select({ userId: comments.userId }).from(comments).where(eq(comments.id, parentId));
+    if (parent && parent.userId !== userId) {
+      await createNotification(parent.userId, "comment_reply", `${authorName} a répondu à ton commentaire.`, link);
+    }
+  } else if (film) {
+    const creatorIds = await getFilmCreatorUserIds(filmId);
+    for (const creatorId of creatorIds) {
+      if (creatorId === userId) continue;
+      await createNotification(creatorId, "new_comment", `${authorName} a commenté "${film.title}".`, link);
+    }
+  }
 }
 
 export async function deleteComment(commentId: string, userId: string, isAdmin: boolean): Promise<void> {
@@ -781,6 +871,38 @@ export async function adminDeleteStudio(studioId: string): Promise<void> {
 
 export async function adminRemoveStudioMember(memberRowId: string): Promise<void> {
   await db.delete(studioMembers).where(eq(studioMembers.id, memberRowId));
+}
+
+export type Notification = typeof notifications.$inferSelect;
+
+export async function createNotification(
+  userId: string,
+  type: string,
+  message: string,
+  link?: string | null
+): Promise<void> {
+  await db.insert(notifications).values({ id: randomUUID(), userId, type, message, link: link ?? null });
+}
+
+export async function getNotifications(userId: string, limit = 30): Promise<Notification[]> {
+  return db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit);
+}
+
+export async function getUnreadNotificationCount(userId: string): Promise<number> {
+  const rows = await db
+    .select({ id: notifications.id })
+    .from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+  return rows.length;
+}
+
+export async function markAllNotificationsRead(userId: string): Promise<void> {
+  await db.update(notifications).set({ read: true }).where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
 }
 
 export type DashboardStats = {

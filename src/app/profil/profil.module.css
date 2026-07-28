@@ -15,6 +15,7 @@
 .identity {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .avatarBlock {
@@ -90,12 +91,18 @@
   font-size: 1.2rem;
   font-weight: 800;
   margin-bottom: 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .email {
   font-size: 0.85rem;
   color: #a0a0a0;
   margin-bottom: 0.4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .joinedBadge {
@@ -181,6 +188,22 @@
 
 @media (max-width: 640px) {
   .header {
+    flex-wrap: wrap;
+    row-gap: 1rem;
+  }
+
+  .identity {
+    flex-basis: 100%;
+    overflow: visible;
+  }
+
+  .name,
+  .email {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .quickLinks {
     flex-wrap: wrap;
   }
 

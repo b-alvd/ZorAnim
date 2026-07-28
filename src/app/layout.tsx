@@ -3,6 +3,7 @@ import { Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getNotifications, getUnreadNotificationCount } from "@/db/queries";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -21,11 +22,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getCurrentUser();
+  const [notifications, unreadCount] = user
+    ? await Promise.all([getNotifications(user.id, 10), getUnreadNotificationCount(user.id)])
+    : [[], 0];
 
   return (
     <html lang="fr" className={montserrat.variable}>
       <body>
-        <Navbar user={user} />
+        <Navbar user={user} notifications={notifications} unreadCount={unreadCount} />
         {children}
         <Footer />
       </body>

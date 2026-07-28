@@ -27,8 +27,14 @@
   background: #ff1a25;
 }
 
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 4px;
+}
+
 .table {
   width: 100%;
+  min-width: 560px;
   border-collapse: collapse;
   background: #0e0e0e;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -284,4 +290,15 @@
 .confirmDeleteBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .row2 {
+    grid-template-columns: 1fr;
+  }
 }
