@@ -15,7 +15,7 @@ export default function MyMessagesCard({ messages }: { messages: ContactMessage[
   }
 
   return (
-    <div className={styles.list}>
+    <div className={`${styles.list} ${styles.scrollList}`}>
       {messages.map((m) => (
         <div key={m.id} className={styles.item}>
           <div className={styles.itemHeader}>

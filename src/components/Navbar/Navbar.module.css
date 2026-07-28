@@ -38,8 +38,10 @@
 }
 
 .link {
+  position: relative;
   font-size: 0.9rem;
   color: #a0a0a0;
+  padding-bottom: 4px;
   transition: color 0.15s ease;
 }
 
@@ -50,6 +52,17 @@
 .active {
   color: #fff;
   font-weight: 600;
+}
+
+.active::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent, #e50914);
 }
 
 .account {
@@ -209,10 +222,11 @@
   }
 
   .mobileLink {
-    padding: 0.9rem 0.25rem;
+    padding: 0.9rem 0.25rem 0.9rem 0.75rem;
     font-size: 1.05rem;
     color: #a0a0a0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 2px solid transparent;
   }
 
   .mobileLink:last-child {
@@ -222,6 +236,7 @@
   .mobileActive {
     color: #fff;
     font-weight: 600;
+    border-left-color: var(--accent, #e50914);
   }
 
   .mobileAccount {

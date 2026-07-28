@@ -1,7 +1,7 @@
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
 // Best-effort, per-instance rate limiting. Resets on server restart and doesn't
-// share state across multiple instances — fine for a small single-instance app.
+// share state across multiple instances - fine for a small single-instance app.
 export function isRateLimited(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now();
   const bucket = buckets.get(key);

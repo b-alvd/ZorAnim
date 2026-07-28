@@ -4,6 +4,12 @@
   gap: 0.75rem;
 }
 
+.scrollList {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 0.4rem;
+}
+
 .empty {
   font-size: 0.9rem;
   color: #808080;

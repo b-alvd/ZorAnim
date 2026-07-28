@@ -782,3 +782,182 @@ export async function adminDeleteStudio(studioId: string): Promise<void> {
 export async function adminRemoveStudioMember(memberRowId: string): Promise<void> {
   await db.delete(studioMembers).where(eq(studioMembers.id, memberRowId));
 }
+
+export type DashboardStats = {
+  filmCount: number;
+  artistCount: number;
+  studioCount: number;
+  userCount: number;
+  pendingCount: number;
+  openMessageCount: number;
+  totalViews: number;
+  totalFavorites: number;
+  ratingCount: number;
+  averageRating: number | null;
+  commentCount: number;
+  reactionUpCount: number;
+  reactionDownCount: number;
+  pendingInviteCount: number;
+  topViewedFilms: { id: string; title: string; views: number }[];
+  topRatedFilms: { id: string; title: string; average: number; count: number }[];
+  topArtists: { id: string; name: string; filmCount: number }[];
+  newUsers7d: number;
+  newUsers30d: number;
+  newFilms7d: number;
+  newFilms30d: number;
+  filmSubmissionsAccepted: number;
+  filmSubmissionsRefused: number;
+  filmSubmissionsPending: number;
+  artistSubmissionsAccepted: number;
+  artistSubmissionsRefused: number;
+  artistSubmissionsPending: number;
+  categoryBreakdown: { category: string; count: number }[];
+  recentFilms: { id: string; title: string; artistName: string; createdAt: string }[];
+  recentComments: { id: string; userName: string; filmTitle: string; body: string; createdAt: string }[];
+};
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const [
+    filmRows,
+    artistRows,
+    userRows,
+    filmSubs,
+    artistSubs,
+    messages,
+    watchRows,
+    favoriteRows,
+    ratingRows,
+    commentRows,
+    reactionRows,
+    inviteRows,
+    allFilmSubs,
+    allArtistSubs,
+    recentCommentRows,
+  ] = await Promise.all([
+    db
+      .select({ id: films.id, title: films.title, artistId: films.artistId, createdAt: films.createdAt, category: films.category })
+      .from(films),
+    db.select({ id: artists.id, name: artists.name, isStudio: artists.isStudio }).from(artists),
+    db.select({ id: users.id, createdAt: users.createdAt }).from(users),
+    getPendingFilmSubmissions(),
+    getPendingArtistSubmissions(),
+    getContactMessages(),
+    db.select({ filmId: watchHistory.filmId }).from(watchHistory),
+    db.select({ filmId: favorites.filmId }).from(favorites),
+    db.select({ filmId: filmRatings.filmId, value: filmRatings.value }).from(filmRatings),
+    db.select({ id: comments.id }).from(comments),
+    db.select({ type: commentReactions.type }).from(commentReactions),
+    db.select({ id: studioMembers.id }).from(studioMembers).where(eq(studioMembers.status, "invited")),
+    db.select({ status: filmSubmissions.status }).from(filmSubmissions),
+    db.select({ status: artistSubmissions.status }).from(artistSubmissions),
+    db
+      .select({
+        id: comments.id,
+        userName: users.name,
+        filmTitle: films.title,
+        body: comments.body,
+        createdAt: comments.createdAt,
+      })
+      .from(comments)
+      .innerJoin(users, eq(comments.userId, users.id))
+      .innerJoin(films, eq(comments.filmId, films.id))
+      .orderBy(desc(comments.createdAt))
+      .limit(5),
+  ]);
+
+  const filmMap = new Map(filmRows.map((f) => [f.id, f]));
+  const artistMap = new Map(artistRows.map((a) => [a.id, a]));
+
+  const now = Date.now();
+  const DAY = 24 * 60 * 60 * 1000;
+  const since = (days: number) => now - days * DAY;
+  const newUsers7d = userRows.filter((u) => new Date(u.createdAt).getTime() >= since(7)).length;
+  const newUsers30d = userRows.filter((u) => new Date(u.createdAt).getTime() >= since(30)).length;
+  const newFilms7d = filmRows.filter((f) => new Date(f.createdAt).getTime() >= since(7)).length;
+  const newFilms30d = filmRows.filter((f) => new Date(f.createdAt).getTime() >= since(30)).length;
+
+  const categoryCounts = new Map<string, number>();
+  for (const f of filmRows) categoryCounts.set(f.category, (categoryCounts.get(f.category) ?? 0) + 1);
+  const categoryBreakdown = [...categoryCounts.entries()]
+    .map(([category, count]) => ({ category, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const recentFilms = [...filmRows]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5)
+    .map((f) => ({
+      id: f.id,
+      title: f.title,
+      artistName: artistMap.get(f.artistId)?.name ?? "?",
+      createdAt: f.createdAt,
+    }));
+
+  const viewsByFilm = new Map<string, number>();
+  for (const w of watchRows) viewsByFilm.set(w.filmId, (viewsByFilm.get(w.filmId) ?? 0) + 1);
+
+  const ratingSumByFilm = new Map<string, number>();
+  const ratingCountByFilm = new Map<string, number>();
+  for (const r of ratingRows) {
+    ratingSumByFilm.set(r.filmId, (ratingSumByFilm.get(r.filmId) ?? 0) + r.value);
+    ratingCountByFilm.set(r.filmId, (ratingCountByFilm.get(r.filmId) ?? 0) + 1);
+  }
+
+  const filmCountByArtist = new Map<string, number>();
+  for (const f of filmRows) filmCountByArtist.set(f.artistId, (filmCountByArtist.get(f.artistId) ?? 0) + 1);
+
+  const topViewedFilms = [...viewsByFilm.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id, views]) => ({ id, title: filmMap.get(id)?.title ?? "?", views }));
+
+  const topRatedFilms = [...ratingSumByFilm.entries()]
+    .map(([id, sum]) => ({
+      id,
+      title: filmMap.get(id)?.title ?? "?",
+      average: sum / (ratingCountByFilm.get(id) ?? 1),
+      count: ratingCountByFilm.get(id) ?? 0,
+    }))
+    .sort((a, b) => b.average - a.average || b.count - a.count)
+    .slice(0, 5);
+
+  const topArtists = [...filmCountByArtist.entries()]
+    .filter(([id]) => !artistMap.get(id)?.isStudio)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([id, filmCount]) => ({ id, name: artistMap.get(id)?.name ?? "?", filmCount }));
+
+  const ratingTotal = ratingRows.reduce((sum, r) => sum + r.value, 0);
+
+  return {
+    filmCount: filmRows.length,
+    artistCount: artistRows.filter((a) => !a.isStudio).length,
+    studioCount: artistRows.filter((a) => a.isStudio).length,
+    userCount: userRows.length,
+    pendingCount: filmSubs.length + artistSubs.length,
+    openMessageCount: messages.filter((m) => m.status === "open").length,
+    totalViews: watchRows.length,
+    totalFavorites: favoriteRows.length,
+    ratingCount: ratingRows.length,
+    averageRating: ratingRows.length > 0 ? ratingTotal / ratingRows.length : null,
+    commentCount: commentRows.length,
+    reactionUpCount: reactionRows.filter((r) => r.type === "up").length,
+    reactionDownCount: reactionRows.filter((r) => r.type === "down").length,
+    pendingInviteCount: inviteRows.length,
+    topViewedFilms,
+    topRatedFilms,
+    topArtists,
+    newUsers7d,
+    newUsers30d,
+    newFilms7d,
+    newFilms30d,
+    filmSubmissionsAccepted: allFilmSubs.filter((s) => s.status === "accepted").length,
+    filmSubmissionsRefused: allFilmSubs.filter((s) => s.status === "refused").length,
+    filmSubmissionsPending: allFilmSubs.filter((s) => s.status === "pending").length,
+    artistSubmissionsAccepted: allArtistSubs.filter((s) => s.status === "accepted").length,
+    artistSubmissionsRefused: allArtistSubs.filter((s) => s.status === "refused").length,
+    artistSubmissionsPending: allArtistSubs.filter((s) => s.status === "pending").length,
+    categoryBreakdown,
+    recentFilms,
+    recentComments: recentCommentRows,
+  };
+}

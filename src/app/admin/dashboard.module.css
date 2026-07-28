@@ -4,29 +4,255 @@
   margin-bottom: 24px;
 }
 
+.sectionTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin: 36px 0 16px;
+  color: #808080;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-  max-width: 600px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
 }
 
 .card {
-  background: #0e0e0e;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  padding: 20px;
+  background: linear-gradient(160deg, #141414, #0b0b0b);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.cardText {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-2px);
+}
+
+.cardHighlight {
+  border-color: rgba(229, 9, 20, 0.45);
+}
+
+.iconBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #b3b3b3;
+}
+
+.iconBadgeAccent {
+  background: rgba(229, 9, 20, 0.15);
+  color: var(--accent, #e50914);
 }
 
 .number {
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
+  line-height: 1.1;
+}
+
+.reactionSep {
+  color: #555;
+  margin: 0 4px;
+}
+
+.reactionUp {
+  color: #4ade80;
+}
+
+.reactionDown {
+  color: #ff8087;
 }
 
 .label {
   color: #808080;
+  font-size: 0.85rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rankings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+.rankCard {
+  background: linear-gradient(160deg, #141414, #0b0b0b);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.rankTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: #fff;
+}
+
+.rankTitleIcon {
+  display: flex;
+  color: var(--accent, #e50914);
+}
+
+.rankEmpty {
+  color: #808080;
+  font-size: 0.85rem;
+}
+
+.rankList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+}
+
+.rankRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+}
+
+.rankBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: #b3b3b3;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.rankBadgeFirst {
+  background: var(--accent, #e50914);
+  color: #fff;
+}
+
+.rankName {
+  color: #d2d2d2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+
+.rankValue {
+  color: #808080;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+}
+
+.acceptanceRate {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.acceptanceRateLabel {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #808080;
+}
+
+.acceptanceBar {
+  display: flex;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  margin-bottom: 14px;
+}
+
+.acceptanceBarUp {
+  background: #4ade80;
+}
+
+.acceptanceBarDown {
+  background: #ff8087;
+}
+
+.acceptanceStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 0.8rem;
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  list-style: none;
+}
+
+.activityRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.activityText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.activityTitle {
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityMeta {
+  color: #808080;
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityDate {
+  color: #666;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  white-space: nowrap;
 }

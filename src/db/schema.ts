@@ -49,6 +49,9 @@ export const films = sqliteTable("films", {
   markedNewAt: text("marked_new_at"),
   poster: text("poster").notNull(),
   videoUrl: text("video_url").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
 });
 
 export const filmSubmissions = sqliteTable("film_submissions", {

@@ -51,6 +51,8 @@ export default function Navbar({ user }: { user: NavbarUser }) {
     };
   }, [menuOpen]);
 
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/");
@@ -71,7 +73,7 @@ export default function Navbar({ user }: { user: NavbarUser }) {
             <Link
               key={l.href}
               href={l.href}
-              className={`${styles.link} ${pathname === l.href ? styles.active : ""}`}
+              className={`${styles.link} ${isActive(l.href) ? styles.active : ""}`}
             >
               {l.label}
             </Link>
@@ -116,7 +118,7 @@ export default function Navbar({ user }: { user: NavbarUser }) {
           <Link
             key={l.href}
             href={l.href}
-            className={`${styles.mobileLink} ${pathname === l.href ? styles.mobileActive : ""}`}
+            className={`${styles.mobileLink} ${isActive(l.href) ? styles.mobileActive : ""}`}
           >
             {l.label}
           </Link>
