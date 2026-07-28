@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
+import CookieConsent from "@/components/CookieConsent/CookieConsent";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getNotifications, getUnreadNotificationCount } from "@/db/queries";
 import "./globals.css";
@@ -32,6 +33,7 @@ export default async function RootLayout({
         <Navbar user={user} notifications={notifications} unreadCount={unreadCount} />
         {children}
         <Footer />
+        <CookieConsent />
       </body>
     </html>
   );

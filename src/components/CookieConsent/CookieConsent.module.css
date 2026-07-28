@@ -1,0 +1,56 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+}
+
+.modal {
+  background: #0e0e0e;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  width: 100%;
+  max-width: 460px;
+  padding: 1.75rem;
+}
+
+.title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.9rem;
+}
+
+.text {
+  font-size: 0.88rem;
+  color: #b3b3b3;
+  line-height: 1.6;
+  margin-bottom: 0.9rem;
+}
+
+.link {
+  color: var(--accent, #e50914);
+  text-decoration: underline;
+}
+
+.acceptBtn {
+  width: 100%;
+  background: var(--accent, #e50914);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  transition: background-color 0.15s ease;
+}
+
+.acceptBtn:hover {
+  background: #ff1a25;
+}
