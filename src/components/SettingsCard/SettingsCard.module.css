@@ -1,0 +1,52 @@
+.card {
+  background: #0e0e0e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: border-color 0.15s ease;
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
+
+.danger {
+  border-color: rgba(255, 107, 107, 0.25);
+}
+
+.danger:hover {
+  border-color: rgba(255, 107, 107, 0.4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(229, 9, 20, 0.15);
+  color: var(--accent, #e50914);
+}
+
+.iconDanger {
+  background: rgba(255, 107, 107, 0.15);
+  color: #ff6b6b;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 700;
+}

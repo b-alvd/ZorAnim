@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import AvatarUpload from "./AvatarUpload";
 import LogoutButton from "./LogoutButton";
+import SettingsGrid from "./SettingsGrid";
 import styles from "./profil.module.css";
 
 function formatJoinDate(createdAt: string) {
@@ -25,15 +26,19 @@ export default async function ProfilPage() {
 
   return (
     <main className={styles.page}>
-      <div className={styles.card}>
+      <div className={styles.header}>
         <AvatarUpload avatarUrl={user.avatarUrl} initials={initials} />
-        <h1 className={styles.name}>{user.name}</h1>
-        <p className={styles.email}>{user.email}</p>
-        <p className={styles.joined}>Membre depuis le {formatJoinDate(user.createdAt)}</p>
-
-        <div className={styles.section}>
-          <LogoutButton />
+        <div className={styles.identity}>
+          <h1 className={styles.name}>{user.name}</h1>
+          <p className={styles.email}>{user.email}</p>
+          <span className={styles.joinedBadge}>Membre depuis le {formatJoinDate(user.createdAt)}</span>
         </div>
+        <LogoutButton />
+      </div>
+
+      <div className={styles.settingsWrap}>
+        <h2 className={styles.settingsTitle}>Paramètres du compte</h2>
+        <SettingsGrid name={user.name} email={user.email} nameChangedAt={user.nameChangedAt} />
       </div>
     </main>
   );

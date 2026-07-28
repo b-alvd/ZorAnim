@@ -39,6 +39,12 @@
   gap: 0.5rem;
 }
 
+.hint {
+  font-size: 0.75rem;
+  color: #808080;
+  line-height: 1.4;
+}
+
 .fieldLabel {
   font-size: 0.8rem;
   text-transform: uppercase;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PasswordField from "@/components/PasswordField/PasswordField";
+import PasswordChecklist from "@/components/PasswordChecklist/PasswordChecklist";
 import styles from "./auth.module.css";
 
 export default function InscriptionPage() {
@@ -11,6 +12,7 @@ export default function InscriptionPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -72,10 +74,13 @@ export default function InscriptionPage() {
             <PasswordField
               value={password}
               onChange={setPassword}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
               minLength={8}
               className={styles.input}
-              placeholder="8 caractères minimum"
+              placeholder="Mot de passe"
             />
+            {passwordFocused && <PasswordChecklist password={password} />}
           </label>
 
           {error && <p className={styles.error}>{error}</p>}

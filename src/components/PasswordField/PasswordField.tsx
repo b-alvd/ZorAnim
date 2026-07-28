@@ -9,12 +9,16 @@ export default function PasswordField({
   placeholder,
   minLength,
   className,
+  onFocus,
+  onBlur,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   minLength?: number;
   className: string;
+  onFocus?: () => void;
+  onBlur?: () => void;
 }) {
   const [visible, setVisible] = useState(false);
 
@@ -26,6 +30,8 @@ export default function PasswordField({
         minLength={minLength}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onFocus={onFocus}
+        onBlur={onBlur}
         className={className}
         placeholder={placeholder}
       />

@@ -6,7 +6,7 @@ import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { setSessionCookie } from "@/lib/auth/cookies";
-import { isValidEmail, isValidPassword } from "@/lib/auth/validate";
+import { isValidEmail, isValidPassword, PASSWORD_REQUIREMENTS } from "@/lib/auth/validate";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -18,10 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Adresse email invalide." }, { status: 400 });
   }
   if (!isValidPassword(password)) {
-    return NextResponse.json(
-      { error: "Le mot de passe doit contenir au moins 8 caractères." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: PASSWORD_REQUIREMENTS }, { status: 400 });
   }
   if (!name) {
     return NextResponse.json({ error: "Le nom est requis." }, { status: 400 });
