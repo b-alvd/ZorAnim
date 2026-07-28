@@ -75,6 +75,12 @@
 .userName {
   font-size: 0.9rem;
   color: #d2d2d2;
+  transition: color 0.15s ease;
+}
+
+.userName:hover {
+  color: #fff;
+  text-decoration: underline;
 }
 
 .logoutBtn {

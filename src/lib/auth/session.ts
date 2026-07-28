@@ -9,6 +9,8 @@ export type SessionUser = {
   id: string;
   email: string;
   name: string;
+  avatarUrl: string | null;
+  createdAt: string;
 };
 
 export async function createSession(userId: string): Promise<{ id: string; expiresAt: Date }> {
@@ -25,6 +27,8 @@ export async function validateSession(sessionId: string): Promise<SessionUser | 
       userId: users.id,
       email: users.email,
       name: users.name,
+      avatarUrl: users.avatarUrl,
+      createdAt: users.createdAt,
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
@@ -36,7 +40,13 @@ export async function validateSession(sessionId: string): Promise<SessionUser | 
     return null;
   }
 
-  return { id: row.userId, email: row.email, name: row.name };
+  return {
+    id: row.userId,
+    email: row.email,
+    name: row.name,
+    avatarUrl: row.avatarUrl,
+    createdAt: row.createdAt,
+  };
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
