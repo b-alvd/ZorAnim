@@ -6,12 +6,17 @@ import Link from "next/link";
 import Logo from "@/components/Logo/Logo";
 import styles from "./Navbar.module.css";
 
-const links = [
+const baseLinks = [
   { href: "/", label: "Accueil" },
   { href: "/catalogue", label: "Catalogue" },
   { href: "/nouveautes", label: "Nouveautés" },
   { href: "/categories", label: "Catégories" },
   { href: "/artistes", label: "Artistes" },
+];
+
+const loggedInLinks = [
+  { href: "/ma-liste", label: "Ma liste" },
+  { href: "/historique", label: "Historique" },
 ];
 
 type NavbarUser = { id: string; email: string; name: string } | null;
@@ -21,6 +26,7 @@ export default function Navbar({ user }: { user: NavbarUser }) {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const links = user ? [...baseLinks, ...loggedInLinks] : baseLinks;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);

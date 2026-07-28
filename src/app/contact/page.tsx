@@ -1,30 +1,10 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
-import Dropdown from "@/components/Dropdown/Dropdown";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import ContactForm from "./ContactForm";
 import styles from "./contact.module.css";
 
-const subjects = [
-  "Question générale",
-  "Bug ou problème technique",
-  "Proposer un film",
-  "Partenariat",
-];
-
-export default function ContactPage() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [subject, setSubject] = useState(subjects[0]);
-  const [message, setMessage] = useState("");
-  const [sent, setSent] = useState(false);
-
-  // No backend yet: this only simulates a submission locally, nothing is
-  // actually sent or stored anywhere. Wire up a real endpoint later.
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSent(true);
-  };
+export default async function ContactPage() {
+  const user = await getCurrentUser();
 
   return (
     <main className={styles.page}>
@@ -92,58 +72,16 @@ export default function ContactPage() {
         </aside>
 
         <div className={styles.panel}>
-          {sent ? (
-            <div className={styles.success}>
-              <p className={styles.successTitle}>Message envoyé</p>
-              <p className={styles.successText}>
-                Merci {name || "à toi"}, on revient vers toi dès que possible.
-              </p>
-            </div>
+          {user ? (
+            <ContactForm initialName={user.name} initialEmail={user.email} />
           ) : (
-            <form className={styles.form} onSubmit={handleSubmit}>
-              <div className={styles.fieldRow}>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Nom</span>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className={styles.input}
-                    placeholder="Ton nom"
-                  />
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.fieldLabel}>Email</span>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={styles.input}
-                    placeholder="ton@email.com"
-                  />
-                </label>
-              </div>
-              <div className={styles.field}>
-                <span className={styles.fieldLabel}>Sujet</span>
-                <Dropdown options={subjects} value={subject} onChange={setSubject} />
-              </div>
-              <label className={styles.field}>
-                <span className={styles.fieldLabel}>Message</span>
-                <textarea
-                  required
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className={styles.textarea}
-                  placeholder="Ton message..."
-                  rows={6}
-                />
-              </label>
-              <button type="submit" className={styles.cta}>
-                Envoyer
-              </button>
-            </form>
+            <div className={styles.success}>
+              <p className={styles.successTitle}>Connexion requise</p>
+              <p className={styles.successText}>Tu dois être connecté pour nous envoyer un message.</p>
+              <Link href="/connexion" className={styles.cta}>
+                Se connecter
+              </Link>
+            </div>
           )}
         </div>
       </div>

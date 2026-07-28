@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
 export const users = sqliteTable("users", {
@@ -30,6 +30,9 @@ export const artists = sqliteTable("artists", {
   name: text("name").notNull(),
   bio: text("bio").notNull(),
   avatar: text("avatar").notNull(),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  isStudio: integer("is_studio", { mode: "boolean" }).notNull().default(false),
+  ownerId: text("owner_id").references(() => users.id, { onDelete: "set null" }),
 });
 
 export const films = sqliteTable("films", {
@@ -57,6 +60,7 @@ export const filmSubmissions = sqliteTable("film_submissions", {
   rating: text("rating").notNull(),
   category: text("category").notNull(),
   artistName: text("artist_name").notNull(),
+  artistId: text("artist_id").references(() => artists.id, { onDelete: "set null" }),
   contactEmail: text("contact_email").notNull(),
   poster: text("poster").notNull(),
   videoUrl: text("video_url").notNull(),
@@ -76,6 +80,75 @@ export const artistSubmissions = sqliteTable("artist_submissions", {
   contactEmail: text("contact_email").notNull(),
   status: text("status").notNull().default("pending"),
   userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
+});
+
+export const favorites = sqliteTable(
+  "favorites",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    filmId: text("film_id")
+      .notNull()
+      .references(() => films.id, { onDelete: "cascade" }),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => [uniqueIndex("favorites_user_film_unique").on(table.userId, table.filmId)]
+);
+
+export const watchHistory = sqliteTable(
+  "watch_history",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    filmId: text("film_id")
+      .notNull()
+      .references(() => films.id, { onDelete: "cascade" }),
+    watchedAt: text("watched_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => [uniqueIndex("watch_history_user_film_unique").on(table.userId, table.filmId)]
+);
+
+export const studioMembers = sqliteTable(
+  "studio_members",
+  {
+    id: text("id").primaryKey(),
+    studioId: text("studio_id")
+      .notNull()
+      .references(() => artists.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("invited"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(current_timestamp)`),
+  },
+  (table) => [uniqueIndex("studio_members_studio_user_unique").on(table.studioId, table.userId)]
+);
+
+export const contactMessages = sqliteTable("contact_messages", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  subject: text("subject").notNull(),
+  message: text("message").notNull(),
+  adminReply: text("admin_reply"),
+  repliedAt: text("replied_at"),
+  status: text("status").notNull().default("open"),
   createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import InfoPage from "@/components/InfoPage/InfoPage";
 import Steps from "@/components/Steps/Steps";
-import { getCategories } from "@/db/queries";
+import { getCategories, getUserIdentities } from "@/db/queries";
 import { mergeCategories } from "@/lib/categories";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import SubmitFilmForm from "./SubmitFilmForm";
@@ -29,6 +29,7 @@ const steps = [
 
 export default async function SoumettreFilmPage() {
   const [categories, user] = await Promise.all([getCategories().then(mergeCategories), getCurrentUser()]);
+  const identities = user ? await getUserIdentities(user.id) : [];
 
   return (
     <InfoPage
@@ -45,9 +46,7 @@ export default async function SoumettreFilmPage() {
         <li>Ton nom ou celui de ton studio</li>
       </ul>
 
-      {user ? (
-        <SubmitFilmForm categories={categories} />
-      ) : (
+      {!user ? (
         <div className={styles.success}>
           <p className={styles.successTitle}>Connexion requise</p>
           <p className={styles.successText}>Tu dois être connecté pour soumettre un film.</p>
@@ -55,6 +54,22 @@ export default async function SoumettreFilmPage() {
             Se connecter
           </Link>
         </div>
+      ) : identities.length === 0 ? (
+        <div className={styles.success}>
+          <p className={styles.successTitle}>Tu dois être artiste</p>
+          <p className={styles.successText}>
+            Seuls les artistes (ou membres d&apos;un studio) peuvent soumettre un film. Présente-toi d&apos;abord.
+          </p>
+          <Link href="/devenir-artiste" className={styles.loginCta}>
+            Devenir artiste
+          </Link>
+        </div>
+      ) : (
+        <SubmitFilmForm
+          categories={categories}
+          identities={identities}
+          initialEmail={user.email}
+        />
       )}
     </InfoPage>
   );

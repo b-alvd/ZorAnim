@@ -1,10 +1,20 @@
 import SettingsCard from "@/components/SettingsCard/SettingsCard";
 import MyRequestsCard from "@/components/SettingsCard/MyRequestsCard";
+import MyMessagesCard from "@/components/SettingsCard/MyMessagesCard";
 import NameForm from "./NameForm";
 import EmailForm from "./EmailForm";
 import PasswordForm from "./PasswordForm";
 import DeleteAccountForm from "./DeleteAccountForm";
-import type { FilmSubmission, ArtistSubmission } from "@/db/queries";
+import StudiosCard from "./StudiosCard";
+import type {
+  FilmSubmission,
+  ArtistSubmission,
+  ContactMessage,
+  StudioMember,
+  StudioMemberInfo,
+  StudioMembership,
+} from "@/db/queries";
+import type { Artist } from "@/data/types";
 import styles from "./profil.module.css";
 
 const icons = {
@@ -38,6 +48,19 @@ const icons = {
       <path d="M4 4h16v12H8l-4 4z" />
     </svg>
   ),
+  messages: (
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </svg>
+  ),
+  studios: (
+    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  ),
 };
 
 export default function SettingsGrid({
@@ -46,12 +69,24 @@ export default function SettingsGrid({
   nameChangedAt,
   filmSubmissions,
   artistSubmissions,
+  messages,
+  personalArtist,
+  ownedStudios,
+  memberStudios,
+  pendingInvites,
+  invitableArtists,
 }: {
   name: string;
   email: string;
   nameChangedAt: string | null;
   filmSubmissions: FilmSubmission[];
   artistSubmissions: ArtistSubmission[];
+  messages: ContactMessage[];
+  personalArtist: Artist | null;
+  ownedStudios: (Artist & { members: StudioMemberInfo[] })[];
+  memberStudios: StudioMembership[];
+  pendingInvites: (StudioMember & { studioName: string })[];
+  invitableArtists: Artist[];
 }) {
   return (
     <div className={styles.grid}>
@@ -64,10 +99,24 @@ export default function SettingsGrid({
       <SettingsCard title="Mot de passe" icon={icons.password}>
         <PasswordForm />
       </SettingsCard>
-      <SettingsCard title="Mes demandes en cours" icon={icons.requests} span2>
-        <MyRequestsCard filmSubmissions={filmSubmissions} artistSubmissions={artistSubmissions} />
+      <div className={styles.pairRow}>
+        <SettingsCard title="Mes demandes en cours" icon={icons.requests}>
+          <MyRequestsCard filmSubmissions={filmSubmissions} artistSubmissions={artistSubmissions} />
+        </SettingsCard>
+        <SettingsCard title="Mes messages" icon={icons.messages}>
+          <MyMessagesCard messages={messages} />
+        </SettingsCard>
+      </div>
+      <SettingsCard title="Studios" icon={icons.studios} wide>
+        <StudiosCard
+          personalArtist={personalArtist}
+          ownedStudios={ownedStudios}
+          memberStudios={memberStudios}
+          pendingInvites={pendingInvites}
+          invitableArtists={invitableArtists}
+        />
       </SettingsCard>
-      <SettingsCard title="Zone de danger" icon={icons.danger} danger>
+      <SettingsCard title="Zone de danger" icon={icons.danger} danger wide>
         <DeleteAccountForm />
       </SettingsCard>
     </div>

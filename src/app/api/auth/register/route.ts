@@ -7,8 +7,13 @@ import { hashPassword } from "@/lib/auth/password";
 import { createSession } from "@/lib/auth/session";
 import { setSessionCookie } from "@/lib/auth/cookies";
 import { isValidEmail, isValidPassword, PASSWORD_REQUIREMENTS } from "@/lib/auth/validate";
+import { getClientIp, isRateLimited } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
+  if (isRateLimited(`register:${getClientIp(request)}`, 5, 15 * 60 * 1000)) {
+    return NextResponse.json({ error: "Trop de tentatives, réessaie dans quelques minutes." }, { status: 429 });
+  }
+
   const body = await request.json().catch(() => null);
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body?.password === "string" ? body.password : "";

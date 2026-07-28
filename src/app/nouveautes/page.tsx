@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Card from "@/components/Card/Card";
-import { getNewFilms } from "@/db/queries";
+import { getFavoriteFilmIds, getNewFilms, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import styles from "../catalogue/catalogue.module.css";
 
@@ -8,7 +8,11 @@ export default async function NouveautesPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
 
-  const newFilms = await getNewFilms();
+  const [newFilms, favoriteIds, watchedIds] = await Promise.all([
+    getNewFilms(),
+    getFavoriteFilmIds(user.id),
+    getWatchedFilmIds(user.id),
+  ]);
 
   return (
     <main className={styles.page}>
@@ -23,7 +27,7 @@ export default async function NouveautesPage() {
       {newFilms.length > 0 ? (
         <div className={styles.grid}>
           {newFilms.map((f) => (
-            <Card key={f.id} film={f} />
+            <Card key={f.id} film={f} isFavorite={favoriteIds.has(f.id)} isWatched={watchedIds.has(f.id)} />
           ))}
         </div>
       ) : (

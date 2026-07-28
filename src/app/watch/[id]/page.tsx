@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getFilm, getSuggestions } from "@/db/queries";
+import { getFilm, getSuggestions, markWatched } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import VideoPlayer from "@/components/VideoPlayer/VideoPlayer";
 import styles from "./watch.module.css";
@@ -19,7 +19,7 @@ export default async function WatchPage({
   const film = await getFilm(id);
   if (!film) notFound();
 
-  const suggestions = await getSuggestions(film.id);
+  const [suggestions] = await Promise.all([getSuggestions(film.id), markWatched(user.id, film.id)]);
 
   return (
     <main className={styles.page}>

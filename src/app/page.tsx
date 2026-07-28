@@ -1,7 +1,7 @@
 import Hero from "@/components/Hero/Hero";
 import Row from "@/components/Row/Row";
 import Landing from "@/components/Landing/Landing";
-import { getFilms } from "@/db/queries";
+import { getFavoriteFilmIds, getFilms, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import styles from "./home.module.css";
 
@@ -19,10 +19,17 @@ export default async function Home() {
     );
   }
 
+  const [favoriteIds, watchedIds] = await Promise.all([getFavoriteFilmIds(user.id), getWatchedFilmIds(user.id)]);
+
   return (
     <main>
       <Hero films={films} />
-      <Row title="Nouveautés" films={films} />
+      <Row
+        title="Nouveautés"
+        films={films}
+        favoriteIds={[...favoriteIds]}
+        watchedIds={[...watchedIds]}
+      />
     </main>
   );
 }

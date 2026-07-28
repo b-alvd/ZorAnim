@@ -5,10 +5,15 @@ import { users } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { isValidPassword, PASSWORD_REQUIREMENTS } from "@/lib/auth/validate";
+import { isRateLimited } from "@/lib/rateLimit";
 
 export async function PATCH(request: Request) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+
+  if (isRateLimited(`password:${user.id}`, 10, 15 * 60 * 1000)) {
+    return NextResponse.json({ error: "Trop de tentatives, réessaie dans quelques minutes." }, { status: 429 });
+  }
 
   const body = await request.json().catch(() => null);
   const currentPassword = typeof body?.currentPassword === "string" ? body.currentPassword : "";

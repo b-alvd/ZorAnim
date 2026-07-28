@@ -6,22 +6,16 @@ export default function SettingsCard({
   icon,
   danger,
   wide,
-  span2,
   children,
 }: {
   title: string;
   icon: ReactNode;
   danger?: boolean;
   wide?: boolean;
-  span2?: boolean;
   children: ReactNode;
 }) {
   return (
-    <div
-      className={`${styles.card} ${danger ? styles.danger : ""} ${wide ? styles.wide : ""} ${
-        span2 ? styles.span2 : ""
-      }`}
-    >
+    <div className={`${styles.card} ${danger ? styles.danger : ""} ${wide ? styles.wide : ""}`}>
       <div className={styles.header}>
         <span className={`${styles.icon} ${danger ? styles.iconDanger : ""}`}>{icon}</span>
         <h3 className={styles.title}>{title}</h3>

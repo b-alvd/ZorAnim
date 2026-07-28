@@ -22,10 +22,39 @@
   overflow: hidden;
 }
 
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .name {
   font-size: clamp(1.6rem, 3.5vw, 2.2rem);
   font-weight: 800;
   margin-bottom: 0.6rem;
+}
+
+.studioBadge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #fff;
+  background: var(--accent, #e50914);
+  border-radius: 4px;
+  padding: 0.2rem 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.members {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  margin-bottom: 0.6rem;
+}
+
+.membersLabel {
+  color: #808080;
 }
 
 .bio {

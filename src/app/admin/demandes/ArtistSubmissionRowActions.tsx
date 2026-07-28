@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Modal from "../Modal";
+import Modal from "@/components/Modal/Modal";
 import ConfirmActionButton from "../ConfirmActionButton";
 import ArtistSubmissionForm from "./ArtistSubmissionForm";
 import { acceptArtistSubmissionAction, refuseArtistSubmissionAction, updateArtistSubmissionAction } from "./actions";

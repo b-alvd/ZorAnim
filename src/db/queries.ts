@@ -1,7 +1,17 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
-import { films, artists, users, filmSubmissions, artistSubmissions } from "@/db/schema";
+import {
+  films,
+  artists,
+  users,
+  filmSubmissions,
+  artistSubmissions,
+  favorites,
+  watchHistory,
+  contactMessages,
+  studioMembers,
+} from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
 import { placeholderAvatar } from "@/lib/placeholder";
@@ -135,9 +145,9 @@ export type ArtistInput = {
   avatar: string;
 };
 
-export async function createArtist(input: ArtistInput): Promise<string> {
+export async function createArtist(input: ArtistInput, userId?: string | null): Promise<string> {
   const id = randomUUID();
-  await db.insert(artists).values({ id, ...input });
+  await db.insert(artists).values({ id, ...input, userId: userId ?? null });
   return id;
 }
 
@@ -193,9 +203,10 @@ export async function updateFilmSubmission(id: string, input: FilmSubmissionInpu
   await db.update(filmSubmissions).set(input).where(eq(filmSubmissions.id, id));
 }
 
-export async function acceptFilmSubmission(id: string, artistId: string): Promise<void> {
+export async function acceptFilmSubmission(id: string, artistId?: string): Promise<void> {
   const submission = await getFilmSubmission(id);
-  if (!submission) return;
+  const resolvedArtistId = artistId ?? submission?.artistId;
+  if (!submission || !resolvedArtistId) return;
 
   await createFilm({
     title: submission.title,
@@ -204,7 +215,7 @@ export async function acceptFilmSubmission(id: string, artistId: string): Promis
     durationMinutes: submission.durationMinutes,
     rating: submission.rating,
     category: submission.category,
-    artistId,
+    artistId: resolvedArtistId,
     isNew: true,
     poster: submission.poster,
     videoUrl: submission.videoUrl,
@@ -250,11 +261,14 @@ export async function acceptArtistSubmission(id: string): Promise<void> {
   const submission = await getArtistSubmission(id);
   if (!submission) return;
 
-  await createArtist({
-    name: submission.name,
-    bio: submission.bio,
-    avatar: submission.avatar || placeholderAvatar(Date.now() % 6, submission.name),
-  });
+  await createArtist(
+    {
+      name: submission.name,
+      bio: submission.bio,
+      avatar: submission.avatar || placeholderAvatar(Date.now() % 6, submission.name),
+    },
+    submission.userId
+  );
 
   await db.update(artistSubmissions).set({ status: "accepted" }).where(eq(artistSubmissions.id, id));
 }
@@ -268,4 +282,244 @@ export async function getPendingArtistSubmissionsByUser(userId: string): Promise
     .select()
     .from(artistSubmissions)
     .where(and(eq(artistSubmissions.userId, userId), eq(artistSubmissions.status, "pending")));
+}
+
+export async function getFavoriteFilmIds(userId: string): Promise<Set<string>> {
+  const rows = await db.select({ filmId: favorites.filmId }).from(favorites).where(eq(favorites.userId, userId));
+  return new Set(rows.map((r) => r.filmId));
+}
+
+export async function toggleFavorite(userId: string, filmId: string): Promise<boolean> {
+  const [existing] = await db
+    .select({ id: favorites.id })
+    .from(favorites)
+    .where(and(eq(favorites.userId, userId), eq(favorites.filmId, filmId)));
+
+  if (existing) {
+    await db.delete(favorites).where(eq(favorites.id, existing.id));
+    return false;
+  }
+
+  await db.insert(favorites).values({ id: randomUUID(), userId, filmId });
+  return true;
+}
+
+export async function getFavoriteFilms(userId: string): Promise<Film[]> {
+  const rows = await db
+    .select(filmSelection)
+    .from(films)
+    .innerJoin(artists, eq(films.artistId, artists.id))
+    .innerJoin(favorites, eq(favorites.filmId, films.id))
+    .where(eq(favorites.userId, userId));
+  return rows.map(mapFilm);
+}
+
+export async function markWatched(userId: string, filmId: string): Promise<void> {
+  const [existing] = await db
+    .select({ id: watchHistory.id })
+    .from(watchHistory)
+    .where(and(eq(watchHistory.userId, userId), eq(watchHistory.filmId, filmId)));
+
+  if (existing) {
+    await db.update(watchHistory).set({ watchedAt: new Date().toISOString() }).where(eq(watchHistory.id, existing.id));
+  } else {
+    await db.insert(watchHistory).values({ id: randomUUID(), userId, filmId });
+  }
+}
+
+export async function getWatchedFilmIds(userId: string): Promise<Set<string>> {
+  const rows = await db.select({ filmId: watchHistory.filmId }).from(watchHistory).where(eq(watchHistory.userId, userId));
+  return new Set(rows.map((r) => r.filmId));
+}
+
+export async function getWatchHistory(userId: string): Promise<(Film & { watchedAt: string })[]> {
+  const rows = await db
+    .select({ ...filmSelection, watchedAt: watchHistory.watchedAt })
+    .from(films)
+    .innerJoin(artists, eq(films.artistId, artists.id))
+    .innerJoin(watchHistory, eq(watchHistory.filmId, films.id))
+    .where(eq(watchHistory.userId, userId))
+    .orderBy(desc(watchHistory.watchedAt));
+  return rows.map((r) => ({ ...mapFilm(r), watchedAt: r.watchedAt }));
+}
+
+export type ContactMessage = typeof contactMessages.$inferSelect;
+
+export async function createContactMessage(input: {
+  userId: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}): Promise<string> {
+  const id = randomUUID();
+  await db.insert(contactMessages).values({ id, ...input, status: "open" });
+  return id;
+}
+
+export async function getContactMessages(): Promise<ContactMessage[]> {
+  return db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt));
+}
+
+export async function getContactMessagesByUser(userId: string): Promise<ContactMessage[]> {
+  return db
+    .select()
+    .from(contactMessages)
+    .where(eq(contactMessages.userId, userId))
+    .orderBy(desc(contactMessages.createdAt));
+}
+
+export async function replyToContactMessage(id: string, reply: string): Promise<void> {
+  await db
+    .update(contactMessages)
+    .set({ adminReply: reply, repliedAt: new Date().toISOString(), status: "replied" })
+    .where(eq(contactMessages.id, id));
+}
+
+export async function getArtistByUserId(userId: string): Promise<Artist | undefined> {
+  const [artist] = await db
+    .select()
+    .from(artists)
+    .where(and(eq(artists.userId, userId), eq(artists.isStudio, false)));
+  return artist;
+}
+
+export async function getStudiosOwnedBy(userId: string): Promise<Artist[]> {
+  return db.select().from(artists).where(and(eq(artists.isStudio, true), eq(artists.ownerId, userId)));
+}
+
+export async function getActiveStudioMemberships(userId: string): Promise<Artist[]> {
+  return db
+    .select({
+      id: artists.id,
+      name: artists.name,
+      bio: artists.bio,
+      avatar: artists.avatar,
+      isStudio: artists.isStudio,
+    })
+    .from(studioMembers)
+    .innerJoin(artists, eq(studioMembers.studioId, artists.id))
+    .where(and(eq(studioMembers.userId, userId), eq(studioMembers.status, "active")));
+}
+
+export type StudioMembership = { membershipId: string; studio: Artist };
+
+export async function getActiveStudioMembershipsDetailed(userId: string): Promise<StudioMembership[]> {
+  const rows = await db
+    .select({
+      membershipId: studioMembers.id,
+      id: artists.id,
+      name: artists.name,
+      bio: artists.bio,
+      avatar: artists.avatar,
+      isStudio: artists.isStudio,
+    })
+    .from(studioMembers)
+    .innerJoin(artists, eq(studioMembers.studioId, artists.id))
+    .where(and(eq(studioMembers.userId, userId), eq(studioMembers.status, "active")));
+
+  return rows.map((r) => ({
+    membershipId: r.membershipId,
+    studio: { id: r.id, name: r.name, bio: r.bio, avatar: r.avatar, isStudio: r.isStudio },
+  }));
+}
+
+export async function getUserIdentities(userId: string): Promise<Artist[]> {
+  const personal = await getArtistByUserId(userId);
+  const owned = await getStudiosOwnedBy(userId);
+  const memberOf = await getActiveStudioMemberships(userId);
+  const all = [...(personal ? [personal] : []), ...owned, ...memberOf];
+  const seen = new Set<string>();
+  return all.filter((a) => {
+    if (seen.has(a.id)) return false;
+    seen.add(a.id);
+    return true;
+  });
+}
+
+export async function createStudio(ownerId: string, input: ArtistInput): Promise<string> {
+  const id = randomUUID();
+  await db.insert(artists).values({ id, ...input, isStudio: true, ownerId });
+  return id;
+}
+
+export async function getInvitableArtists(excludeUserId: string): Promise<Artist[]> {
+  const rows = await db.select().from(artists).where(eq(artists.isStudio, false));
+  return rows.filter((a) => a.userId && a.userId !== excludeUserId);
+}
+
+export type StudioMember = typeof studioMembers.$inferSelect;
+
+export async function inviteToStudio(studioId: string, artistId: string): Promise<void> {
+  const [artist] = await db.select({ userId: artists.userId }).from(artists).where(eq(artists.id, artistId));
+  if (!artist?.userId) throw new Error("Cet artiste n'est lié à aucun compte.");
+
+  const [existing] = await db
+    .select({ id: studioMembers.id })
+    .from(studioMembers)
+    .where(and(eq(studioMembers.studioId, studioId), eq(studioMembers.userId, artist.userId)));
+  if (existing) return;
+
+  await db.insert(studioMembers).values({ id: randomUUID(), studioId, userId: artist.userId, status: "invited" });
+}
+
+export async function getPendingStudioInvites(userId: string): Promise<(StudioMember & { studioName: string })[]> {
+  return db
+    .select({
+      id: studioMembers.id,
+      studioId: studioMembers.studioId,
+      userId: studioMembers.userId,
+      status: studioMembers.status,
+      createdAt: studioMembers.createdAt,
+      studioName: artists.name,
+    })
+    .from(studioMembers)
+    .innerJoin(artists, eq(studioMembers.studioId, artists.id))
+    .where(and(eq(studioMembers.userId, userId), eq(studioMembers.status, "invited")));
+}
+
+export async function respondToStudioInvite(memberId: string, userId: string, accept: boolean): Promise<void> {
+  const [row] = await db.select().from(studioMembers).where(eq(studioMembers.id, memberId));
+  if (!row || row.userId !== userId) return;
+
+  if (accept) {
+    await db.update(studioMembers).set({ status: "active" }).where(eq(studioMembers.id, memberId));
+  } else {
+    await db.delete(studioMembers).where(eq(studioMembers.id, memberId));
+  }
+}
+
+export type StudioMemberInfo = { id: string; name: string; email: string; status: string };
+
+export async function getStudioMembers(studioId: string): Promise<StudioMemberInfo[]> {
+  const rows = await db
+    .select({ id: studioMembers.id, status: studioMembers.status, userName: users.name, userEmail: users.email })
+    .from(studioMembers)
+    .innerJoin(users, eq(studioMembers.userId, users.id))
+    .where(eq(studioMembers.studioId, studioId));
+  return rows.map((r) => ({ id: r.id, name: r.userName, email: r.userEmail, status: r.status }));
+}
+
+export async function removeStudioMembership(memberRowId: string, requesterUserId: string): Promise<void> {
+  const [row] = await db.select().from(studioMembers).where(eq(studioMembers.id, memberRowId));
+  if (!row) return;
+
+  const isSelf = row.userId === requesterUserId;
+  const [studio] = await db.select({ ownerId: artists.ownerId }).from(artists).where(eq(artists.id, row.studioId));
+  const isOwner = studio?.ownerId === requesterUserId;
+
+  if (!isSelf && !isOwner) throw new Error("Non autorisé.");
+
+  await db.delete(studioMembers).where(eq(studioMembers.id, memberRowId));
+}
+
+export async function deleteStudio(studioId: string, requesterUserId: string): Promise<void> {
+  const [studio] = await db.select().from(artists).where(eq(artists.id, studioId));
+  if (!studio || !studio.isStudio) throw new Error("Studio introuvable.");
+  if (studio.ownerId !== requesterUserId) throw new Error("Non autorisé.");
+
+  const [filmRow] = await db.select({ id: films.id }).from(films).where(eq(films.artistId, studioId));
+  if (filmRow) throw new Error("Impossible de supprimer un studio qui a des films au catalogue.");
+
+  await db.delete(artists).where(eq(artists.id, studioId));
 }

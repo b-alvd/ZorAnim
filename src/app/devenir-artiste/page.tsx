@@ -69,7 +69,7 @@ export default async function DevenirArtistePage() {
       <Steps steps={steps} />
 
       {user ? (
-        <BecomeArtistForm />
+        <BecomeArtistForm initialName={user.name} initialEmail={user.email} />
       ) : (
         <div className={styles.success}>
           <p className={styles.successTitle}>Connexion requise</p>

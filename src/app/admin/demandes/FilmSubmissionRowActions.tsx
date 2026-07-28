@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Modal from "../Modal";
+import Modal from "@/components/Modal/Modal";
 import ConfirmActionButton from "../ConfirmActionButton";
 import Dropdown from "@/components/Dropdown/Dropdown";
 import FilmSubmissionForm from "./FilmSubmissionForm";
@@ -21,7 +21,7 @@ export default function FilmSubmissionRowActions({
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [acceptOpen, setAcceptOpen] = useState(false);
-  const [artistId, setArtistId] = useState(artists[0]?.id ?? "");
+  const [artistId, setArtistId] = useState(submission.artistId ?? artists[0]?.id ?? "");
   const [isPending, startTransition] = useTransition();
   const [isAccepting, startAccepting] = useTransition();
 

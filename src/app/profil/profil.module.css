@@ -144,6 +144,13 @@
   gap: 1.25rem;
 }
 
+.pairRow {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
 @media (max-width: 900px) {
   .grid {
     grid-template-columns: repeat(2, 1fr);
@@ -156,6 +163,10 @@
   }
 
   .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pairRow {
     grid-template-columns: 1fr;
   }
 }

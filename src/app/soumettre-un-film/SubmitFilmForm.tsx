@@ -5,15 +5,28 @@ import Dropdown from "@/components/Dropdown/Dropdown";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import { RATING_OPTIONS } from "@/lib/ratings";
 import { submitFilmAction } from "./actions";
+import type { Artist } from "@/data/types";
 import styles from "../devenir-artiste/community.module.css";
 
-export default function SubmitFilmForm({ categories }: { categories: string[] }) {
+export default function SubmitFilmForm({
+  categories,
+  identities,
+  initialEmail,
+}: {
+  categories: string[];
+  identities: Artist[];
+  initialEmail: string;
+}) {
   const [rating, setRating] = useState(RATING_OPTIONS[0]);
   const [category, setCategory] = useState(categories[0]);
+  const [artistId, setArtistId] = useState(identities[0].id);
   const [poster, setPoster] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [sent, setSent] = useState(false);
   const [isPending, startTransition] = useTransition();
+
+  const identityNames = identities.map((a) => a.name);
+  const selectedIdentityName = identities.find((a) => a.id === artistId)?.name ?? identityNames[0];
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -38,13 +51,28 @@ export default function SubmitFilmForm({ categories }: { categories: string[] })
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       <div className={styles.fieldRow}>
-        <label className={styles.field}>
-          <span className={styles.fieldLabel}>Ton nom / studio</span>
-          <input name="artistName" required className={styles.input} placeholder="Ton nom" />
-        </label>
+        <div className={styles.field}>
+          <span className={styles.fieldLabel}>Nom d&apos;artiste / studio</span>
+          <input type="hidden" name="artistId" value={artistId} />
+          <Dropdown
+            options={identityNames}
+            value={selectedIdentityName}
+            onChange={(name) => {
+              const found = identities.find((a) => a.name === name);
+              if (found) setArtistId(found.id);
+            }}
+          />
+        </div>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Email de contact</span>
-          <input name="contactEmail" type="email" required className={styles.input} placeholder="ton@email.com" />
+          <input
+            name="contactEmail"
+            type="email"
+            required
+            defaultValue={initialEmail}
+            className={styles.input}
+            placeholder="ton@email.com"
+          />
         </label>
       </div>
       <label className={styles.field}>

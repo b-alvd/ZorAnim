@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Modal from "../Modal";
+import Modal from "@/components/Modal/Modal";
 import FilmForm from "./FilmForm";
 import { createFilmAction } from "./actions";
 import type { Artist } from "@/data/types";

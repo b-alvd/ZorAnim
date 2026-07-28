@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Modal from "./Modal";
+import Modal from "@/components/Modal/Modal";
 import styles from "./shared.module.css";
 
 export default function ConfirmDeleteButton({

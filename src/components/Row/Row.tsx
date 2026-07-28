@@ -9,11 +9,17 @@ export default function Row({
   title,
   films,
   cardWidth,
+  favoriteIds,
+  watchedIds,
 }: {
   title: string;
   films: Film[];
   cardWidth?: number;
+  favoriteIds?: string[];
+  watchedIds?: string[];
 }) {
+  const favoriteSet = new Set(favoriteIds);
+  const watchedSet = new Set(watchedIds);
   const trackRef = useRef<HTMLDivElement>(null);
   const indexRef = useRef(0);
   const [atStart, setAtStart] = useState(true);
@@ -76,7 +82,7 @@ export default function Row({
               className={`${styles.slot} ${cardWidth ? styles.slotFixed : ""}`}
               style={cardWidth ? { ["--card-width" as string]: `${cardWidth}px` } : undefined}
             >
-              <Card film={f} />
+              <Card film={f} isFavorite={favoriteSet.has(f.id)} isWatched={watchedSet.has(f.id)} />
             </div>
           ))}
         </div>

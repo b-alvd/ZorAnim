@@ -1,6 +1,16 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getPendingArtistSubmissionsByUser, getPendingFilmSubmissionsByUser } from "@/db/queries";
+import {
+  getActiveStudioMembershipsDetailed,
+  getArtistByUserId,
+  getContactMessagesByUser,
+  getInvitableArtists,
+  getPendingArtistSubmissionsByUser,
+  getPendingFilmSubmissionsByUser,
+  getPendingStudioInvites,
+  getStudioMembers,
+  getStudiosOwnedBy,
+} from "@/db/queries";
 import AvatarUpload from "./AvatarUpload";
 import LogoutButton from "./LogoutButton";
 import SettingsGrid from "./SettingsGrid";
@@ -18,9 +28,22 @@ export default async function ProfilPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
 
-  const [filmSubmissions, artistSubmissions] = await Promise.all([
-    getPendingFilmSubmissionsByUser(user.id),
-    getPendingArtistSubmissionsByUser(user.id),
+  const [filmSubmissions, artistSubmissions, messages, personalArtist, ownedStudiosRaw, memberStudios, pendingInvites] =
+    await Promise.all([
+      getPendingFilmSubmissionsByUser(user.id),
+      getPendingArtistSubmissionsByUser(user.id),
+      getContactMessagesByUser(user.id),
+      getArtistByUserId(user.id),
+      getStudiosOwnedBy(user.id),
+      getActiveStudioMembershipsDetailed(user.id),
+      getPendingStudioInvites(user.id),
+    ]);
+
+  const [ownedStudios, invitableArtists] = await Promise.all([
+    Promise.all(
+      ownedStudiosRaw.map(async (studio) => ({ ...studio, members: await getStudioMembers(studio.id) }))
+    ),
+    getInvitableArtists(user.id),
   ]);
 
   const initials = user.name
@@ -50,6 +73,12 @@ export default async function ProfilPage() {
           nameChangedAt={user.nameChangedAt}
           filmSubmissions={filmSubmissions}
           artistSubmissions={artistSubmissions}
+          messages={messages}
+          personalArtist={personalArtist ?? null}
+          ownedStudios={ownedStudios}
+          memberStudios={memberStudios}
+          pendingInvites={pendingInvites}
+          invitableArtists={invitableArtists}
         />
       </div>
     </main>

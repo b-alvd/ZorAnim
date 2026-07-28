@@ -3,6 +3,7 @@ export type Artist = {
   name: string;
   bio: string;
   avatar: string;
+  isStudio: boolean;
 };
 
 export type Film = {

@@ -46,3 +46,27 @@
   font-size: 0.82rem;
   color: #a0a0a0;
 }
+
+.reply {
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  background: rgba(229, 9, 20, 0.08);
+  border-left: 2px solid var(--accent, #e50914);
+  border-radius: 4px;
+}
+
+.replyLabel {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent, #e50914);
+  margin-bottom: 0.25rem;
+}
+
+.replyText {
+  font-size: 0.85rem;
+  color: #e5e5e5;
+  line-height: 1.5;
+}

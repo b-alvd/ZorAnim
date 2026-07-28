@@ -4,21 +4,96 @@
   gap: 0.5rem;
 }
 
-.row {
+.hiddenInput {
+  display: none;
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 1.25rem 1rem;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: #d2d2d2;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.dropzone:hover,
+.dropzoneOver {
+  border-color: var(--accent, #e50914);
+  background: rgba(229, 9, 20, 0.06);
+}
+
+.dropzoneHint {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: #808080;
+}
+
+.progressBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: #1a1a1a;
+}
+
+.progressHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.percent {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent, #e50914);
+  flex-shrink: 0;
+}
+
+.progressTrack {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent, #e50914);
+  transition: width 0.15s ease;
+}
+
+.doneBox {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: #1a1a1a;
 }
 
 .preview {
   position: relative;
-  width: 64px;
-  height: 36px;
+  width: 56px;
+  height: 32px;
   flex-shrink: 0;
   border-radius: 4px;
   overflow: hidden;
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #000;
 }
 
 .previewImg {
@@ -27,39 +102,62 @@
   object-fit: cover;
 }
 
-.uploadBtn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 4px;
-  padding: 0.6rem 1rem;
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-
-.uploadBtn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.uploadBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.doneInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .filename {
-  font-size: 0.8rem;
-  color: #a0a0a0;
+  font-size: 0.85rem;
+  color: #fff;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.hiddenInput {
-  display: none;
+.filesize {
+  font-size: 0.75rem;
+  color: #808080;
+}
+
+.replaceBtn {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  padding: 0.4rem 0.75rem;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.replaceBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.removeBtn {
+  flex-shrink: 0;
+  background: rgba(229, 9, 20, 0.12);
+  border: 1px solid rgba(229, 9, 20, 0.3);
+  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff8087;
+  cursor: pointer;
+}
+
+.removeBtn:hover {
+  background: rgba(229, 9, 20, 0.22);
+  border-color: rgba(229, 9, 20, 0.5);
 }
 
 .error {

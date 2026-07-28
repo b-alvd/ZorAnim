@@ -19,8 +19,9 @@ const columns = [
   {
     title: "Communauté",
     links: [
-      { label: "Soumettre un film", href: "/soumettre-un-film" },
       { label: "Devenir artiste", href: "/devenir-artiste" },
+      { label: "Créer un studio", href: "/creer-un-studio" },
+      { label: "Soumettre un film", href: "/soumettre-un-film" },
     ],
   },
   {

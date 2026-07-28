@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import styles from "./modal.module.css";
+import styles from "./Modal.module.css";
 
 export default function Modal({
   open,

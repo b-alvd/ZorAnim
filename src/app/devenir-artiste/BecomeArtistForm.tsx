@@ -5,7 +5,13 @@ import FileUpload from "@/components/FileUpload/FileUpload";
 import { submitArtistAction } from "./actions";
 import styles from "./community.module.css";
 
-export default function BecomeArtistForm() {
+export default function BecomeArtistForm({
+  initialName,
+  initialEmail,
+}: {
+  initialName: string;
+  initialEmail: string;
+}) {
   const [avatar, setAvatar] = useState("");
   const [sent, setSent] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -35,11 +41,18 @@ export default function BecomeArtistForm() {
       <div className={styles.fieldRow}>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Nom / nom de studio</span>
-          <input name="name" required className={styles.input} placeholder="Ton nom" />
+          <input name="name" required defaultValue={initialName} className={styles.input} placeholder="Ton nom" />
         </label>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Email de contact</span>
-          <input name="contactEmail" type="email" required className={styles.input} placeholder="ton@email.com" />
+          <input
+            name="contactEmail"
+            type="email"
+            required
+            defaultValue={initialEmail}
+            className={styles.input}
+            placeholder="ton@email.com"
+          />
         </label>
       </div>
       <label className={styles.field}>

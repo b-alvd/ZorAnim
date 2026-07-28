@@ -1,15 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Film } from "@/data/types";
+import { toggleFavoriteAction } from "@/lib/actions";
 import styles from "./FilmModal.module.css";
 
 const ANIM_MS = 250;
 
-export default function FilmModal({ film, onClose }: { film: Film; onClose: () => void }) {
+export default function FilmModal({
+  film,
+  onClose,
+  isFavorite = false,
+}: {
+  film: Film;
+  onClose: () => void;
+  isFavorite?: boolean;
+}) {
   const [shown, setShown] = useState(false);
+  const [favorite, setFavorite] = useState(isFavorite);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
@@ -33,6 +44,13 @@ export default function FilmModal({ film, onClose }: { film: Film; onClose: () =
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleToggleFavorite = () => {
+    startTransition(async () => {
+      const result = await toggleFavoriteAction(film.id);
+      setFavorite(result);
+    });
+  };
 
   return (
     <div className={`${styles.overlay} ${shown ? styles.shown : ""}`} onClick={requestClose}>
@@ -66,6 +84,24 @@ export default function FilmModal({ film, onClose }: { film: Film; onClose: () =
               </svg>
               Lecture
             </Link>
+            <button
+              type="button"
+              className={`${styles.favBtn} ${favorite ? styles.favActive : ""}`}
+              onClick={handleToggleFavorite}
+              disabled={isPending}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill={favorite ? "currentColor" : "none"}
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M12 21s-7.5-4.7-10-9.3C.5 8.4 2.3 5 5.6 5c1.9 0 3.4 1 4.4 2.4C11 6 12.5 5 14.4 5c3.3 0 5.1 3.4 3.6 6.7C19.5 16.3 12 21 12 21z" />
+              </svg>
+              {favorite ? "Dans ma liste" : "Ajouter à ma liste"}
+            </button>
           </div>
         </div>
       </div>
