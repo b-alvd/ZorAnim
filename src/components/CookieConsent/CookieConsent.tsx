@@ -21,28 +21,23 @@ export default function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div className={styles.overlay}>
-      <div className={styles.modal}>
-        <h2 className={styles.title}>Cookies &amp; confidentialité</h2>
-        <p className={styles.text}>
-          ZorAnim utilise uniquement un cookie de session, strictement nécessaire pour te garder
-          connecté à ton compte. Aucun cookie de suivi publicitaire n&apos;est utilisé.
-        </p>
-        <p className={styles.text}>
-          En continuant, tu acceptes notre{" "}
-          <Link href="/confidentialite" className={styles.link}>
-            politique de confidentialité
-          </Link>{" "}
-          et nos{" "}
-          <Link href="/conditions-utilisation" className={styles.link}>
-            conditions d&apos;utilisation
-          </Link>
-          .
-        </p>
-        <button type="button" className={styles.acceptBtn} onClick={accept}>
-          J&apos;ai compris
-        </button>
-      </div>
+    <div className={styles.banner}>
+      <p className={styles.text}>
+        ZorAnim utilise uniquement un cookie de session, strictement nécessaire pour te garder
+        connecté à ton compte. Aucun cookie de suivi publicitaire n&apos;est utilisé. En continuant,
+        tu acceptes notre{" "}
+        <Link href="/confidentialite" className={styles.link}>
+          politique de confidentialité
+        </Link>{" "}
+        et nos{" "}
+        <Link href="/conditions-utilisation" className={styles.link}>
+          conditions d&apos;utilisation
+        </Link>
+        .
+      </p>
+      <button type="button" className={styles.acceptBtn} onClick={accept}>
+        J&apos;ai compris
+      </button>
     </div>
   );
 }
