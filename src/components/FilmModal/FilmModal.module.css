@@ -271,6 +271,19 @@
   white-space: nowrap;
 }
 
+.episodeWatched {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #b5b5b5;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 .myRating {
   display: flex;
   align-items: center;

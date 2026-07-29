@@ -1,11 +1,11 @@
 import Image from "next/image";
 import Card from "@/components/Card/Card";
 import type { Artist, Film } from "@/data/types";
-import type { StudioMemberInfo } from "@/db/queries";
-import { collapseSeries } from "@/lib/series";
+import { getSeriesEpisodeIds, type StudioMemberInfo } from "@/db/queries";
+import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
 import styles from "./ArtistProfile.module.css";
 
-export default function ArtistProfile({
+export default async function ArtistProfile({
   artist,
   artistFilms,
   favoriteIds,
@@ -20,6 +20,9 @@ export default function ArtistProfile({
 }) {
   const activeMembers = members.filter((m) => m.status === "active");
   const collapsedFilms = collapseSeries(artistFilms);
+  const seriesTitles = [...new Set(collapsedFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
+  const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
+  const effectiveWatchedIds = computeEffectiveWatchedIds(collapsedFilms, watchedIds, episodeIdsMap);
 
   return (
     <main className={styles.page}>
@@ -53,7 +56,7 @@ export default function ArtistProfile({
               key={f.id}
               film={f}
               isFavorite={favoriteIds.has(f.id)}
-              isWatched={watchedIds.has(f.id)}
+              isWatched={effectiveWatchedIds.has(f.id)}
               episodeCount={f.episodeCount}
             />
           ))}

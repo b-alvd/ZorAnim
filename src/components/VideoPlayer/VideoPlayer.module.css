@@ -142,6 +142,19 @@
   white-space: nowrap;
 }
 
+.episodeWatched {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #c9c9c9;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
 .endedSubtitle {
   font-size: 0.9rem;
   color: #a0a0a0;

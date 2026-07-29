@@ -142,12 +142,35 @@ export async function getSeriesEpisodeCounts(seriesTitles: string[]): Promise<Ma
   return map;
 }
 
+export async function getSeriesEpisodeIds(seriesTitles: string[]): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>();
+  if (seriesTitles.length === 0) return map;
+  const rows = await db
+    .select({ id: films.id, seriesTitle: films.seriesTitle })
+    .from(films)
+    .where(inArray(films.seriesTitle, seriesTitles));
+  for (const r of rows) {
+    if (!r.seriesTitle) continue;
+    const arr = map.get(r.seriesTitle) ?? [];
+    arr.push(r.id);
+    map.set(r.seriesTitle, arr);
+  }
+  return map;
+}
+
 export async function getSeriesEpisodes(seriesTitle: string): Promise<Film[]> {
   const rows = await filmsQuery().where(eq(films.seriesTitle, seriesTitle));
   const episodes = await attachRatingSummaries(rows.map(mapFilm));
   return episodes.sort(
     (a, b) => (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) || (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
   );
+}
+
+export async function resolveCommentFilmId(filmId: string): Promise<string> {
+  const [film] = await db.select({ seriesTitle: films.seriesTitle }).from(films).where(eq(films.id, filmId));
+  if (!film?.seriesTitle) return filmId;
+  const episodes = await getSeriesEpisodes(film.seriesTitle);
+  return episodes[0]?.id ?? filmId;
 }
 
 export async function getSuggestions(excludeId: string, limit = 4): Promise<Film[]> {

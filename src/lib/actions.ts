@@ -12,8 +12,10 @@ import {
   getSeriesEpisodes,
   getUnreadNotificationCount,
   getUserRating,
+  getWatchedFilmIds,
   isFilmFavorite,
   markAllNotificationsRead,
+  resolveCommentFilmId,
   toggleCommentReaction,
   toggleFavorite,
   upsertRating,
@@ -52,8 +54,9 @@ export async function getFilmSocialDataAction(filmId: string): Promise<{
   isFavorite: boolean;
 }> {
   const user = await getCurrentUser();
+  const commentFilmId = await resolveCommentFilmId(filmId);
   const [filmComments, userRating, creatorUserIds, isFavorite] = await Promise.all([
-    getFilmComments(filmId, user?.id),
+    getFilmComments(commentFilmId, user?.id),
     user ? getUserRating(user.id, filmId) : Promise.resolve(null),
     getFilmCreatorUserIds(filmId),
     user ? isFilmFavorite(user.id, filmId) : Promise.resolve(false),
@@ -77,16 +80,18 @@ export async function addCommentAction(filmId: string, body: string, parentId?: 
     throw new Error("Trop de commentaires envoyés, réessaie dans quelques minutes.");
   }
 
-  await addComment(user.id, filmId, body.trim(), parentId ?? null);
-  return getFilmComments(filmId, user.id);
+  const commentFilmId = await resolveCommentFilmId(filmId);
+  await addComment(user.id, commentFilmId, body.trim(), parentId ?? null);
+  return getFilmComments(commentFilmId, user.id);
 }
 
 export async function deleteCommentAction(commentId: string, filmId: string): Promise<Comment[]> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Non authentifié.");
 
+  const commentFilmId = await resolveCommentFilmId(filmId);
   await deleteComment(commentId, user.id, user.role === "admin");
-  return getFilmComments(filmId, user.id);
+  return getFilmComments(commentFilmId, user.id);
 }
 
 export async function toggleCommentReactionAction(
@@ -100,8 +105,9 @@ export async function toggleCommentReactionAction(
     throw new Error("Trop de réactions envoyées, réessaie dans un instant.");
   }
 
+  const commentFilmId = await resolveCommentFilmId(filmId);
   await toggleCommentReaction(user.id, commentId, type);
-  return getFilmComments(filmId, user.id);
+  return getFilmComments(commentFilmId, user.id);
 }
 
 export async function getNotificationsAction(): Promise<{ notifications: Notification[]; unreadCount: number }> {
@@ -114,6 +120,13 @@ export async function getNotificationsAction(): Promise<{ notifications: Notific
 
 export async function getSeriesEpisodesAction(seriesTitle: string): Promise<Film[]> {
   return getSeriesEpisodes(seriesTitle);
+}
+
+export async function getWatchedEpisodeIdsAction(seriesTitle: string): Promise<string[]> {
+  const user = await getCurrentUser();
+  if (!user) return [];
+  const [episodes, watchedIds] = await Promise.all([getSeriesEpisodes(seriesTitle), getWatchedFilmIds(user.id)]);
+  return episodes.filter((ep) => watchedIds.has(ep.id)).map((ep) => ep.id);
 }
 
 export async function markAllNotificationsReadAction(): Promise<void> {

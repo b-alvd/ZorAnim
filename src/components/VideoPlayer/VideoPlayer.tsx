@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import type { Film } from "@/data/types";
+import { getWatchedEpisodeIdsAction } from "@/lib/actions";
 import styles from "./VideoPlayer.module.css";
 
 function formatTime(seconds: number) {
@@ -40,6 +41,15 @@ export default function VideoPlayer({
   const [muted, setMuted] = useState(false);
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
+  const [watchedEpisodeIds, setWatchedEpisodeIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!film.seriesTitle) {
+      setWatchedEpisodeIds(new Set());
+      return;
+    }
+    getWatchedEpisodeIdsAction(film.seriesTitle).then((ids) => setWatchedEpisodeIds(new Set(ids)));
+  }, [film.seriesTitle]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -199,6 +209,7 @@ export default function VideoPlayer({
                     >
                       <span className={styles.episodeNumber}>S{ep.seasonNumber ?? 1}E{ep.episodeNumber}</span>
                       <span className={styles.episodeTitle}>{ep.title}</span>
+                      {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
                     </Link>
                   ))}
                 </div>
@@ -246,6 +257,7 @@ export default function VideoPlayer({
                   >
                     <span className={styles.episodeNumber}>S{ep.seasonNumber ?? 1}E{ep.episodeNumber}</span>
                     <span className={styles.episodeTitle}>{ep.title}</span>
+                    {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
                   </Link>
                 ))}
               </div>

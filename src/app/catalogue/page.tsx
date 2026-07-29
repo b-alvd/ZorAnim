@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import Card from "@/components/Card/Card";
 import Pagination from "@/components/Pagination/Pagination";
-import { getFavoriteFilmIds, getFilms, getWatchedFilmIds } from "@/db/queries";
+import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { matchesQuery } from "@/lib/search";
-import { collapseSeries } from "@/lib/series";
+import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
 import SearchBar from "./SearchBar";
 import Filters from "./Filters";
 import styles from "./catalogue.module.css";
@@ -44,6 +44,10 @@ export default async function CataloguePage({
   const page = Math.min(Math.max(1, Number(pageParam) || 1), totalPages);
   const films = collapsed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  const seriesTitles = [...new Set(films.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
+  const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
+  const effectiveWatchedIds = computeEffectiveWatchedIds(films, watchedIds, episodeIdsMap);
+
   return (
     <main className={styles.page}>
       <div className={styles.header}>
@@ -62,7 +66,7 @@ export default async function CataloguePage({
                 key={f.id}
                 film={f}
                 isFavorite={favoriteIds.has(f.id)}
-                isWatched={watchedIds.has(f.id)}
+                isWatched={effectiveWatchedIds.has(f.id)}
                 episodeCount={f.episodeCount}
               />
             ))}

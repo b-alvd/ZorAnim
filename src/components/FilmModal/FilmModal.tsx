@@ -10,6 +10,7 @@ import {
   deleteCommentAction,
   getFilmSocialDataAction,
   getSeriesEpisodesAction,
+  getWatchedEpisodeIdsAction,
   rateFilmAction,
   toggleCommentReactionAction,
   toggleFavoriteAction,
@@ -44,6 +45,7 @@ export default function FilmModal({
   const [isRating, startRating] = useTransition();
   const [isCommenting, startCommenting] = useTransition();
   const [episodes, setEpisodes] = useState<Film[]>([]);
+  const [watchedEpisodeIds, setWatchedEpisodeIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
@@ -64,9 +66,11 @@ export default function FilmModal({
   useEffect(() => {
     if (!film.seriesTitle) {
       setEpisodes([]);
+      setWatchedEpisodeIds(new Set());
       return;
     }
     getSeriesEpisodesAction(film.seriesTitle).then(setEpisodes);
+    getWatchedEpisodeIdsAction(film.seriesTitle).then((ids) => setWatchedEpisodeIds(new Set(ids)));
   }, [film.seriesTitle]);
 
   const requestClose = () => {
@@ -243,6 +247,7 @@ export default function FilmModal({
                       S{ep.seasonNumber ?? 1}E{ep.episodeNumber}
                     </span>
                     <span className={styles.episodeTitle}>{ep.title}</span>
+                    {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
                   </button>
                 ))}
               </div>
@@ -256,7 +261,8 @@ export default function FilmModal({
 
           <div className={styles.commentsSection}>
             <h3 className={styles.commentsTitle}>
-              Commentaires {comments.length > 0 && `(${comments.length})`}
+              {activeFilm.seriesTitle ? `Commentaires de la série` : "Commentaires"}{" "}
+              {comments.length > 0 && `(${comments.length})`}
             </h3>
 
             <form className={styles.commentForm} onSubmit={handleAddComment}>

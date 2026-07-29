@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import Card from "@/components/Card/Card";
-import { getCategories, getFavoriteFilmIds, getFilms, getWatchedFilmIds } from "@/db/queries";
+import { getCategories, getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { collapseSeries } from "@/lib/series";
+import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
 import gridStyles from "../catalogue/catalogue.module.css";
 import styles from "./categories.module.css";
 
@@ -17,6 +17,9 @@ export default async function CategoriesPage() {
     getWatchedFilmIds(user.id),
   ]);
 
+  const allSeriesTitles = [...new Set(films.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
+  const episodeIdsMap = await getSeriesEpisodeIds(allSeriesTitles);
+
   return (
     <main className={styles.page}>
       <div className={styles.header}>
@@ -27,6 +30,7 @@ export default async function CategoriesPage() {
       </div>
       {categories.map((cat) => {
         const catFilms = collapseSeries(films.filter((f) => f.category === cat));
+        const effectiveWatchedIds = computeEffectiveWatchedIds(catFilms, watchedIds, episodeIdsMap);
         return (
           <section key={cat} className={styles.section}>
             <h2 className={styles.sectionTitle}>{cat}</h2>
@@ -36,7 +40,7 @@ export default async function CategoriesPage() {
                   key={f.id}
                   film={f}
                   isFavorite={favoriteIds.has(f.id)}
-                  isWatched={watchedIds.has(f.id)}
+                  isWatched={effectiveWatchedIds.has(f.id)}
                   episodeCount={f.episodeCount}
                 />
               ))}

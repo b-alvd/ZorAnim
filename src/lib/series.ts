@@ -31,3 +31,20 @@ export function collapseSeries(films: Film[], trueEpisodeCounts?: Map<string, nu
 
   return result;
 }
+
+export function computeEffectiveWatchedIds(
+  collapsed: CollapsedFilm[],
+  watchedIds: Set<string>,
+  episodeIdsMap: Map<string, string[]>
+): Set<string> {
+  const result = new Set<string>();
+  for (const f of collapsed) {
+    if (!f.seriesTitle) {
+      if (watchedIds.has(f.id)) result.add(f.id);
+      continue;
+    }
+    const ids = episodeIdsMap.get(f.seriesTitle);
+    if (ids && ids.length > 0 && ids.every((id) => watchedIds.has(id))) result.add(f.id);
+  }
+  return result;
+}

@@ -1,9 +1,9 @@
 import Hero from "@/components/Hero/Hero";
 import Row from "@/components/Row/Row";
 import Landing from "@/components/Landing/Landing";
-import { getFavoriteFilmIds, getFilms, getWatchedFilmIds } from "@/db/queries";
+import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { collapseSeries } from "@/lib/series";
+import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
 import styles from "./home.module.css";
 
 export default async function Home() {
@@ -22,6 +22,9 @@ export default async function Home() {
 
   const [favoriteIds, watchedIds] = await Promise.all([getFavoriteFilmIds(user.id), getWatchedFilmIds(user.id)]);
   const collapsedFilms = collapseSeries(films);
+  const seriesTitles = [...new Set(collapsedFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
+  const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
+  const effectiveWatchedIds = computeEffectiveWatchedIds(collapsedFilms, watchedIds, episodeIdsMap);
 
   return (
     <main>
@@ -30,7 +33,7 @@ export default async function Home() {
         title="Nouveautés"
         films={collapsedFilms}
         favoriteIds={[...favoriteIds]}
-        watchedIds={[...watchedIds]}
+        watchedIds={[...effectiveWatchedIds]}
       />
     </main>
   );
