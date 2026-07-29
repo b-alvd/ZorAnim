@@ -4,6 +4,7 @@ import { db } from "@/db";
 import {
   films,
   artists,
+  studios,
   users,
   filmSubmissions,
   artistSubmissions,
@@ -29,7 +30,9 @@ const filmSelection = {
   rating: films.rating,
   category: films.category,
   artistId: films.artistId,
+  studioId: films.studioId,
   artistName: artists.name,
+  studioName: studios.name,
   markedNewAt: films.markedNewAt,
   poster: films.poster,
   videoUrl: films.videoUrl,
@@ -39,12 +42,17 @@ const filmSelection = {
 };
 
 function filmsQuery() {
-  return db.select(filmSelection).from(films).innerJoin(artists, eq(films.artistId, artists.id));
+  return db
+    .select(filmSelection)
+    .from(films)
+    .leftJoin(artists, eq(films.artistId, artists.id))
+    .leftJoin(studios, eq(films.studioId, studios.id));
 }
 
 type FilmRow = Awaited<ReturnType<typeof filmsQuery>>[number];
 
 function mapFilm(row: FilmRow): Film {
+  const isStudioAttribution = !!row.studioId;
   return {
     id: row.id,
     title: row.title,
@@ -54,8 +62,9 @@ function mapFilm(row: FilmRow): Film {
     durationMinutes: row.durationMinutes,
     rating: row.rating,
     category: row.category,
-    artistId: row.artistId,
-    artistName: row.artistName,
+    artistId: (isStudioAttribution ? row.studioId : row.artistId) ?? "",
+    artistName: (isStudioAttribution ? row.studioName : row.artistName) ?? "?",
+    isStudioAttribution,
     isNew: isNewActive(row.markedNewAt),
     poster: row.poster,
     videoUrl: row.videoUrl,
@@ -114,6 +123,11 @@ export async function getFilmsByArtist(artistId: string): Promise<Film[]> {
   return attachRatingSummaries(rows.map(mapFilm));
 }
 
+export async function getFilmsByStudio(studioId: string): Promise<Film[]> {
+  const rows = await filmsQuery().where(eq(films.studioId, studioId));
+  return attachRatingSummaries(rows.map(mapFilm));
+}
+
 export async function getSeriesEpisodeCounts(seriesTitles: string[]): Promise<Map<string, number>> {
   const map = new Map<string, number>();
   if (seriesTitles.length === 0) return map;
@@ -147,12 +161,25 @@ export async function getCategories(): Promise<string[]> {
 }
 
 export async function getArtists(): Promise<Artist[]> {
-  return db.select().from(artists);
+  const rows = await db.select().from(artists);
+  return rows.map((a) => ({ id: a.id, name: a.name, bio: a.bio, avatar: a.avatar, isStudio: false }));
 }
 
 export async function getArtist(id: string): Promise<Artist | undefined> {
-  const [artist] = await db.select().from(artists).where(eq(artists.id, id));
-  return artist;
+  const [row] = await db.select().from(artists).where(eq(artists.id, id));
+  if (!row) return undefined;
+  return { id: row.id, name: row.name, bio: row.bio, avatar: row.avatar, isStudio: false };
+}
+
+export async function getStudios(): Promise<Artist[]> {
+  const rows = await db.select().from(studios);
+  return rows.map((s) => ({ id: s.id, name: s.name, bio: s.bio, avatar: s.avatar, isStudio: true }));
+}
+
+export async function getStudio(id: string): Promise<Artist | undefined> {
+  const [row] = await db.select().from(studios).where(eq(studios.id, id));
+  if (!row) return undefined;
+  return { id: row.id, name: row.name, bio: row.bio, avatar: row.avatar, isStudio: true };
 }
 
 export type FilmInput = {
@@ -162,7 +189,8 @@ export type FilmInput = {
   durationMinutes: number;
   rating: string;
   category: string;
-  artistId: string;
+  artistId: string | null;
+  studioId: string | null;
   isNew: boolean;
   poster: string;
   videoUrl: string;
@@ -210,14 +238,16 @@ export async function createArtist(input: ArtistInput, userId?: string | null): 
   return id;
 }
 
-export async function getArtistOwnership(
+export async function getIdentityOwnership(
   id: string
 ): Promise<{ isStudio: boolean; ownerId: string | null; userId: string | null } | undefined> {
-  const [row] = await db
-    .select({ isStudio: artists.isStudio, ownerId: artists.ownerId, userId: artists.userId })
-    .from(artists)
-    .where(eq(artists.id, id));
-  return row;
+  const [artistRow] = await db.select({ userId: artists.userId }).from(artists).where(eq(artists.id, id));
+  if (artistRow) return { isStudio: false, ownerId: null, userId: artistRow.userId };
+
+  const [studioRow] = await db.select({ ownerId: studios.ownerId }).from(studios).where(eq(studios.id, id));
+  if (studioRow) return { isStudio: true, ownerId: studioRow.ownerId, userId: null };
+
+  return undefined;
 }
 
 export async function updateArtist(id: string, input: ArtistInput): Promise<void> {
@@ -226,6 +256,10 @@ export async function updateArtist(id: string, input: ArtistInput): Promise<void
 
 export async function deleteArtist(id: string): Promise<void> {
   await db.delete(artists).where(eq(artists.id, id));
+}
+
+export async function updateStudio(id: string, input: ArtistInput): Promise<void> {
+  await db.update(studios).set(input).where(eq(studios.id, id));
 }
 
 export type AdminUser = {
@@ -272,10 +306,13 @@ export async function updateFilmSubmission(id: string, input: FilmSubmissionInpu
   await db.update(filmSubmissions).set(input).where(eq(filmSubmissions.id, id));
 }
 
-export async function acceptFilmSubmission(id: string, artistId?: string): Promise<void> {
+export async function acceptFilmSubmission(id: string, identity?: { id: string; isStudio: boolean }): Promise<void> {
   const submission = await getFilmSubmission(id);
-  const resolvedArtistId = artistId ?? submission?.artistId;
-  if (!submission || !resolvedArtistId) return;
+  if (!submission) return;
+
+  const resolvedArtistId = identity ? (identity.isStudio ? null : identity.id) : submission.artistId;
+  const resolvedStudioId = identity ? (identity.isStudio ? identity.id : null) : submission.studioId;
+  if (!resolvedArtistId && !resolvedStudioId) return;
 
   await createFilm({
     title: submission.title,
@@ -285,6 +322,7 @@ export async function acceptFilmSubmission(id: string, artistId?: string): Promi
     rating: submission.rating,
     category: submission.category,
     artistId: resolvedArtistId,
+    studioId: resolvedStudioId,
     isNew: true,
     poster: submission.poster,
     videoUrl: submission.videoUrl,
@@ -423,12 +461,7 @@ export async function toggleFavorite(userId: string, filmId: string): Promise<bo
 }
 
 export async function getFavoriteFilms(userId: string): Promise<Film[]> {
-  const rows = await db
-    .select(filmSelection)
-    .from(films)
-    .innerJoin(artists, eq(films.artistId, artists.id))
-    .innerJoin(favorites, eq(favorites.filmId, films.id))
-    .where(eq(favorites.userId, userId));
+  const rows = await filmsQuery().innerJoin(favorites, eq(favorites.filmId, films.id)).where(eq(favorites.userId, userId));
   return attachRatingSummaries(rows.map(mapFilm));
 }
 
@@ -469,7 +502,8 @@ export async function getWatchHistory(userId: string): Promise<(Film & { watched
   const rows = await db
     .select({ ...filmSelection, watchedAt: watchHistory.watchedAt })
     .from(films)
-    .innerJoin(artists, eq(films.artistId, artists.id))
+    .leftJoin(artists, eq(films.artistId, artists.id))
+    .leftJoin(studios, eq(films.studioId, studios.id))
     .innerJoin(watchHistory, eq(watchHistory.filmId, films.id))
     .where(eq(watchHistory.userId, userId))
     .orderBy(desc(watchHistory.watchedAt));
@@ -521,29 +555,23 @@ export async function replyToContactMessage(id: string, reply: string): Promise<
 }
 
 export async function getArtistByUserId(userId: string): Promise<Artist | undefined> {
-  const [artist] = await db
-    .select()
-    .from(artists)
-    .where(and(eq(artists.userId, userId), eq(artists.isStudio, false)));
-  return artist;
+  const [row] = await db.select().from(artists).where(eq(artists.userId, userId));
+  if (!row) return undefined;
+  return { id: row.id, name: row.name, bio: row.bio, avatar: row.avatar, isStudio: false };
 }
 
 export async function getStudiosOwnedBy(userId: string): Promise<Artist[]> {
-  return db.select().from(artists).where(and(eq(artists.isStudio, true), eq(artists.ownerId, userId)));
+  const rows = await db.select().from(studios).where(eq(studios.ownerId, userId));
+  return rows.map((s) => ({ id: s.id, name: s.name, bio: s.bio, avatar: s.avatar, isStudio: true }));
 }
 
 export async function getActiveStudioMemberships(userId: string): Promise<Artist[]> {
-  return db
-    .select({
-      id: artists.id,
-      name: artists.name,
-      bio: artists.bio,
-      avatar: artists.avatar,
-      isStudio: artists.isStudio,
-    })
+  const rows = await db
+    .select({ id: studios.id, name: studios.name, bio: studios.bio, avatar: studios.avatar })
     .from(studioMembers)
-    .innerJoin(artists, eq(studioMembers.studioId, artists.id))
+    .innerJoin(studios, eq(studioMembers.studioId, studios.id))
     .where(and(eq(studioMembers.userId, userId), eq(studioMembers.status, "active")));
+  return rows.map((s) => ({ ...s, isStudio: true }));
 }
 
 export type StudioMembership = { membershipId: string; studio: Artist };
@@ -552,19 +580,18 @@ export async function getActiveStudioMembershipsDetailed(userId: string): Promis
   const rows = await db
     .select({
       membershipId: studioMembers.id,
-      id: artists.id,
-      name: artists.name,
-      bio: artists.bio,
-      avatar: artists.avatar,
-      isStudio: artists.isStudio,
+      id: studios.id,
+      name: studios.name,
+      bio: studios.bio,
+      avatar: studios.avatar,
     })
     .from(studioMembers)
-    .innerJoin(artists, eq(studioMembers.studioId, artists.id))
+    .innerJoin(studios, eq(studioMembers.studioId, studios.id))
     .where(and(eq(studioMembers.userId, userId), eq(studioMembers.status, "active")));
 
   return rows.map((r) => ({
     membershipId: r.membershipId,
-    studio: { id: r.id, name: r.name, bio: r.bio, avatar: r.avatar, isStudio: r.isStudio },
+    studio: { id: r.id, name: r.name, bio: r.bio, avatar: r.avatar, isStudio: true },
   }));
 }
 
@@ -583,13 +610,15 @@ export async function getUserIdentities(userId: string): Promise<Artist[]> {
 
 export async function createStudio(ownerId: string, input: ArtistInput): Promise<string> {
   const id = randomUUID();
-  await db.insert(artists).values({ id, ...input, isStudio: true, ownerId });
+  await db.insert(studios).values({ id, ...input, ownerId });
   return id;
 }
 
 export async function getInvitableArtists(excludeUserId: string): Promise<Artist[]> {
-  const rows = await db.select().from(artists).where(eq(artists.isStudio, false));
-  return rows.filter((a) => a.userId && a.userId !== excludeUserId);
+  const rows = await db.select().from(artists);
+  return rows
+    .filter((a) => a.userId && a.userId !== excludeUserId)
+    .map((a) => ({ id: a.id, name: a.name, bio: a.bio, avatar: a.avatar, isStudio: false }));
 }
 
 export type StudioMember = typeof studioMembers.$inferSelect;
@@ -606,7 +635,7 @@ export async function inviteToStudio(studioId: string, artistId: string): Promis
 
   await db.insert(studioMembers).values({ id: randomUUID(), studioId, userId: artist.userId, status: "invited" });
 
-  const [studio] = await db.select({ name: artists.name }).from(artists).where(eq(artists.id, studioId));
+  const [studio] = await db.select({ name: studios.name }).from(studios).where(eq(studios.id, studioId));
   if (studio) {
     await createNotification(
       artist.userId,
@@ -625,10 +654,10 @@ export async function getPendingStudioInvites(userId: string): Promise<(StudioMe
       userId: studioMembers.userId,
       status: studioMembers.status,
       createdAt: studioMembers.createdAt,
-      studioName: artists.name,
+      studioName: studios.name,
     })
     .from(studioMembers)
-    .innerJoin(artists, eq(studioMembers.studioId, artists.id))
+    .innerJoin(studios, eq(studioMembers.studioId, studios.id))
     .where(and(eq(studioMembers.userId, userId), eq(studioMembers.status, "invited")));
 }
 
@@ -642,7 +671,7 @@ export async function respondToStudioInvite(memberId: string, userId: string, ac
     await db.delete(studioMembers).where(eq(studioMembers.id, memberId));
   }
 
-  const [studio] = await db.select({ name: artists.name, ownerId: artists.ownerId }).from(artists).where(eq(artists.id, row.studioId));
+  const [studio] = await db.select({ name: studios.name, ownerId: studios.ownerId }).from(studios).where(eq(studios.id, row.studioId));
   const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId));
   if (studio?.ownerId && user) {
     await createNotification(
@@ -672,7 +701,7 @@ export async function removeStudioMembership(memberRowId: string, requesterUserI
   if (!row) return;
 
   const isSelf = row.userId === requesterUserId;
-  const [studio] = await db.select({ ownerId: artists.ownerId }).from(artists).where(eq(artists.id, row.studioId));
+  const [studio] = await db.select({ ownerId: studios.ownerId }).from(studios).where(eq(studios.id, row.studioId));
   const isOwner = studio?.ownerId === requesterUserId;
 
   if (!isSelf && !isOwner) throw new Error("Non autorisé.");
@@ -681,14 +710,14 @@ export async function removeStudioMembership(memberRowId: string, requesterUserI
 }
 
 export async function deleteStudio(studioId: string, requesterUserId: string): Promise<void> {
-  const [studio] = await db.select().from(artists).where(eq(artists.id, studioId));
-  if (!studio || !studio.isStudio) throw new Error("Studio introuvable.");
+  const [studio] = await db.select().from(studios).where(eq(studios.id, studioId));
+  if (!studio) throw new Error("Studio introuvable.");
   if (studio.ownerId !== requesterUserId) throw new Error("Non autorisé.");
 
-  const [filmRow] = await db.select({ id: films.id }).from(films).where(eq(films.artistId, studioId));
+  const [filmRow] = await db.select({ id: films.id }).from(films).where(eq(films.studioId, studioId));
   if (filmRow) throw new Error("Impossible de supprimer un studio qui a des films au catalogue.");
 
-  await db.delete(artists).where(eq(artists.id, studioId));
+  await db.delete(studios).where(eq(studios.id, studioId));
 }
 
 export async function upsertRating(userId: string, filmId: string, value: number): Promise<void> {
@@ -866,30 +895,27 @@ export async function getAllCommentsWithStats(): Promise<AdminComment[]> {
 }
 
 export async function getFilmCreatorUserIds(filmId: string): Promise<string[]> {
-  const [film] = await db.select({ artistId: films.artistId }).from(films).where(eq(films.id, filmId));
+  const [film] = await db.select({ artistId: films.artistId, studioId: films.studioId }).from(films).where(eq(films.id, filmId));
   if (!film) return [];
 
-  const [artist] = await db.select().from(artists).where(eq(artists.id, film.artistId));
-  if (!artist) return [];
-
-  if (!artist.isStudio) {
-    return artist.userId ? [artist.userId] : [];
+  if (film.artistId) {
+    const [artist] = await db.select({ userId: artists.userId }).from(artists).where(eq(artists.id, film.artistId));
+    return artist?.userId ? [artist.userId] : [];
   }
 
+  if (!film.studioId) return [];
+
+  const [studio] = await db.select({ ownerId: studios.ownerId }).from(studios).where(eq(studios.id, film.studioId));
   const ids = new Set<string>();
-  if (artist.ownerId) ids.add(artist.ownerId);
+  if (studio?.ownerId) ids.add(studio.ownerId);
 
   const members = await db
     .select({ userId: studioMembers.userId })
     .from(studioMembers)
-    .where(and(eq(studioMembers.studioId, artist.id), eq(studioMembers.status, "active")));
+    .where(and(eq(studioMembers.studioId, film.studioId), eq(studioMembers.status, "active")));
   for (const m of members) ids.add(m.userId);
 
   return [...ids];
-}
-
-export async function getStudios(): Promise<Artist[]> {
-  return db.select().from(artists).where(eq(artists.isStudio, true));
 }
 
 export type AdminStudio = Artist & {
@@ -900,16 +926,16 @@ export type AdminStudio = Artist & {
 };
 
 export async function getAllStudiosWithDetails(): Promise<AdminStudio[]> {
-  const studios = await getStudios();
-  if (studios.length === 0) return [];
+  const studioList = await getStudios();
+  if (studioList.length === 0) return [];
 
-  const ids = studios.map((s) => s.id);
+  const ids = studioList.map((s) => s.id);
 
   const owners = await db
-    .select({ id: artists.id, ownerName: users.name, ownerEmail: users.email })
-    .from(artists)
-    .leftJoin(users, eq(artists.ownerId, users.id))
-    .where(inArray(artists.id, ids));
+    .select({ id: studios.id, ownerName: users.name, ownerEmail: users.email })
+    .from(studios)
+    .leftJoin(users, eq(studios.ownerId, users.id))
+    .where(inArray(studios.id, ids));
   const ownerMap = new Map(owners.map((o) => [o.id, o]));
 
   const memberRows = await db
@@ -919,11 +945,14 @@ export async function getAllStudiosWithDetails(): Promise<AdminStudio[]> {
   const memberCounts = new Map<string, number>();
   for (const m of memberRows) memberCounts.set(m.studioId, (memberCounts.get(m.studioId) ?? 0) + 1);
 
-  const filmRows = await db.select({ artistId: films.artistId }).from(films).where(inArray(films.artistId, ids));
+  const filmRows = await db.select({ studioId: films.studioId }).from(films).where(inArray(films.studioId, ids));
   const filmCounts = new Map<string, number>();
-  for (const f of filmRows) filmCounts.set(f.artistId, (filmCounts.get(f.artistId) ?? 0) + 1);
+  for (const f of filmRows) {
+    if (!f.studioId) continue;
+    filmCounts.set(f.studioId, (filmCounts.get(f.studioId) ?? 0) + 1);
+  }
 
-  return studios.map((s) => ({
+  return studioList.map((s) => ({
     ...s,
     ownerName: ownerMap.get(s.id)?.ownerName ?? null,
     ownerEmail: ownerMap.get(s.id)?.ownerEmail ?? null,
@@ -933,7 +962,7 @@ export async function getAllStudiosWithDetails(): Promise<AdminStudio[]> {
 }
 
 export async function adminDeleteStudio(studioId: string): Promise<void> {
-  await db.delete(artists).where(and(eq(artists.id, studioId), eq(artists.isStudio, true)));
+  await db.delete(studios).where(eq(studios.id, studioId));
 }
 
 export async function adminRemoveStudioMember(memberRowId: string): Promise<void> {
@@ -1009,6 +1038,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const [
     filmRows,
     artistRows,
+    studioRows,
     userRows,
     filmSubs,
     artistSubs,
@@ -1024,9 +1054,17 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     recentCommentRows,
   ] = await Promise.all([
     db
-      .select({ id: films.id, title: films.title, artistId: films.artistId, createdAt: films.createdAt, category: films.category })
+      .select({
+        id: films.id,
+        title: films.title,
+        artistId: films.artistId,
+        studioId: films.studioId,
+        createdAt: films.createdAt,
+        category: films.category,
+      })
       .from(films),
-    db.select({ id: artists.id, name: artists.name, isStudio: artists.isStudio }).from(artists),
+    db.select({ id: artists.id, name: artists.name }).from(artists),
+    db.select({ id: studios.id, name: studios.name }).from(studios),
     db.select({ id: users.id, createdAt: users.createdAt }).from(users),
     getPendingFilmSubmissions(),
     getPendingArtistSubmissions(),
@@ -1055,7 +1093,11 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   ]);
 
   const filmMap = new Map(filmRows.map((f) => [f.id, f]));
-  const artistMap = new Map(artistRows.map((a) => [a.id, a]));
+  const creatorMap = new Map<string, { name: string; isStudio: boolean }>([
+    ...artistRows.map((a): [string, { name: string; isStudio: boolean }] => [a.id, { name: a.name, isStudio: false }]),
+    ...studioRows.map((s): [string, { name: string; isStudio: boolean }] => [s.id, { name: s.name, isStudio: true }]),
+  ]);
+  const creatorIdOf = (f: { artistId: string | null; studioId: string | null }) => f.artistId ?? f.studioId ?? "";
 
   const now = Date.now();
   const DAY = 24 * 60 * 60 * 1000;
@@ -1077,7 +1119,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .map((f) => ({
       id: f.id,
       title: f.title,
-      artistName: artistMap.get(f.artistId)?.name ?? "?",
+      artistName: creatorMap.get(creatorIdOf(f))?.name ?? "?",
       createdAt: f.createdAt,
     }));
 
@@ -1092,7 +1134,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   }
 
   const filmCountByArtist = new Map<string, number>();
-  for (const f of filmRows) filmCountByArtist.set(f.artistId, (filmCountByArtist.get(f.artistId) ?? 0) + 1);
+  for (const f of filmRows) {
+    const cid = creatorIdOf(f);
+    filmCountByArtist.set(cid, (filmCountByArtist.get(cid) ?? 0) + 1);
+  }
 
   const topViewedFilms = [...viewsByFilm.entries()]
     .sort((a, b) => b[1] - a[1])
@@ -1110,17 +1155,17 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .slice(0, 5);
 
   const topArtists = [...filmCountByArtist.entries()]
-    .filter(([id]) => !artistMap.get(id)?.isStudio)
+    .filter(([id]) => !creatorMap.get(id)?.isStudio)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([id, filmCount]) => ({ id, name: artistMap.get(id)?.name ?? "?", filmCount }));
+    .map(([id, filmCount]) => ({ id, name: creatorMap.get(id)?.name ?? "?", filmCount }));
 
   const ratingTotal = ratingRows.reduce((sum, r) => sum + r.value, 0);
 
   return {
     filmCount: filmRows.length,
-    artistCount: artistRows.filter((a) => !a.isStudio).length,
-    studioCount: artistRows.filter((a) => a.isStudio).length,
+    artistCount: artistRows.length,
+    studioCount: studioRows.length,
     userCount: userRows.length,
     pendingCount: filmSubs.length + artistSubs.length,
     openMessageCount: messages.filter((m) => m.status === "open").length,

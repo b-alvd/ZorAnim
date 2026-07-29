@@ -1,17 +1,19 @@
-import { getArtists, getCategories, getPendingArtistSubmissions, getPendingFilmSubmissions } from "@/db/queries";
+import { getArtists, getCategories, getPendingArtistSubmissions, getPendingFilmSubmissions, getStudios } from "@/db/queries";
 import { mergeCategories } from "@/lib/categories";
 import FilmSubmissionRowActions from "./FilmSubmissionRowActions";
 import ArtistSubmissionRowActions from "./ArtistSubmissionRowActions";
 import styles from "../shared.module.css";
 
 export default async function AdminDemandesPage() {
-  const [filmSubmissions, artistSubmissions, artists, existingCategories] = await Promise.all([
+  const [filmSubmissions, artistSubmissions, artists, studios, existingCategories] = await Promise.all([
     getPendingFilmSubmissions(),
     getPendingArtistSubmissions(),
     getArtists(),
+    getStudios(),
     getCategories(),
   ]);
   const categories = mergeCategories(existingCategories);
+  const identities = [...artists, ...studios];
 
   return (
     <main>
@@ -40,7 +42,7 @@ export default async function AdminDemandesPage() {
                 <td>{s.contactEmail}</td>
                 <td>{s.category}</td>
                 <td>
-                  <FilmSubmissionRowActions submission={s} categories={categories} artists={artists} />
+                  <FilmSubmissionRowActions submission={s} categories={categories} artists={identities} />
                 </td>
               </tr>
             ))}

@@ -21,7 +21,7 @@ export default function FilmSubmissionRowActions({
 }) {
   const [editOpen, setEditOpen] = useState(false);
   const [acceptOpen, setAcceptOpen] = useState(false);
-  const [artistId, setArtistId] = useState(submission.artistId ?? artists[0]?.id ?? "");
+  const [artistId, setArtistId] = useState(submission.artistId ?? submission.studioId ?? artists[0]?.id ?? "");
   const [isPending, startTransition] = useTransition();
   const [isAccepting, startAccepting] = useTransition();
 
@@ -74,7 +74,8 @@ export default function FilmSubmissionRowActions({
             disabled={isAccepting || !artistId}
             onClick={() =>
               startAccepting(async () => {
-                await acceptFilmSubmissionAction(submission.id, artistId);
+                const identity = artists.find((a) => a.id === artistId);
+                await acceptFilmSubmissionAction(submission.id, artistId, identity?.isStudio ?? false);
                 setAcceptOpen(false);
               })
             }

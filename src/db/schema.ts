@@ -31,8 +31,17 @@ export const artists = sqliteTable("artists", {
   bio: text("bio").notNull(),
   avatar: text("avatar").notNull(),
   userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
-  isStudio: integer("is_studio", { mode: "boolean" }).notNull().default(false),
+});
+
+export const studios = sqliteTable("studios", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  bio: text("bio").notNull(),
+  avatar: text("avatar").notNull(),
   ownerId: text("owner_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
 });
 
 export const films = sqliteTable("films", {
@@ -43,9 +52,8 @@ export const films = sqliteTable("films", {
   durationMinutes: integer("duration_minutes").notNull(),
   rating: text("rating").notNull(),
   category: text("category").notNull(),
-  artistId: text("artist_id")
-    .notNull()
-    .references(() => artists.id, { onDelete: "cascade" }),
+  artistId: text("artist_id").references(() => artists.id, { onDelete: "cascade" }),
+  studioId: text("studio_id").references(() => studios.id, { onDelete: "cascade" }),
   markedNewAt: text("marked_new_at"),
   poster: text("poster").notNull(),
   videoUrl: text("video_url").notNull(),
@@ -67,6 +75,7 @@ export const filmSubmissions = sqliteTable("film_submissions", {
   category: text("category").notNull(),
   artistName: text("artist_name").notNull(),
   artistId: text("artist_id").references(() => artists.id, { onDelete: "set null" }),
+  studioId: text("studio_id").references(() => studios.id, { onDelete: "set null" }),
   contactEmail: text("contact_email").notNull(),
   poster: text("poster").notNull(),
   videoUrl: text("video_url").notNull(),
@@ -135,7 +144,7 @@ export const studioMembers = sqliteTable(
     id: text("id").primaryKey(),
     studioId: text("studio_id")
       .notNull()
-      .references(() => artists.id, { onDelete: "cascade" }),
+      .references(() => studios.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

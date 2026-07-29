@@ -32,8 +32,8 @@ export async function updateFilmSubmissionAction(id: string, formData: FormData)
   revalidatePath("/admin/demandes");
 }
 
-export async function acceptFilmSubmissionAction(id: string, artistId: string) {
-  await acceptFilmSubmission(id, artistId);
+export async function acceptFilmSubmissionAction(id: string, identityId: string, isStudio: boolean) {
+  await acceptFilmSubmission(id, { id: identityId, isStudio });
   revalidatePath("/admin/demandes");
   revalidatePath("/admin/films");
 }

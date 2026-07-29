@@ -12,7 +12,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function generateStaticParams() {
   const artists = await getArtists();
-  return artists.filter((a) => !a.isStudio).map((a) => ({ id: a.id }));
+  return artists.map((a) => ({ id: a.id }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -40,7 +40,6 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const artist = await getArtist(id);
   if (!artist) notFound();
-  if (artist.isStudio) redirect(`/studios/${id}`);
 
   const [artistFilms, favoriteIds, watchedIds] = await Promise.all([
     getFilmsByArtist(artist.id),

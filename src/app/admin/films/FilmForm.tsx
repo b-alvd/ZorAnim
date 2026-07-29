@@ -45,8 +45,9 @@ export default function FilmForm({
   const [valid, setValid] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
-  const artistNames = artists.map((a) => a.name);
-  const selectedArtistName = artists.find((a) => a.id === artistId)?.name ?? artistNames[0];
+  const artistNames = artists.map((a) => (a.isStudio ? `${a.name} (studio)` : a.name));
+  const selectedArtist = artists.find((a) => a.id === artistId);
+  const selectedArtistName = selectedArtist ? (selectedArtist.isStudio ? `${selectedArtist.name} (studio)` : selectedArtist.name) : artistNames[0];
 
   const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
   useEffect(updateValidity, []);
@@ -151,11 +152,12 @@ export default function FilmForm({
       <div className={styles.field}>
         <label>Artiste</label>
         <input type="hidden" name="artistId" value={artistId} />
+        <input type="hidden" name="isStudio" value={selectedArtist?.isStudio ? "1" : ""} />
         <Dropdown
           options={artistNames}
           value={selectedArtistName}
           onChange={(name) => {
-            const found = artists.find((a) => a.name === name);
+            const found = artists.find((a) => (a.isStudio ? `${a.name} (studio)` : a.name) === name);
             if (found) setArtistId(found.id);
           }}
         />

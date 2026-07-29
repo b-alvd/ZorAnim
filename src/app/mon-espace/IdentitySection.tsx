@@ -24,6 +24,7 @@ function readFilmInput(formData: FormData, fallbackArtistId: string) {
     rating: String(formData.get("rating") ?? ""),
     category: String(formData.get("category") ?? ""),
     artistId: String(formData.get("artistId") ?? fallbackArtistId),
+    studioId: null,
     isNew: formData.get("isNew") === "on",
     poster: String(formData.get("poster") ?? ""),
     videoUrl: String(formData.get("videoUrl") ?? ""),

@@ -1,4 +1,4 @@
-import { getArtists, getCategories, getFilms } from "@/db/queries";
+import { getArtists, getCategories, getFilms, getStudios } from "@/db/queries";
 import { mergeCategories } from "@/lib/categories";
 import Pagination from "@/components/Pagination/Pagination";
 import FilmsList, { type FilmRow } from "./FilmsList";
@@ -12,7 +12,13 @@ export default async function AdminFilmsPage({
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
-  const [allFilms, artists, existingCategories] = await Promise.all([getFilms(), getArtists(), getCategories()]);
+  const [allFilms, personalArtists, studioList, existingCategories] = await Promise.all([
+    getFilms(),
+    getArtists(),
+    getStudios(),
+    getCategories(),
+  ]);
+  const artists = [...personalArtists, ...studioList];
   const categories = mergeCategories(existingCategories);
 
   const rows: FilmRow[] = [];

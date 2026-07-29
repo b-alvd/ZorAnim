@@ -5,11 +5,12 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   createFilm,
   deleteFilm,
-  getArtistOwnership,
   getFilm,
+  getIdentityOwnership,
   getUserIdentities,
   updateArtist,
   updateFilm,
+  updateStudio,
   type ArtistInput,
   type FilmInput,
 } from "@/db/queries";
@@ -21,12 +22,19 @@ async function assertOwnsFilm(userId: string, filmId: string) {
   if (!identities.some((i) => i.id === film.artistId)) throw new Error("Non autorisé.");
 }
 
-async function assertOwnsIdentity(userId: string, artistId: string) {
-  const artist = await getArtistOwnership(artistId);
-  if (!artist) throw new Error("Profil introuvable.");
-  if (artist.isStudio) {
-    if (artist.ownerId !== userId) throw new Error("Non autorisé.");
-  } else if (artist.userId !== userId) {
+async function resolveIdentityInput(userId: string, identityId: string): Promise<{ artistId: string | null; studioId: string | null }> {
+  const identities = await getUserIdentities(userId);
+  const identity = identities.find((i) => i.id === identityId);
+  if (!identity) throw new Error("Non autorisé.");
+  return identity.isStudio ? { artistId: null, studioId: identity.id } : { artistId: identity.id, studioId: null };
+}
+
+async function assertOwnsIdentity(userId: string, identityId: string) {
+  const identity = await getIdentityOwnership(identityId);
+  if (!identity) throw new Error("Profil introuvable.");
+  if (identity.isStudio) {
+    if (identity.ownerId !== userId) throw new Error("Non autorisé.");
+  } else if (identity.userId !== userId) {
     throw new Error("Non autorisé.");
   }
 }
@@ -34,10 +42,9 @@ async function assertOwnsIdentity(userId: string, artistId: string) {
 export async function createOwnFilmAction(input: FilmInput): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Non authentifié.");
-  const identities = await getUserIdentities(user.id);
-  if (!identities.some((i) => i.id === input.artistId)) throw new Error("Non autorisé.");
+  const { artistId, studioId } = await resolveIdentityInput(user.id, input.artistId ?? "");
 
-  await createFilm(input);
+  await createFilm({ ...input, artistId, studioId });
   revalidatePath("/mon-espace");
   revalidatePath("/", "layout");
 }
@@ -46,8 +53,9 @@ export async function updateOwnFilmAction(filmId: string, input: FilmInput): Pro
   const user = await getCurrentUser();
   if (!user) throw new Error("Non authentifié.");
   await assertOwnsFilm(user.id, filmId);
+  const { artistId, studioId } = await resolveIdentityInput(user.id, input.artistId ?? "");
 
-  await updateFilm(filmId, input);
+  await updateFilm(filmId, { ...input, artistId, studioId });
   revalidatePath("/mon-espace");
   revalidatePath("/", "layout");
 }
@@ -62,12 +70,17 @@ export async function deleteOwnFilmAction(filmId: string): Promise<void> {
   revalidatePath("/", "layout");
 }
 
-export async function updateOwnProfileAction(artistId: string, input: ArtistInput): Promise<void> {
+export async function updateOwnProfileAction(identityId: string, input: ArtistInput): Promise<void> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Non authentifié.");
-  await assertOwnsIdentity(user.id, artistId);
+  const ownership = await getIdentityOwnership(identityId);
+  await assertOwnsIdentity(user.id, identityId);
 
-  await updateArtist(artistId, input);
+  if (ownership?.isStudio) {
+    await updateStudio(identityId, input);
+  } else {
+    await updateArtist(identityId, input);
+  }
   revalidatePath("/mon-espace");
   revalidatePath("/", "layout");
 }

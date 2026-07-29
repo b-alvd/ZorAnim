@@ -17,6 +17,7 @@ export type Film = {
   category: string;
   artistId: string;
   artistName: string;
+  isStudioAttribution: boolean;
   isNew: boolean;
   poster: string;
   videoUrl: string;

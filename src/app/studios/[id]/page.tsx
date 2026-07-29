@@ -2,23 +2,23 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import ArtistProfile from "@/components/ArtistProfile/ArtistProfile";
 import {
-  getArtist,
-  getArtists,
   getFavoriteFilmIds,
-  getFilmsByArtist,
+  getFilmsByStudio,
+  getStudio,
   getStudioMembers,
+  getStudios,
   getWatchedFilmIds,
 } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function generateStaticParams() {
-  const artists = await getArtists();
-  return artists.filter((a) => a.isStudio).map((a) => ({ id: a.id }));
+  const studioList = await getStudios();
+  return studioList.map((s) => ({ id: s.id }));
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const studio = await getArtist(id);
+  const studio = await getStudio(id);
   if (!studio) return { title: "Studio introuvable | ZorAnim" };
 
   const description = studio.bio.length > 160 ? `${studio.bio.slice(0, 157)}...` : studio.bio;
@@ -39,12 +39,11 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
   if (!user) redirect("/connexion");
 
   const { id } = await params;
-  const studio = await getArtist(id);
+  const studio = await getStudio(id);
   if (!studio) notFound();
-  if (!studio.isStudio) redirect(`/artistes/${id}`);
 
   const [studioFilms, favoriteIds, watchedIds, members] = await Promise.all([
-    getFilmsByArtist(studio.id),
+    getFilmsByStudio(studio.id),
     getFavoriteFilmIds(user.id),
     getWatchedFilmIds(user.id),
     getStudioMembers(studio.id),

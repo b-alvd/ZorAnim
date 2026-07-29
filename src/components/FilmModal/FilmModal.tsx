@@ -178,7 +178,10 @@ export default function FilmModal({
               {activeFilm.seriesTitle} · Saison {activeFilm.seasonNumber ?? 1} · Épisode {activeFilm.episodeNumber}
             </p>
           )}
-          <Link href={`/artistes/${activeFilm.artistId}`} className={styles.artist}>
+          <Link
+            href={activeFilm.isStudioAttribution ? `/studios/${activeFilm.artistId}` : `/artistes/${activeFilm.artistId}`}
+            className={styles.artist}
+          >
             Par {activeFilm.artistName}
           </Link>
           <div className={styles.badges}>

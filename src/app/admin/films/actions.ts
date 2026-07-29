@@ -7,6 +7,8 @@ function readFilmInput(formData: FormData): FilmInput {
   const seriesTitle = String(formData.get("seriesTitle") ?? "").trim();
   const seasonNumber = formData.get("seasonNumber");
   const episodeNumber = formData.get("episodeNumber");
+  const selectedId = String(formData.get("artistId") ?? "") || null;
+  const isStudio = formData.get("isStudio") === "1";
   return {
     title: String(formData.get("title") ?? ""),
     synopsis: String(formData.get("synopsis") ?? ""),
@@ -14,7 +16,8 @@ function readFilmInput(formData: FormData): FilmInput {
     durationMinutes: Number(formData.get("durationMinutes")),
     rating: String(formData.get("rating") ?? ""),
     category: String(formData.get("category") ?? ""),
-    artistId: String(formData.get("artistId") ?? ""),
+    artistId: isStudio ? null : selectedId,
+    studioId: isStudio ? selectedId : null,
     isNew: formData.get("isNew") === "on",
     poster: String(formData.get("poster") ?? ""),
     videoUrl: String(formData.get("videoUrl") ?? ""),

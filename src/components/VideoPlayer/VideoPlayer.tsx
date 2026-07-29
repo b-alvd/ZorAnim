@@ -174,7 +174,10 @@ export default function VideoPlayer({
               <Image src={film.poster} alt="" fill sizes="520px" className={styles.posterImg} unoptimized />
             </div>
             <h1 className={styles.pauseTitle}>{film.title}</h1>
-            <Link href={`/artistes/${film.artistId}`} className={styles.pauseArtist}>
+            <Link
+              href={film.isStudioAttribution ? `/studios/${film.artistId}` : `/artistes/${film.artistId}`}
+              className={styles.pauseArtist}
+            >
               Par {film.artistName}
             </Link>
             <div className={styles.pauseBadges}>
