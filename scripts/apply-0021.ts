@@ -2,14 +2,7 @@ import { db } from "@/db";
 import { sql } from "drizzle-orm";
 
 async function main() {
-  await db.run(sql`
-    CREATE TABLE IF NOT EXISTS site_settings (
-      id text PRIMARY KEY NOT NULL,
-      reveal_enabled integer DEFAULT 0 NOT NULL,
-      reveal_at text
-    )
-  `);
-
+  await db.run(sql`ALTER TABLE site_settings ADD COLUMN maintenance_enabled integer DEFAULT 0 NOT NULL`);
   console.log("done");
 }
 

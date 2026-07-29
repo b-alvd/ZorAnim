@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
 import CookieConsent from "@/components/CookieConsent/CookieConsent";
 import RevealOverlay from "@/components/RevealGate/RevealOverlay";
+import MaintenanceOverlay from "@/components/RevealGate/MaintenanceOverlay";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getNotifications, getSiteSettings, getUnreadNotificationCount } from "@/db/queries";
 import "./globals.css";
@@ -36,7 +37,10 @@ export default async function RootLayout({
         {children}
         <Footer />
         <CookieConsent />
-        <RevealOverlay initialEnabled={settings.revealEnabled} revealAt={settings.revealAt} />
+        <MaintenanceOverlay enabled={settings.maintenanceEnabled} />
+        {!settings.maintenanceEnabled && (
+          <RevealOverlay initialEnabled={settings.revealEnabled} revealAt={settings.revealAt} />
+        )}
       </body>
     </html>
   );

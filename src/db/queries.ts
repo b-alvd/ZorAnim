@@ -1298,19 +1298,25 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 const SITE_SETTINGS_ID = "main";
 
-export type SiteSettings = { revealEnabled: boolean; revealAt: string | null };
+export type SiteSettings = { revealEnabled: boolean; revealAt: string | null; maintenanceEnabled: boolean };
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   const [row] = await db.select().from(siteSettings).where(eq(siteSettings.id, SITE_SETTINGS_ID));
-  if (!row) return { revealEnabled: false, revealAt: null };
-  return { revealEnabled: row.revealEnabled, revealAt: row.revealAt };
+  if (!row) return { revealEnabled: false, revealAt: null, maintenanceEnabled: false };
+  return { revealEnabled: row.revealEnabled, revealAt: row.revealAt, maintenanceEnabled: row.maintenanceEnabled };
 }
 
-export async function updateSiteSettings(input: SiteSettings): Promise<void> {
+export async function updateSiteSettings(input: Partial<SiteSettings>): Promise<void> {
   const [existing] = await db.select({ id: siteSettings.id }).from(siteSettings).where(eq(siteSettings.id, SITE_SETTINGS_ID));
   if (existing) {
     await db.update(siteSettings).set(input).where(eq(siteSettings.id, SITE_SETTINGS_ID));
   } else {
-    await db.insert(siteSettings).values({ id: SITE_SETTINGS_ID, ...input });
+    await db.insert(siteSettings).values({
+      id: SITE_SETTINGS_ID,
+      revealEnabled: false,
+      revealAt: null,
+      maintenanceEnabled: false,
+      ...input,
+    });
   }
 }

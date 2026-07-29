@@ -225,6 +225,7 @@ export const siteSettings = sqliteTable("site_settings", {
   id: text("id").primaryKey(),
   revealEnabled: integer("reveal_enabled", { mode: "boolean" }).notNull().default(false),
   revealAt: text("reveal_at"),
+  maintenanceEnabled: integer("maintenance_enabled", { mode: "boolean" }).notNull().default(false),
 });
 
 export const contactMessages = sqliteTable("contact_messages", {
