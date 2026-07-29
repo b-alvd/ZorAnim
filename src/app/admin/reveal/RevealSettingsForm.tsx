@@ -74,9 +74,6 @@ export default function RevealSettingsForm({
           Sans date, la page de compte à rebours reste affichée indéfiniment (pas de reveal automatique).
         </p>
       )}
-      <p className={styles.warning} style={{ color: "#a0a0a0", background: "none", border: "none" }}>
-        Pour prévisualiser : ouvre le site dans une fenêtre privée (sans session admin) une fois activé.
-      </p>
 
       <div className={styles.actionsRow}>
         <button type="button" className={adminStyles.submitBtn} onClick={handleSave} disabled={isPending}>
