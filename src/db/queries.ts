@@ -726,29 +726,33 @@ export async function getStudioMembers(studioId: string): Promise<StudioMemberIn
   return rows.map((r) => ({ id: r.id, name: r.artistName ?? r.userName, email: r.userEmail, status: r.status }));
 }
 
-export async function getStudioTeamDisplay(studioId: string): Promise<{ name: string; isOwner: boolean }[]> {
+export async function getStudioTeamDisplay(
+  studioId: string
+): Promise<{ name: string; isOwner: boolean; artistId: string | null }[]> {
   const [studio] = await db.select({ ownerId: studios.ownerId }).from(studios).where(eq(studios.id, studioId));
 
-  const result: { name: string; isOwner: boolean }[] = [];
+  const result: { name: string; isOwner: boolean; artistId: string | null }[] = [];
 
   if (studio?.ownerId) {
     const [ownerRow] = await db
-      .select({ userName: users.name, artistName: artists.name })
+      .select({ userName: users.name, artistId: artists.id, artistName: artists.name })
       .from(users)
       .leftJoin(artists, eq(artists.userId, users.id))
       .where(eq(users.id, studio.ownerId));
-    if (ownerRow) result.push({ name: ownerRow.artistName ?? ownerRow.userName, isOwner: true });
+    if (ownerRow) {
+      result.push({ name: ownerRow.artistName ?? ownerRow.userName, isOwner: true, artistId: ownerRow.artistId ?? null });
+    }
   }
 
   const memberRows = await db
-    .select({ userName: users.name, artistName: artists.name })
+    .select({ userName: users.name, artistId: artists.id, artistName: artists.name })
     .from(studioMembers)
     .innerJoin(users, eq(studioMembers.userId, users.id))
     .leftJoin(artists, eq(artists.userId, studioMembers.userId))
     .where(and(eq(studioMembers.studioId, studioId), eq(studioMembers.status, "active")));
 
   for (const r of memberRows) {
-    result.push({ name: r.artistName ?? r.userName, isOwner: false });
+    result.push({ name: r.artistName ?? r.userName, isOwner: false, artistId: r.artistId ?? null });
   }
 
   return result;

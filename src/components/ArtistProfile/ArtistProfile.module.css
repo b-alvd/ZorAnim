@@ -57,6 +57,16 @@
   color: #808080;
 }
 
+.memberLink {
+  color: #d2d2d2;
+  text-decoration: none;
+}
+
+.memberLink:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
 .bio {
   font-size: 0.98rem;
   color: #d2d2d2;

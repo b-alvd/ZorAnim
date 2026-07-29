@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import Card from "@/components/Card/Card";
 import type { Artist, Film } from "@/data/types";
 import { getSeriesEpisodeIds, getStudioTeamDisplay } from "@/db/queries";
@@ -40,7 +41,19 @@ export default async function ArtistProfile({
           {artist.isStudio && team.length > 0 && (
             <div className={styles.members}>
               <span className={styles.membersLabel}>Membres :</span>{" "}
-              {team.map((m) => (m.isOwner ? `${m.name} (fondateur)` : m.name)).join(", ")}
+              {team.map((m, i) => (
+                <span key={i}>
+                  {m.artistId ? (
+                    <Link href={`/artistes/${m.artistId}`} className={styles.memberLink}>
+                      {m.name}
+                    </Link>
+                  ) : (
+                    m.name
+                  )}
+                  {m.isOwner && " (fondateur)"}
+                  {i < team.length - 1 && ", "}
+                </span>
+              ))}
             </div>
           )}
         </div>
