@@ -6,7 +6,7 @@ import ConfirmDeleteButton from "@/app/admin/ConfirmDeleteButton";
 import FilmForm from "@/app/admin/films/FilmForm";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import type { Artist, Film } from "@/data/types";
-import { createOwnFilmAction, deleteOwnFilmAction, updateOwnFilmAction, updateOwnProfileAction } from "./actions";
+import { deleteOwnFilmAction, updateOwnFilmAction, updateOwnProfileAction } from "./actions";
 import adminStyles from "@/app/admin/shared.module.css";
 import styles from "./mon-espace.module.css";
 
@@ -145,7 +145,6 @@ export default function IdentitySection({
   categories: string[];
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
   const [editingFilmId, setEditingFilmId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -181,9 +180,6 @@ export default function IdentitySection({
           </p>
         </div>
         <div className={styles.sectionActions}>
-          <button type="button" className={adminStyles.addBtn} onClick={() => setCreateOpen(true)}>
-            + Ajouter un film
-          </button>
           <button type="button" className={adminStyles.editLink} onClick={() => setProfileOpen(true)}>
             Modifier le profil
           </button>
@@ -252,20 +248,6 @@ export default function IdentitySection({
             }
           />
         )}
-      </Modal>
-
-      <Modal open={createOpen} onClose={() => setCreateOpen(false)} title="Ajouter un film">
-        <FilmForm
-          artists={[identity, ...identities.filter((i) => i.id !== identity.id)]}
-          categories={categories}
-          pending={isPending}
-          onSubmit={(formData) =>
-            startTransition(async () => {
-              await createOwnFilmAction(readFilmInput(formData, identity.id));
-              setCreateOpen(false);
-            })
-          }
-        />
       </Modal>
     </section>
   );

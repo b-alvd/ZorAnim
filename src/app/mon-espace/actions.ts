@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
-  createFilm,
   deleteFilm,
   getFilm,
   getIdentityOwnership,
@@ -37,16 +36,6 @@ async function assertOwnsIdentity(userId: string, identityId: string) {
   } else if (identity.userId !== userId) {
     throw new Error("Non autorisé.");
   }
-}
-
-export async function createOwnFilmAction(input: FilmInput): Promise<void> {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Non authentifié.");
-  const { artistId, studioId } = await resolveIdentityInput(user.id, input.artistId ?? "");
-
-  await createFilm({ ...input, artistId, studioId });
-  revalidatePath("/mon-espace");
-  revalidatePath("/", "layout");
 }
 
 export async function updateOwnFilmAction(filmId: string, input: FilmInput): Promise<void> {

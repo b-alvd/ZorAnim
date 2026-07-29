@@ -39,7 +39,7 @@ export default function FileUpload({
   accept,
   value,
   onChange,
-  maxSizeMB = 8,
+  maxSizeMB = 10,
   preview = false,
 }: {
   name: string;
