@@ -11,11 +11,13 @@ export default async function ArtistProfile({
   artistFilms,
   favoriteIds,
   watchedIds,
+  studios = [],
 }: {
   artist: Artist;
   artistFilms: Film[];
   favoriteIds: Set<string>;
   watchedIds: Set<string>;
+  studios?: { id: string; name: string; isOwner: boolean }[];
 }) {
   const team = artist.isStudio ? await getStudioTeamDisplay(artist.id) : [];
   const collapsedFilms = collapseSeries(artistFilms);
@@ -56,6 +58,20 @@ export default async function ArtistProfile({
               ))}
             </div>
           )}
+          {!artist.isStudio && studios.length > 0 && (
+            <div className={styles.members}>
+              <span className={styles.membersLabel}>Studio{studios.length > 1 ? "s" : ""} :</span>{" "}
+              {studios.map((s, i) => (
+                <span key={s.id}>
+                  <Link href={`/studios/${s.id}`} className={styles.memberLink}>
+                    {s.name}
+                  </Link>
+                  {s.isOwner && " (fondateur)"}
+                  {i < studios.length - 1 && ", "}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -63,13 +79,19 @@ export default async function ArtistProfile({
         <h2 className={styles.filmsTitle}>Films</h2>
         <div className={styles.grid}>
           {collapsedFilms.map((f) => (
-            <Card
-              key={f.id}
-              film={f}
-              isFavorite={favoriteIds.has(f.id)}
-              isWatched={effectiveWatchedIds.has(f.id)}
-              episodeCount={f.episodeCount}
-            />
+            <div key={f.id} className={styles.filmSlot}>
+              <Card
+                film={f}
+                isFavorite={favoriteIds.has(f.id)}
+                isWatched={effectiveWatchedIds.has(f.id)}
+                episodeCount={f.episodeCount}
+              />
+              {!artist.isStudio && f.isStudioAttribution && (
+                <Link href={`/studios/${f.artistId}`} className={styles.filmStudioTag}>
+                  Avec {f.artistName}
+                </Link>
+              )}
+            </div>
           ))}
         </div>
       </div>

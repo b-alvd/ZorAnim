@@ -128,6 +128,30 @@ export async function getFilmsByStudio(studioId: string): Promise<Film[]> {
   return attachRatingSummaries(rows.map(mapFilm));
 }
 
+export async function getArtistStudios(artistId: string): Promise<{ id: string; name: string; isOwner: boolean }[]> {
+  const [artist] = await db.select({ userId: artists.userId }).from(artists).where(eq(artists.id, artistId));
+  if (!artist?.userId) return [];
+
+  const [owned, memberOf] = await Promise.all([
+    getStudiosOwnedBy(artist.userId),
+    getActiveStudioMemberships(artist.userId),
+  ]);
+
+  const seen = new Set<string>();
+  const result: { id: string; name: string; isOwner: boolean }[] = [];
+  for (const s of owned) {
+    if (seen.has(s.id)) continue;
+    seen.add(s.id);
+    result.push({ id: s.id, name: s.name, isOwner: true });
+  }
+  for (const s of memberOf) {
+    if (seen.has(s.id)) continue;
+    seen.add(s.id);
+    result.push({ id: s.id, name: s.name, isOwner: false });
+  }
+  return result;
+}
+
 export async function getSeriesEpisodeCounts(seriesTitles: string[]): Promise<Map<string, number>> {
   const map = new Map<string, number>();
   if (seriesTitles.length === 0) return map;

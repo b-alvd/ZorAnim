@@ -4,8 +4,10 @@ import ArtistProfile from "@/components/ArtistProfile/ArtistProfile";
 import {
   getArtist,
   getArtists,
+  getArtistStudios,
   getFavoriteFilmIds,
   getFilmsByArtist,
+  getFilmsByStudio,
   getWatchedFilmIds,
 } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -41,13 +43,23 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
   const artist = await getArtist(id);
   if (!artist) notFound();
 
-  const [artistFilms, favoriteIds, watchedIds] = await Promise.all([
+  const [ownFilms, favoriteIds, watchedIds, artistStudios] = await Promise.all([
     getFilmsByArtist(artist.id),
     getFavoriteFilmIds(user.id),
     getWatchedFilmIds(user.id),
+    getArtistStudios(artist.id),
   ]);
 
+  const studioFilms = (await Promise.all(artistStudios.map((s) => getFilmsByStudio(s.id)))).flat();
+  const artistFilms = [...ownFilms, ...studioFilms];
+
   return (
-    <ArtistProfile artist={artist} artistFilms={artistFilms} favoriteIds={favoriteIds} watchedIds={watchedIds} />
+    <ArtistProfile
+      artist={artist}
+      artistFilms={artistFilms}
+      favoriteIds={favoriteIds}
+      watchedIds={watchedIds}
+      studios={artistStudios}
+    />
   );
 }
