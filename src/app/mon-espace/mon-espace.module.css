@@ -1,5 +1,5 @@
 .page {
-  max-width: 1100px;
+  max-width: 1440px;
   margin: 0 auto;
   padding: 3rem clamp(1rem, 4vw, 3.5rem) 4rem;
 }
@@ -22,6 +22,7 @@
 .empty {
   color: #a0a0a0;
   font-size: 0.95rem;
+  padding: 1.5rem 0;
 }
 
 .link {
@@ -40,22 +41,38 @@
 .sectionHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
+}
+
+.identityAvatarWrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.identityInfo {
+  flex: 1 1 240px;
+  min-width: 0;
 }
 
 .sectionActions {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  flex-shrink: 0;
 }
 
 .identityRow {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  margin-bottom: 0.4rem;
 }
 
 .identityName {
@@ -69,21 +86,145 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--accent, #e50914);
-  background: rgba(229, 9, 20, 0.12);
-  border: 1px solid rgba(229, 9, 20, 0.3);
-  border-radius: 999px;
+  color: #fff;
+  background: var(--accent, #e50914);
+  border-radius: 4px;
   padding: 0.15rem 0.55rem;
 }
 
-.filmCount {
-  font-size: 0.82rem;
+.statsBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.statChip {
+  font-size: 0.75rem;
+  color: #a0a0a0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 190px 230px;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  min-height: 76px;
+}
+
+.rowPoster {
+  position: relative;
+  flex-shrink: 0;
+  width: 96px;
+  aspect-ratio: 16 / 9;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.rowPosterBadge {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  font-size: 0.55rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--accent, #e50914);
+  border-radius: 3px;
+  padding: 0.1rem 0.3rem;
+}
+
+.rowInfo {
+  flex: 1 1 180px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.rowTitle {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowMeta {
+  font-size: 0.78rem;
   color: #808080;
-  margin-top: 0.2rem;
+}
+
+.rowStats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: #a0a0a0;
+}
+
+.rowStat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+}
+
+.rowStat svg {
+  flex-shrink: 0;
+  color: var(--accent, #e50914);
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rowActionBtn {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  padding: 6px 12px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.rowActionBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .episodeTag {
-  display: inline-block;
+  display: inline-flex;
+  align-self: center;
+  width: fit-content;
+  flex-shrink: 0;
   font-size: 0.72rem;
   font-weight: 700;
   color: #b3b3b3;
@@ -92,17 +233,79 @@
   padding: 0.1rem 0.45rem;
 }
 
-.seriesHeaderRow {
-  cursor: pointer;
-}
-
-.seriesHeaderRow:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.seriesHeaderInner {
+.episodesManager {
   display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.episodesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.episodeRow {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
-  color: #d2d2d2;
+  gap: 0.6rem 1rem;
+  padding: 0.6rem 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  min-height: 60px;
+}
+
+.episodeInfo {
+  flex: 1 1 140px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.episodeRow .rowStats {
+  flex: 0 0 auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+}
+
+.episodeRow .rowActions {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 860px) {
+  .row {
+    grid-template-columns: 80px minmax(0, 1fr);
+    grid-template-areas:
+      "poster info"
+      "stats stats"
+      "actions actions";
+    row-gap: 0.5rem;
+  }
+
+  .rowPoster {
+    grid-area: poster;
+    width: 80px;
+  }
+
+  .rowInfo {
+    grid-area: info;
+  }
+
+  .rowStats {
+    grid-area: stats;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.9rem;
+  }
+
+  .rowActions {
+    grid-area: actions;
+  }
 }

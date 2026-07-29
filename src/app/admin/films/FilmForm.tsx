@@ -43,7 +43,9 @@ export default function FilmForm({
   const [artistId, setArtistId] = useState(initial?.artistId ?? artists[0]?.id ?? "");
   const [poster, setPoster] = useState(initial?.poster ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
-  const [isSeries, setIsSeries] = useState(!!lockedSeriesTitle || !!initial?.seriesTitle);
+  const [seriesTitleValue, setSeriesTitleValue] = useState(lockedSeriesTitle ?? initial?.seriesTitle ?? "");
+  const isSeries = !!lockedSeriesTitle || !!seriesTitleValue.trim();
+  const showSeriesTitleInput = !lockedSeriesTitle && (!initial || !!initial.seriesTitle);
   const [valid, setValid] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -65,35 +67,23 @@ export default function FilmForm({
       onInput={updateValidity}
       className={styles.form}
     >
-      {!lockedSeriesTitle && (
-        <label className={styles.customCheckbox}>
+      {lockedSeriesTitle && <input type="hidden" name="seriesTitle" value={lockedSeriesTitle} />}
+      {showSeriesTitleInput && (
+        <div className={styles.field}>
+          <label htmlFor="seriesTitle">Titre de la série (optionnel)</label>
           <input
-            type="checkbox"
-            checked={isSeries}
+            id="seriesTitle"
+            name="seriesTitle"
+            value={seriesTitleValue}
             onChange={(e) => {
-              setIsSeries(e.target.checked);
+              setSeriesTitleValue(e.target.value);
               updateValidity();
             }}
           />
-          <span className={styles.checkboxBox} />
-          Fait partie d&apos;une série
-        </label>
+        </div>
       )}
       {isSeries && (
         <>
-          {lockedSeriesTitle ? (
-            <input type="hidden" name="seriesTitle" value={lockedSeriesTitle} />
-          ) : (
-            <div className={styles.field}>
-              <label htmlFor="seriesTitle">Titre de la série</label>
-              <input
-                id="seriesTitle"
-                name="seriesTitle"
-                defaultValue={initial?.seriesTitle ?? ""}
-                required={isSeries}
-              />
-            </div>
-          )}
           <div className={styles.row2}>
             <div className={styles.field}>
               <label htmlFor="seasonNumber">Numéro de saison</label>

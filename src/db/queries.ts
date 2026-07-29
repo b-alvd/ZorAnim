@@ -273,6 +273,19 @@ export async function deleteFilm(id: string): Promise<void> {
   await db.delete(films).where(eq(films.id, id));
 }
 
+export async function updateSeriesInfo(
+  artistId: string | null,
+  studioId: string | null,
+  oldSeriesTitle: string,
+  input: { seriesTitle: string; rating: string; category: string }
+): Promise<void> {
+  const identityCondition = artistId ? eq(films.artistId, artistId) : eq(films.studioId, studioId!);
+  await db
+    .update(films)
+    .set({ seriesTitle: input.seriesTitle, rating: input.rating, category: input.category })
+    .where(and(identityCondition, eq(films.seriesTitle, oldSeriesTitle)));
+}
+
 export type ArtistInput = {
   name: string;
   bio: string;

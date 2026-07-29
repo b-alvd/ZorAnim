@@ -10,6 +10,7 @@ import {
   getUserIdentities,
   updateArtist,
   updateFilm,
+  updateSeriesInfo,
   updateStudio,
   type ArtistInput,
   type FilmInput,
@@ -60,6 +61,21 @@ export async function addOwnEpisodeAction(identityId: string, input: FilmInput):
   const { artistId, studioId } = await resolveIdentityInput(user.id, identityId);
 
   await createFilm({ ...input, artistId, studioId });
+  revalidatePath("/mon-espace");
+  revalidatePath("/", "layout");
+}
+
+export async function updateOwnSeriesAction(
+  identityId: string,
+  oldSeriesTitle: string,
+  input: { seriesTitle: string; rating: string; category: string }
+): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Non authentifié.");
+  await assertOwnsIdentity(user.id, identityId);
+  const { artistId, studioId } = await resolveIdentityInput(user.id, identityId);
+
+  await updateSeriesInfo(artistId, studioId, oldSeriesTitle, input);
   revalidatePath("/mon-espace");
   revalidatePath("/", "layout");
 }
