@@ -6,7 +6,7 @@ import ConfirmDeleteButton from "@/app/admin/ConfirmDeleteButton";
 import FilmForm from "@/app/admin/films/FilmForm";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import type { Artist, Film } from "@/data/types";
-import { deleteOwnFilmAction, updateOwnFilmAction, updateOwnProfileAction } from "./actions";
+import { addOwnEpisodeAction, deleteOwnFilmAction, updateOwnFilmAction, updateOwnProfileAction } from "./actions";
 import adminStyles from "@/app/admin/shared.module.css";
 import styles from "./mon-espace.module.css";
 
@@ -67,11 +67,13 @@ function SeriesGroupRow({
   episodes,
   engagement,
   onEdit,
+  onAddEpisode,
 }: {
   title: string;
   episodes: Film[];
   engagement: Record<string, Engagement>;
   onEdit: (id: string) => void;
+  onAddEpisode: (title: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const sorted = [...episodes].sort(
@@ -80,9 +82,9 @@ function SeriesGroupRow({
 
   return (
     <>
-      <tr className={styles.seriesHeaderRow} onClick={() => setExpanded((e) => !e)}>
+      <tr className={styles.seriesHeaderRow}>
         <td colSpan={6}>
-          <div className={styles.seriesHeaderInner}>
+          <div className={styles.seriesHeaderInner} onClick={() => setExpanded((e) => !e)} style={{ cursor: "pointer" }}>
             <svg
               viewBox="0 0 24 24"
               width="14"
@@ -102,6 +104,16 @@ function SeriesGroupRow({
               {episodes.length} épisode{episodes.length > 1 ? "s" : ""}
             </span>
           </div>
+          <button
+            type="button"
+            className={adminStyles.editLink}
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddEpisode(title);
+            }}
+          >
+            + Ajouter un épisode
+          </button>
         </td>
       </tr>
       {expanded &&
@@ -146,9 +158,16 @@ export default function IdentitySection({
 }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [editingFilmId, setEditingFilmId] = useState<string | null>(null);
+  const [addingEpisodeSeries, setAddingEpisodeSeries] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const editingFilm = films.find((f) => f.id === editingFilmId) ?? null;
+  const seriesEpisodes = addingEpisodeSeries ? films.filter((f) => f.seriesTitle === addingEpisodeSeries) : [];
+  const lastEpisode = seriesEpisodes.length
+    ? [...seriesEpisodes].sort(
+        (a, b) => (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) || (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
+      ).at(-1)!
+    : null;
 
   const rows: ({ type: "film"; film: Film } | { type: "series"; title: string; episodes: Film[] })[] = [];
   const seriesIndex = new Map<string, number>();
@@ -212,6 +231,7 @@ export default function IdentitySection({
                     episodes={row.episodes}
                     engagement={engagement}
                     onEdit={setEditingFilmId}
+                    onAddEpisode={setAddingEpisodeSeries}
                   />
                 )
               )}
@@ -244,6 +264,40 @@ export default function IdentitySection({
               startTransition(async () => {
                 await updateOwnFilmAction(editingFilm.id, readFilmInput(formData, identity.id));
                 setEditingFilmId(null);
+              })
+            }
+          />
+        )}
+      </Modal>
+      <Modal
+        open={!!addingEpisodeSeries}
+        onClose={() => setAddingEpisodeSeries(null)}
+        title={addingEpisodeSeries ? `Ajouter un épisode à ${addingEpisodeSeries}` : ""}
+      >
+        {addingEpisodeSeries && (
+          <FilmForm
+            artists={identities}
+            categories={categories}
+            initial={{
+              title: "",
+              synopsis: "",
+              year: new Date().getFullYear(),
+              durationMinutes: lastEpisode?.durationMinutes ?? 0,
+              rating: lastEpisode?.rating ?? "",
+              category: lastEpisode?.category ?? categories[0],
+              artistId: identity.id,
+              isNew: false,
+              poster: "",
+              videoUrl: "",
+              seriesTitle: addingEpisodeSeries,
+              seasonNumber: lastEpisode?.seasonNumber ?? 1,
+              episodeNumber: (lastEpisode?.episodeNumber ?? 0) + 1,
+            }}
+            pending={isPending}
+            onSubmit={(formData) =>
+              startTransition(async () => {
+                await addOwnEpisodeAction(identity.id, readFilmInput(formData, identity.id));
+                setAddingEpisodeSeries(null);
               })
             }
           />

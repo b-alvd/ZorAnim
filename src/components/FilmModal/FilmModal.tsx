@@ -228,7 +228,7 @@ export default function FilmModal({
             </button>
           </div>
 
-          {episodes.length > 1 && (
+          {episodes.length >= 1 && film.seriesTitle && (
             <div className={styles.episodesSection}>
               <h3 className={styles.episodesTitle}>Épisodes de {film.seriesTitle}</h3>
               <div className={styles.episodesList}>

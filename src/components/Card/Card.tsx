@@ -18,7 +18,7 @@ export default function Card({
   episodeCount?: number;
 }) {
   const [open, setOpen] = useState(false);
-  const isSeries = !!film.seriesTitle && episodeCount > 1;
+  const isSeries = !!film.seriesTitle;
 
   return (
     <>
@@ -52,7 +52,9 @@ export default function Card({
         {isSeries ? (
           <span className={styles.title}>
             <span className={styles.titleText}>{film.seriesTitle}</span>
-            <span className={styles.seriesSubtitle}>Série ({episodeCount} ép.)</span>
+            <span className={styles.seriesSubtitle}>
+              Série ({episodeCount} ép{episodeCount > 1 ? "s" : ""}.)
+            </span>
           </span>
         ) : (
           <span className={styles.title}>

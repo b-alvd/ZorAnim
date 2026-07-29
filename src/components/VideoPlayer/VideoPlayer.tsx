@@ -187,7 +187,7 @@ export default function VideoPlayer({
               <span className={styles.badge}>{film.rating}</span>
             </div>
             <p className={styles.pauseSynopsis}>{film.synopsis}</p>
-            {episodes.length > 1 && (
+            {episodes.length >= 1 && film.seriesTitle && (
               <div className={styles.episodesSection}>
                 <span className={styles.episodesLabel}>Épisodes</span>
                 <div className={styles.episodesList}>
@@ -234,7 +234,7 @@ export default function VideoPlayer({
               </Link>
             )}
           </div>
-          {episodes.length > 1 ? (
+          {episodes.length >= 1 && film.seriesTitle ? (
             <>
               <p className={styles.endedSubtitle}>Épisodes de {film.seriesTitle}</p>
               <div className={styles.episodesList}>
