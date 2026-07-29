@@ -127,6 +127,20 @@
       "when": 1785277486631,
       "tag": "0017_add_watch_position",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1785284069870,
+      "tag": "0018_add_series",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1785286725320,
+      "tag": "0019_add_season_number",
+      "breakpoints": true
     }
   ]
 }

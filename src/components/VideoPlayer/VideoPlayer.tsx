@@ -20,10 +20,12 @@ function formatTime(seconds: number) {
 export default function VideoPlayer({
   film,
   suggestions,
+  episodes = [],
   autoplay = false,
 }: {
   film: Film;
   suggestions: Film[];
+  episodes?: Film[];
   autoplay?: boolean;
 }) {
   const router = useRouter();
@@ -142,6 +144,8 @@ export default function VideoPlayer({
 
   const progressPct = duration ? (current / duration) * 100 : 0;
   const isPaused = !playing && !ended;
+  const currentEpisodeIndex = episodes.findIndex((e) => e.id === film.id);
+  const nextEpisode = currentEpisodeIndex >= 0 ? episodes[currentEpisodeIndex + 1] : undefined;
 
   return (
     <div className={styles.player} ref={containerRef}>
@@ -180,6 +184,23 @@ export default function VideoPlayer({
               <span className={styles.badge}>{film.rating}</span>
             </div>
             <p className={styles.pauseSynopsis}>{film.synopsis}</p>
+            {episodes.length > 1 && (
+              <div className={styles.episodesSection}>
+                <span className={styles.episodesLabel}>Épisodes</span>
+                <div className={styles.episodesList}>
+                  {episodes.map((ep) => (
+                    <Link
+                      key={ep.id}
+                      href={`/watch/${ep.id}?autoplay=1`}
+                      className={`${styles.episodeItem} ${ep.id === film.id ? styles.episodeItemActive : ""}`}
+                    >
+                      <span className={styles.episodeNumber}>S{ep.seasonNumber ?? 1}E{ep.episodeNumber}</span>
+                      <span className={styles.episodeTitle}>{ep.title}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
             <button className={styles.resumeBtn} onClick={togglePlay}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path d="M8 5v14l11-7z" />
@@ -201,23 +222,51 @@ export default function VideoPlayer({
               </svg>
               Revoir
             </button>
-          </div>
-          <p className={styles.endedSubtitle}>Quelques suggestions pour toi</p>
-          <div className={styles.suggestions}>
-            {suggestions.map((s) => (
-              <Link key={s.id} href={`/watch/${s.id}`} className={styles.suggestionCard}>
-                <div className={styles.suggestionPoster}>
-                  <Image src={s.poster} alt={s.title} fill sizes="240px" unoptimized />
-                </div>
-                <span className={styles.suggestionTitle}>{s.title}</span>
-                <div className={styles.suggestionBadges}>
-                  <span className={styles.badge}>{s.year}</span>
-                  <span className={styles.badge}>{s.duration}</span>
-                  <span className={styles.badge}>{s.rating}</span>
-                </div>
+            {nextEpisode && (
+              <Link href={`/watch/${nextEpisode.id}?autoplay=1`} className={styles.nextEpisodeBtn}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                S{nextEpisode.seasonNumber ?? 1}E{nextEpisode.episodeNumber} : {nextEpisode.title}
               </Link>
-            ))}
+            )}
           </div>
+          {episodes.length > 1 ? (
+            <>
+              <p className={styles.endedSubtitle}>Épisodes de {film.seriesTitle}</p>
+              <div className={styles.episodesList}>
+                {episodes.map((ep) => (
+                  <Link
+                    key={ep.id}
+                    href={`/watch/${ep.id}?autoplay=1`}
+                    className={`${styles.episodeItem} ${ep.id === film.id ? styles.episodeItemActive : ""}`}
+                  >
+                    <span className={styles.episodeNumber}>S{ep.seasonNumber ?? 1}E{ep.episodeNumber}</span>
+                    <span className={styles.episodeTitle}>{ep.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className={styles.endedSubtitle}>Quelques suggestions pour toi</p>
+              <div className={styles.suggestions}>
+                {suggestions.map((s) => (
+                  <Link key={s.id} href={`/watch/${s.id}`} className={styles.suggestionCard}>
+                    <div className={styles.suggestionPoster}>
+                      <Image src={s.poster} alt={s.title} fill sizes="240px" unoptimized />
+                    </div>
+                    <span className={styles.suggestionTitle}>{s.title}</span>
+                    <div className={styles.suggestionBadges}>
+                      <span className={styles.badge}>{s.year}</span>
+                      <span className={styles.badge}>{s.duration}</span>
+                      <span className={styles.badge}>{s.rating}</span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 

@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createFilm, deleteFilm, updateFilm, type FilmInput } from "@/db/queries";
 
 function readFilmInput(formData: FormData): FilmInput {
+  const seriesTitle = String(formData.get("seriesTitle") ?? "").trim();
+  const seasonNumber = formData.get("seasonNumber");
+  const episodeNumber = formData.get("episodeNumber");
   return {
     title: String(formData.get("title") ?? ""),
     synopsis: String(formData.get("synopsis") ?? ""),
@@ -15,6 +18,9 @@ function readFilmInput(formData: FormData): FilmInput {
     isNew: formData.get("isNew") === "on",
     poster: String(formData.get("poster") ?? ""),
     videoUrl: String(formData.get("videoUrl") ?? ""),
+    seriesTitle: seriesTitle || null,
+    seasonNumber: seriesTitle && seasonNumber ? Number(seasonNumber) : null,
+    episodeNumber: seriesTitle && episodeNumber ? Number(episodeNumber) : null,
   };
 }
 

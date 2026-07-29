@@ -18,6 +18,9 @@ type FilmFormValues = {
   isNew: boolean;
   poster: string;
   videoUrl: string;
+  seriesTitle?: string | null;
+  seasonNumber?: number | null;
+  episodeNumber?: number | null;
 };
 
 export default function FilmForm({
@@ -38,6 +41,7 @@ export default function FilmForm({
   const [artistId, setArtistId] = useState(initial?.artistId ?? artists[0]?.id ?? "");
   const [poster, setPoster] = useState(initial?.poster ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
+  const [isSeries, setIsSeries] = useState(!!initial?.seriesTitle);
   const [valid, setValid] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -58,6 +62,55 @@ export default function FilmForm({
       onInput={updateValidity}
       className={styles.form}
     >
+      <label className={styles.customCheckbox}>
+        <input
+          type="checkbox"
+          checked={isSeries}
+          onChange={(e) => {
+            setIsSeries(e.target.checked);
+            updateValidity();
+          }}
+        />
+        <span className={styles.checkboxBox} />
+        Fait partie d&apos;une série
+      </label>
+      {isSeries && (
+        <>
+          <div className={styles.field}>
+            <label htmlFor="seriesTitle">Titre de la série</label>
+            <input
+              id="seriesTitle"
+              name="seriesTitle"
+              defaultValue={initial?.seriesTitle ?? ""}
+              required={isSeries}
+            />
+          </div>
+          <div className={styles.row2}>
+            <div className={styles.field}>
+              <label htmlFor="seasonNumber">Numéro de saison</label>
+              <input
+                id="seasonNumber"
+                name="seasonNumber"
+                type="number"
+                min={1}
+                defaultValue={initial?.seasonNumber ?? 1}
+                required={isSeries}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="episodeNumber">Numéro d&apos;épisode</label>
+              <input
+                id="episodeNumber"
+                name="episodeNumber"
+                type="number"
+                min={1}
+                defaultValue={initial?.episodeNumber ?? undefined}
+                required={isSeries}
+              />
+            </div>
+          </div>
+        </>
+      )}
       <div className={styles.field}>
         <label htmlFor="title">Titre</label>
         <input id="title" name="title" defaultValue={initial?.title} required />

@@ -1,0 +1,52 @@
+.seriesHeaderRow {
+  cursor: pointer;
+}
+
+.seriesHeaderRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.seriesHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #d2d2d2;
+}
+
+.seriesBadge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent, #e50914);
+  background: rgba(229, 9, 20, 0.12);
+  border: 1px solid rgba(229, 9, 20, 0.3);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  flex-shrink: 0;
+}
+
+.seriesTitle {
+  font-weight: 700;
+  color: #fff;
+}
+
+.seriesCount {
+  color: #808080;
+  font-size: 0.85rem;
+}
+
+.episodeRow {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.episodeTag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #b3b3b3;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  margin-right: 0.4rem;
+}

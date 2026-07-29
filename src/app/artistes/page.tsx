@@ -8,7 +8,8 @@ export default async function ArtistesPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
 
-  const [artists, films] = await Promise.all([getArtists(), getFilms()]);
+  const [allArtists, films] = await Promise.all([getArtists(), getFilms()]);
+  const artists = allArtists.filter((a) => !a.isStudio);
 
   return (
     <main className={styles.page}>

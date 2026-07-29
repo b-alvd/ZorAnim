@@ -1,14 +1,18 @@
 import { redirect } from "next/navigation";
 import Card from "@/components/Card/Card";
-import { getFavoriteFilms, getWatchedFilmIds } from "@/db/queries";
+import { getFavoriteFilms, getSeriesEpisodeCounts, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { collapseSeries } from "@/lib/series";
 import styles from "../catalogue/catalogue.module.css";
 
 export default async function MaListePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
 
-  const [films, watchedIds] = await Promise.all([getFavoriteFilms(user.id), getWatchedFilmIds(user.id)]);
+  const [rawFilms, watchedIds] = await Promise.all([getFavoriteFilms(user.id), getWatchedFilmIds(user.id)]);
+  const seriesTitles = [...new Set(rawFilms.map((f) => f.seriesTitle).filter((t): t is string => !!t))];
+  const trueCounts = await getSeriesEpisodeCounts(seriesTitles);
+  const films = collapseSeries(rawFilms, trueCounts);
 
   return (
     <main className={styles.page}>
@@ -21,7 +25,7 @@ export default async function MaListePage() {
       {films.length > 0 ? (
         <div className={styles.grid}>
           {films.map((f) => (
-            <Card key={f.id} film={f} isFavorite isWatched={watchedIds.has(f.id)} />
+            <Card key={f.id} film={f} isFavorite isWatched={watchedIds.has(f.id)} episodeCount={f.episodeCount} />
           ))}
         </div>
       ) : (

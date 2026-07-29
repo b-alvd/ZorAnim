@@ -13,7 +13,7 @@ export default function Row({
   watchedIds,
 }: {
   title: string;
-  films: Film[];
+  films: (Film & { episodeCount?: number })[];
   cardWidth?: number;
   favoriteIds?: string[];
   watchedIds?: string[];
@@ -82,7 +82,12 @@ export default function Row({
               className={`${styles.slot} ${cardWidth ? styles.slotFixed : ""}`}
               style={cardWidth ? { ["--card-width" as string]: `${cardWidth}px` } : undefined}
             >
-              <Card film={f} isFavorite={favoriteSet.has(f.id)} isWatched={watchedSet.has(f.id)} />
+              <Card
+                film={f}
+                isFavorite={favoriteSet.has(f.id)}
+                isWatched={watchedSet.has(f.id)}
+                episodeCount={f.episodeCount}
+              />
             </div>
           ))}
         </div>

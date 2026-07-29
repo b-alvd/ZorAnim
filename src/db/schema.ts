@@ -52,6 +52,9 @@ export const films = sqliteTable("films", {
   createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),
+  seriesTitle: text("series_title"),
+  seasonNumber: integer("season_number"),
+  episodeNumber: integer("episode_number"),
 });
 
 export const filmSubmissions = sqliteTable("film_submissions", {
@@ -72,6 +75,9 @@ export const filmSubmissions = sqliteTable("film_submissions", {
   createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),
+  seriesTitle: text("series_title"),
+  seasonNumber: integer("season_number"),
+  episodeNumber: integer("episode_number"),
 });
 
 export const artistSubmissions = sqliteTable("artist_submissions", {

@@ -4,6 +4,7 @@ import Pagination from "@/components/Pagination/Pagination";
 import { getFavoriteFilmIds, getFilms, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { matchesQuery } from "@/lib/search";
+import { collapseSeries } from "@/lib/series";
 import SearchBar from "./SearchBar";
 import Filters from "./Filters";
 import styles from "./catalogue.module.css";
@@ -38,16 +39,17 @@ export default async function CataloguePage({
     return true;
   });
 
-  const totalPages = Math.max(1, Math.ceil(matched.length / PAGE_SIZE));
+  const collapsed = collapseSeries(matched);
+  const totalPages = Math.max(1, Math.ceil(collapsed.length / PAGE_SIZE));
   const page = Math.min(Math.max(1, Number(pageParam) || 1), totalPages);
-  const films = matched.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const films = collapsed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Catalogue</h1>
         <p className={styles.subtitle}>
-          {matched.length} film{matched.length > 1 ? "s" : ""} disponible{matched.length > 1 ? "s" : ""}
+          {collapsed.length} film{collapsed.length > 1 ? "s" : ""} disponible{collapsed.length > 1 ? "s" : ""}
         </p>
         <SearchBar />
         <Filters categories={categories} years={years} />
@@ -56,7 +58,13 @@ export default async function CataloguePage({
         <>
           <div className={styles.grid}>
             {films.map((f) => (
-              <Card key={f.id} film={f} isFavorite={favoriteIds.has(f.id)} isWatched={watchedIds.has(f.id)} />
+              <Card
+                key={f.id}
+                film={f}
+                isFavorite={favoriteIds.has(f.id)}
+                isWatched={watchedIds.has(f.id)}
+                episodeCount={f.episodeCount}
+              />
             ))}
           </div>
           <Pagination

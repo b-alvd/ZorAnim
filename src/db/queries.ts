@@ -33,6 +33,9 @@ const filmSelection = {
   markedNewAt: films.markedNewAt,
   poster: films.poster,
   videoUrl: films.videoUrl,
+  seriesTitle: films.seriesTitle,
+  seasonNumber: films.seasonNumber,
+  episodeNumber: films.episodeNumber,
 };
 
 function filmsQuery() {
@@ -58,6 +61,9 @@ function mapFilm(row: FilmRow): Film {
     videoUrl: row.videoUrl,
     avgRating: null,
     ratingCount: 0,
+    seriesTitle: row.seriesTitle,
+    seasonNumber: row.seasonNumber,
+    episodeNumber: row.episodeNumber,
   };
 }
 
@@ -108,6 +114,28 @@ export async function getFilmsByArtist(artistId: string): Promise<Film[]> {
   return attachRatingSummaries(rows.map(mapFilm));
 }
 
+export async function getSeriesEpisodeCounts(seriesTitles: string[]): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (seriesTitles.length === 0) return map;
+  const rows = await db
+    .select({ seriesTitle: films.seriesTitle })
+    .from(films)
+    .where(inArray(films.seriesTitle, seriesTitles));
+  for (const r of rows) {
+    if (!r.seriesTitle) continue;
+    map.set(r.seriesTitle, (map.get(r.seriesTitle) ?? 0) + 1);
+  }
+  return map;
+}
+
+export async function getSeriesEpisodes(seriesTitle: string): Promise<Film[]> {
+  const rows = await filmsQuery().where(eq(films.seriesTitle, seriesTitle));
+  const episodes = await attachRatingSummaries(rows.map(mapFilm));
+  return episodes.sort(
+    (a, b) => (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) || (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
+  );
+}
+
 export async function getSuggestions(excludeId: string, limit = 4): Promise<Film[]> {
   const rows = await filmsQuery().where(ne(films.id, excludeId));
   return attachRatingSummaries(rows.slice(0, limit).map(mapFilm));
@@ -138,6 +166,9 @@ export type FilmInput = {
   isNew: boolean;
   poster: string;
   videoUrl: string;
+  seriesTitle?: string | null;
+  seasonNumber?: number | null;
+  episodeNumber?: number | null;
 };
 
 export async function createFilm(input: FilmInput): Promise<string> {
@@ -177,6 +208,16 @@ export async function createArtist(input: ArtistInput, userId?: string | null): 
   const id = randomUUID();
   await db.insert(artists).values({ id, ...input, userId: userId ?? null });
   return id;
+}
+
+export async function getArtistOwnership(
+  id: string
+): Promise<{ isStudio: boolean; ownerId: string | null; userId: string | null } | undefined> {
+  const [row] = await db
+    .select({ isStudio: artists.isStudio, ownerId: artists.ownerId, userId: artists.userId })
+    .from(artists)
+    .where(eq(artists.id, id));
+  return row;
 }
 
 export async function updateArtist(id: string, input: ArtistInput): Promise<void> {
@@ -247,6 +288,9 @@ export async function acceptFilmSubmission(id: string, artistId?: string): Promi
     isNew: true,
     poster: submission.poster,
     videoUrl: submission.videoUrl,
+    seriesTitle: submission.seriesTitle,
+    seasonNumber: submission.seasonNumber,
+    episodeNumber: submission.episodeNumber,
   });
 
   await db.update(filmSubmissions).set({ status: "accepted" }).where(eq(filmSubmissions.id, id));
@@ -355,6 +399,14 @@ export async function getFavoriteFilmIds(userId: string): Promise<Set<string>> {
   return new Set(rows.map((r) => r.filmId));
 }
 
+export async function isFilmFavorite(userId: string, filmId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: favorites.id })
+    .from(favorites)
+    .where(and(eq(favorites.userId, userId), eq(favorites.filmId, filmId)));
+  return !!row;
+}
+
 export async function toggleFavorite(userId: string, filmId: string): Promise<boolean> {
   const [existing] = await db
     .select({ id: favorites.id })
@@ -391,6 +443,21 @@ export async function markWatched(userId: string, filmId: string): Promise<void>
   } else {
     await db.insert(watchHistory).values({ id: randomUUID(), userId, filmId });
   }
+}
+
+export async function getFilmEngagement(filmIds: string[]): Promise<Map<string, { views: number; comments: number }>> {
+  const map = new Map<string, { views: number; comments: number }>();
+  if (filmIds.length === 0) return map;
+
+  const [viewRows, commentRows] = await Promise.all([
+    db.select({ filmId: watchHistory.filmId }).from(watchHistory).where(inArray(watchHistory.filmId, filmIds)),
+    db.select({ filmId: comments.filmId }).from(comments).where(inArray(comments.filmId, filmIds)),
+  ]);
+
+  for (const id of filmIds) map.set(id, { views: 0, comments: 0 });
+  for (const r of viewRows) map.get(r.filmId)!.views += 1;
+  for (const r of commentRows) map.get(r.filmId)!.comments += 1;
+  return map;
 }
 
 export async function getWatchedFilmIds(userId: string): Promise<Set<string>> {

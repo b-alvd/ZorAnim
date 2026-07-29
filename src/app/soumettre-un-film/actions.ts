@@ -25,5 +25,59 @@ export async function submitFilmAction(formData: FormData) {
     contactEmail: String(formData.get("contactEmail") ?? ""),
     poster: String(formData.get("poster") ?? ""),
     videoUrl: String(formData.get("videoUrl") ?? ""),
+    seriesTitle: null,
+    seasonNumber: null,
+    episodeNumber: null,
   });
+}
+
+export type EpisodeInput = {
+  title: string;
+  synopsis: string;
+  year: number;
+  durationMinutes: number;
+  seasonNumber: number;
+  episodeNumber: number;
+  poster: string;
+  videoUrl: string;
+};
+
+export async function submitSeriesAction(input: {
+  artistId: string;
+  contactEmail: string;
+  seriesTitle: string;
+  rating: string;
+  category: string;
+  episodes: EpisodeInput[];
+}) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Tu dois être connecté pour soumettre une série.");
+
+  const identities = await getUserIdentities(user.id);
+  const identity = identities.find((a) => a.id === input.artistId);
+  if (!identity) throw new Error("Tu dois être artiste pour soumettre une série.");
+
+  const seriesTitle = input.seriesTitle.trim();
+  if (!seriesTitle) throw new Error("Le titre de la série est requis.");
+  if (input.episodes.length === 0) throw new Error("Ajoute au moins un épisode.");
+
+  for (const episode of input.episodes) {
+    await createFilmSubmission({
+      userId: user.id,
+      artistId: identity.id,
+      artistName: identity.name,
+      title: episode.title,
+      synopsis: episode.synopsis,
+      year: episode.year,
+      durationMinutes: episode.durationMinutes,
+      rating: input.rating,
+      category: input.category,
+      contactEmail: input.contactEmail,
+      poster: episode.poster,
+      videoUrl: episode.videoUrl,
+      seriesTitle,
+      seasonNumber: episode.seasonNumber,
+      episodeNumber: episode.episodeNumber,
+    });
+  }
 }

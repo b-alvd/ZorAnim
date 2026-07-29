@@ -42,8 +42,9 @@ export default function Hero({ films }: { films: Film[] }) {
       />
       <div className={styles.shade} />
       <div className={`${styles.content} ${visible ? styles.visible : ""}`}>
-        <h1 className={styles.title}>{film.title}</h1>
+        <h1 className={styles.title}>{film.seriesTitle ?? film.title}</h1>
         <div className={styles.badges}>
+          {film.seriesTitle && <span className={styles.badge}>Série</span>}
           {film.isNew && <span className={`${styles.badge} ${styles.newBadge}`}>Nouveau</span>}
           <span className={styles.badge}>{film.year}</span>
           <span className={styles.badge}>{film.duration}</span>

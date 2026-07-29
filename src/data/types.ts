@@ -22,4 +22,7 @@ export type Film = {
   videoUrl: string;
   avgRating: number | null;
   ratingCount: number;
+  seriesTitle: string | null;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
 };

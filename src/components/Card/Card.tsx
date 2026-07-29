@@ -10,19 +10,22 @@ export default function Card({
   film,
   isFavorite = false,
   isWatched = false,
+  episodeCount = 1,
 }: {
   film: Film;
   isFavorite?: boolean;
   isWatched?: boolean;
+  episodeCount?: number;
 }) {
   const [open, setOpen] = useState(false);
+  const isSeries = !!film.seriesTitle && episodeCount > 1;
 
   return (
     <>
       <button className={styles.card} onClick={() => setOpen(true)}>
         <Image
           src={film.poster}
-          alt={film.title}
+          alt={isSeries ? film.seriesTitle! : film.title}
           fill
           sizes="340px"
           className={styles.bg}
@@ -46,7 +49,16 @@ export default function Card({
             </span>
           )}
         </div>
-        <span className={styles.title}>{film.title}</span>
+        {isSeries ? (
+          <span className={styles.title}>
+            <span className={styles.titleText}>{film.seriesTitle}</span>
+            <span className={styles.seriesSubtitle}>Série ({episodeCount} ép.)</span>
+          </span>
+        ) : (
+          <span className={styles.title}>
+            <span className={styles.titleText}>{film.title}</span>
+          </span>
+        )}
       </button>
       {open && <FilmModal film={film} onClose={() => setOpen(false)} isFavorite={isFavorite} />}
     </>

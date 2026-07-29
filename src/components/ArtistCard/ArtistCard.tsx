@@ -5,7 +5,7 @@ import styles from "./ArtistCard.module.css";
 
 export default function ArtistCard({ artist, filmCount }: { artist: Artist; filmCount: number }) {
   return (
-    <Link href={`/artistes/${artist.id}`} className={styles.card}>
+    <Link href={artist.isStudio ? `/studios/${artist.id}` : `/artistes/${artist.id}`} className={styles.card}>
       <div className={styles.avatarWrap}>
         <Image src={artist.avatar} alt={artist.name} fill sizes="140px" unoptimized />
       </div>

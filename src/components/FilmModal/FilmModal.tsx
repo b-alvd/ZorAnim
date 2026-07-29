@@ -9,6 +9,7 @@ import {
   addCommentAction,
   deleteCommentAction,
   getFilmSocialDataAction,
+  getSeriesEpisodesAction,
   rateFilmAction,
   toggleCommentReactionAction,
   toggleFavoriteAction,
@@ -29,6 +30,7 @@ export default function FilmModal({
   isFavorite?: boolean;
 }) {
   const [shown, setShown] = useState(false);
+  const [activeFilm, setActiveFilm] = useState(film);
   const [favorite, setFavorite] = useState(isFavorite);
   const [isPending, startTransition] = useTransition();
 
@@ -41,6 +43,7 @@ export default function FilmModal({
   const [commentError, setCommentError] = useState<string | null>(null);
   const [isRating, startRating] = useTransition();
   const [isCommenting, startCommenting] = useTransition();
+  const [episodes, setEpisodes] = useState<Film[]>([]);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
@@ -48,14 +51,23 @@ export default function FilmModal({
   }, []);
 
   useEffect(() => {
-    getFilmSocialDataAction(film.id).then((data) => {
+    getFilmSocialDataAction(activeFilm.id).then((data) => {
       setComments(data.comments);
       setUserRating(data.userRating);
       setCurrentUserId(data.currentUserId);
       setCanModerate(data.canModerate);
       setCreatorUserIds(data.creatorUserIds);
+      setFavorite(data.isFavorite);
     });
-  }, [film.id]);
+  }, [activeFilm.id]);
+
+  useEffect(() => {
+    if (!film.seriesTitle) {
+      setEpisodes([]);
+      return;
+    }
+    getSeriesEpisodesAction(film.seriesTitle).then(setEpisodes);
+  }, [film.seriesTitle]);
 
   const requestClose = () => {
     setShown(false);
@@ -77,14 +89,14 @@ export default function FilmModal({
 
   const handleToggleFavorite = () => {
     startTransition(async () => {
-      const result = await toggleFavoriteAction(film.id);
+      const result = await toggleFavoriteAction(activeFilm.id);
       setFavorite(result);
     });
   };
 
   const handleRate = (value: number) => {
     setUserRating(value);
-    startRating(() => rateFilmAction(film.id, value));
+    startRating(() => rateFilmAction(activeFilm.id, value));
   };
 
   const handleAddComment = (e: React.FormEvent) => {
@@ -93,7 +105,7 @@ export default function FilmModal({
     setCommentError(null);
     startCommenting(async () => {
       try {
-        const updated = await addCommentAction(film.id, commentText);
+        const updated = await addCommentAction(activeFilm.id, commentText);
         setComments(updated);
         setCommentText("");
       } catch (err) {
@@ -106,7 +118,7 @@ export default function FilmModal({
     setCommentError(null);
     startCommenting(async () => {
       try {
-        const updated = await addCommentAction(film.id, body, parentId);
+        const updated = await addCommentAction(activeFilm.id, body, parentId);
         setComments(updated);
       } catch (err) {
         setCommentError(err instanceof Error ? err.message : "Une erreur est survenue.");
@@ -116,7 +128,7 @@ export default function FilmModal({
 
   const handleDeleteComment = (commentId: string) => {
     startCommenting(async () => {
-      const updated = await deleteCommentAction(commentId, film.id);
+      const updated = await deleteCommentAction(commentId, activeFilm.id);
       setComments(updated);
     });
   };
@@ -125,7 +137,7 @@ export default function FilmModal({
     setCommentError(null);
     startCommenting(async () => {
       try {
-        const updated = await toggleCommentReactionAction(commentId, film.id, type);
+        const updated = await toggleCommentReactionAction(commentId, activeFilm.id, type);
         setComments(updated);
       } catch (err) {
         setCommentError(err instanceof Error ? err.message : "Une erreur est survenue.");
@@ -156,33 +168,38 @@ export default function FilmModal({
           </svg>
         </button>
         <div className={styles.banner}>
-          <Image src={film.poster} alt={film.title} fill sizes="700px" className={styles.bannerImg} unoptimized />
+          <Image src={activeFilm.poster} alt={activeFilm.title} fill sizes="700px" className={styles.bannerImg} unoptimized />
           <div className={styles.bannerShade} />
         </div>
         <div className={styles.body}>
-          <h2 className={styles.title}>{film.title}</h2>
-          <Link href={`/artistes/${film.artistId}`} className={styles.artist}>
-            Par {film.artistName}
+          <h2 className={styles.title}>{activeFilm.title}</h2>
+          {activeFilm.seriesTitle && (
+            <p className={styles.seriesLabel}>
+              {activeFilm.seriesTitle} · Saison {activeFilm.seasonNumber ?? 1} · Épisode {activeFilm.episodeNumber}
+            </p>
+          )}
+          <Link href={`/artistes/${activeFilm.artistId}`} className={styles.artist}>
+            Par {activeFilm.artistName}
           </Link>
           <div className={styles.badges}>
-            {film.isNew && <span className={`${styles.badge} ${styles.newBadge}`}>Nouveau</span>}
-            <span className={styles.badge}>{film.year}</span>
-            <span className={styles.badge}>{film.duration}</span>
-            <span className={styles.badge}>{film.rating}</span>
+            {activeFilm.isNew && <span className={`${styles.badge} ${styles.newBadge}`}>Nouveau</span>}
+            <span className={styles.badge}>{activeFilm.year}</span>
+            <span className={styles.badge}>{activeFilm.duration}</span>
+            <span className={styles.badge}>{activeFilm.rating}</span>
           </div>
 
           <div className={styles.ratingRow}>
-            <StarRating value={film.avgRating ?? 0} readOnly />
+            <StarRating value={activeFilm.avgRating ?? 0} readOnly />
             <span className={styles.ratingMeta}>
-              {film.ratingCount > 0
-                ? `${film.avgRating!.toFixed(1)} (${film.ratingCount} avis)`
+              {activeFilm.ratingCount > 0
+                ? `${activeFilm.avgRating!.toFixed(1)} (${activeFilm.ratingCount} avis)`
                 : "Aucune note pour l'instant"}
             </span>
           </div>
 
-          <p className={styles.synopsis}>{film.synopsis}</p>
+          <p className={styles.synopsis}>{activeFilm.synopsis}</p>
           <div className={styles.actions}>
-            <Link href={`/watch/${film.id}?autoplay=1`} className={styles.playBtn}>
+            <Link href={`/watch/${activeFilm.id}?autoplay=1`} className={styles.playBtn}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path d="M8 5v14l11-7z" />
               </svg>
@@ -207,6 +224,27 @@ export default function FilmModal({
               {favorite ? "Dans ma liste" : "Ajouter à ma liste"}
             </button>
           </div>
+
+          {episodes.length > 1 && (
+            <div className={styles.episodesSection}>
+              <h3 className={styles.episodesTitle}>Épisodes de {film.seriesTitle}</h3>
+              <div className={styles.episodesList}>
+                {episodes.map((ep) => (
+                  <button
+                    key={ep.id}
+                    type="button"
+                    onClick={() => setActiveFilm(ep)}
+                    className={`${styles.episodeItem} ${ep.id === activeFilm.id ? styles.episodeItemActive : ""}`}
+                  >
+                    <span className={styles.episodeNumber}>
+                      S{ep.seasonNumber ?? 1}E{ep.episodeNumber}
+                    </span>
+                    <span className={styles.episodeTitle}>{ep.title}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className={styles.myRating}>
             <span className={styles.myRatingLabel}>Ta note</span>

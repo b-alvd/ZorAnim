@@ -3,6 +3,7 @@ import Image from "next/image";
 import FeatureGrid from "@/components/FeatureGrid/FeatureGrid";
 import Steps from "@/components/Steps/Steps";
 import type { Film } from "@/data/types";
+import { collapseSeries } from "@/lib/series";
 import styles from "./Landing.module.css";
 
 const features = [
@@ -47,7 +48,7 @@ const steps = [
 ];
 
 export default function Landing({ films }: { films: Film[] }) {
-  const teaser = films.slice(0, 8);
+  const teaser = collapseSeries(films).slice(0, 8);
 
   return (
     <main className={styles.page}>

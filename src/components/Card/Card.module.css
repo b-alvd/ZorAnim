@@ -31,6 +31,24 @@
   font-size: 1.1rem;
   color: #fff;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.titleText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seriesSubtitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent, #e50914);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

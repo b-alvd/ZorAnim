@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Card from "@/components/Card/Card";
 import { getCategories, getFavoriteFilmIds, getFilms, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { collapseSeries } from "@/lib/series";
 import gridStyles from "../catalogue/catalogue.module.css";
 import styles from "./categories.module.css";
 
@@ -25,13 +26,19 @@ export default async function CategoriesPage() {
         </p>
       </div>
       {categories.map((cat) => {
-        const catFilms = films.filter((f) => f.category === cat);
+        const catFilms = collapseSeries(films.filter((f) => f.category === cat));
         return (
           <section key={cat} className={styles.section}>
             <h2 className={styles.sectionTitle}>{cat}</h2>
             <div className={gridStyles.grid}>
               {catFilms.map((f) => (
-                <Card key={f.id} film={f} isFavorite={favoriteIds.has(f.id)} isWatched={watchedIds.has(f.id)} />
+                <Card
+                  key={f.id}
+                  film={f}
+                  isFavorite={favoriteIds.has(f.id)}
+                  isWatched={watchedIds.has(f.id)}
+                  episodeCount={f.episodeCount}
+                />
               ))}
             </div>
           </section>

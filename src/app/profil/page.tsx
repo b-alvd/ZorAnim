@@ -47,6 +47,8 @@ export default async function ProfilPage() {
     getInvitableArtists(user.id),
   ]);
 
+  const hasIdentity = !!personalArtist || ownedStudiosRaw.length > 0 || memberStudios.length > 0;
+
   const initials = user.name
     .split(" ")
     .map((w) => w[0])
@@ -70,6 +72,11 @@ export default async function ProfilPage() {
           <Link href="/historique" className={styles.quickLink}>
             Historique
           </Link>
+          {hasIdentity && (
+            <Link href="/mon-espace" className={styles.quickLink}>
+              Espace créateur
+            </Link>
+          )}
         </div>
         <LogoutButton />
       </div>

@@ -9,8 +9,10 @@ import {
   getFilmComments,
   getFilmCreatorUserIds,
   getNotifications,
+  getSeriesEpisodes,
   getUnreadNotificationCount,
   getUserRating,
+  isFilmFavorite,
   markAllNotificationsRead,
   toggleCommentReaction,
   toggleFavorite,
@@ -18,6 +20,7 @@ import {
   type Comment,
   type Notification,
 } from "@/db/queries";
+import type { Film } from "@/data/types";
 
 export async function toggleFavoriteAction(filmId: string): Promise<boolean> {
   const user = await getCurrentUser();
@@ -46,12 +49,14 @@ export async function getFilmSocialDataAction(filmId: string): Promise<{
   currentUserId: string | null;
   canModerate: boolean;
   creatorUserIds: string[];
+  isFavorite: boolean;
 }> {
   const user = await getCurrentUser();
-  const [filmComments, userRating, creatorUserIds] = await Promise.all([
+  const [filmComments, userRating, creatorUserIds, isFavorite] = await Promise.all([
     getFilmComments(filmId, user?.id),
     user ? getUserRating(user.id, filmId) : Promise.resolve(null),
     getFilmCreatorUserIds(filmId),
+    user ? isFilmFavorite(user.id, filmId) : Promise.resolve(false),
   ]);
 
   return {
@@ -60,6 +65,7 @@ export async function getFilmSocialDataAction(filmId: string): Promise<{
     currentUserId: user?.id ?? null,
     canModerate: user?.role === "admin",
     creatorUserIds,
+    isFavorite,
   };
 }
 
@@ -104,6 +110,10 @@ export async function getNotificationsAction(): Promise<{ notifications: Notific
 
   const [list, unreadCount] = await Promise.all([getNotifications(user.id), getUnreadNotificationCount(user.id)]);
   return { notifications: list, unreadCount };
+}
+
+export async function getSeriesEpisodesAction(seriesTitle: string): Promise<Film[]> {
+  return getSeriesEpisodes(seriesTitle);
 }
 
 export async function markAllNotificationsReadAction(): Promise<void> {
