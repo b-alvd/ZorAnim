@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getCategories, getFilmEngagement, getFilmsByArtist, getUserIdentities } from "@/db/queries";
+import { getCategories, getFilmEngagement, getFilmsByArtist, getFilmsByStudio, getUserIdentities } from "@/db/queries";
 import { mergeCategories } from "@/lib/categories";
 import IdentitySection from "./IdentitySection";
 import styles from "./mon-espace.module.css";
@@ -32,7 +32,7 @@ export default async function MonEspacePage() {
 
   const sections = await Promise.all(
     identities.map(async (identity) => {
-      const films = await getFilmsByArtist(identity.id);
+      const films = identity.isStudio ? await getFilmsByStudio(identity.id) : await getFilmsByArtist(identity.id);
       const engagement = await getFilmEngagement(films.map((f) => f.id));
       return { identity, films, engagement: Object.fromEntries(engagement) };
     })
