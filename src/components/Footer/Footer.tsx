@@ -70,7 +70,7 @@ export default function Footer() {
           {" "}
           ZorAnim. Une plateforme pour l&apos;animation indépendante.
         </p>
-        <p className={styles.credit}>Développé par b-alvd</p>
+        <p className={styles.credit}>Développé par b_alvd</p>
       </div>
     </footer>
   );

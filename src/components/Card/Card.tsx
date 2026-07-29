@@ -32,6 +32,11 @@ export default function Card({
           unoptimized
         />
         <div className={styles.shadow} />
+        {isSeries && (
+          <span className={styles.seriesBadge}>
+            Série ({episodeCount} ép{episodeCount > 1 ? "s" : ""}.)
+          </span>
+        )}
         <div className={styles.badgeStack}>
           {isWatched && <span className={styles.watchedBadge}>Vu</span>}
           {film.ratingCount > 0 && (
@@ -50,18 +55,9 @@ export default function Card({
             </span>
           )}
         </div>
-        {isSeries ? (
-          <span className={styles.title}>
-            <span className={styles.titleText}>{film.seriesTitle}</span>
-            <span className={styles.seriesSubtitle}>
-              Série ({episodeCount} ép{episodeCount > 1 ? "s" : ""}.)
-            </span>
-          </span>
-        ) : (
-          <span className={styles.title}>
-            <span className={styles.titleText}>{film.title}</span>
-          </span>
-        )}
+        <span className={styles.title}>
+          <span className={styles.titleText}>{isSeries ? film.seriesTitle : film.title}</span>
+        </span>
       </button>
       {open && <FilmModal film={film} onClose={() => setOpen(false)} isFavorite={isFavorite} />}
     </>

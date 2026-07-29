@@ -53,12 +53,20 @@
   white-space: nowrap;
 }
 
-.seriesSubtitle {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--accent, #e50914);
+.seriesBadge {
+  position: absolute;
+  top: 0.6rem;
+  right: 0.6rem;
+  z-index: 1;
+  font-size: 0.68rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  color: #fff;
+  background: var(--accent, #e50914);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  max-width: calc(100% - 1.2rem);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
