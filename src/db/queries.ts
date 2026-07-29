@@ -712,11 +712,46 @@ export type StudioMemberInfo = { id: string; name: string; email: string; status
 
 export async function getStudioMembers(studioId: string): Promise<StudioMemberInfo[]> {
   const rows = await db
-    .select({ id: studioMembers.id, status: studioMembers.status, userName: users.name, userEmail: users.email })
+    .select({
+      id: studioMembers.id,
+      status: studioMembers.status,
+      userName: users.name,
+      userEmail: users.email,
+      artistName: artists.name,
+    })
     .from(studioMembers)
     .innerJoin(users, eq(studioMembers.userId, users.id))
+    .leftJoin(artists, eq(artists.userId, studioMembers.userId))
     .where(eq(studioMembers.studioId, studioId));
-  return rows.map((r) => ({ id: r.id, name: r.userName, email: r.userEmail, status: r.status }));
+  return rows.map((r) => ({ id: r.id, name: r.artistName ?? r.userName, email: r.userEmail, status: r.status }));
+}
+
+export async function getStudioTeamDisplay(studioId: string): Promise<{ name: string; isOwner: boolean }[]> {
+  const [studio] = await db.select({ ownerId: studios.ownerId }).from(studios).where(eq(studios.id, studioId));
+
+  const result: { name: string; isOwner: boolean }[] = [];
+
+  if (studio?.ownerId) {
+    const [ownerRow] = await db
+      .select({ userName: users.name, artistName: artists.name })
+      .from(users)
+      .leftJoin(artists, eq(artists.userId, users.id))
+      .where(eq(users.id, studio.ownerId));
+    if (ownerRow) result.push({ name: ownerRow.artistName ?? ownerRow.userName, isOwner: true });
+  }
+
+  const memberRows = await db
+    .select({ userName: users.name, artistName: artists.name })
+    .from(studioMembers)
+    .innerJoin(users, eq(studioMembers.userId, users.id))
+    .leftJoin(artists, eq(artists.userId, studioMembers.userId))
+    .where(and(eq(studioMembers.studioId, studioId), eq(studioMembers.status, "active")));
+
+  for (const r of memberRows) {
+    result.push({ name: r.artistName ?? r.userName, isOwner: false });
+  }
+
+  return result;
 }
 
 export async function removeStudioMembership(memberRowId: string, requesterUserId: string): Promise<void> {

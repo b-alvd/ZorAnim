@@ -48,6 +48,6 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
   ]);
 
   return (
-    <ArtistProfile artist={artist} artistFilms={artistFilms} favoriteIds={favoriteIds} watchedIds={watchedIds} members={[]} />
+    <ArtistProfile artist={artist} artistFilms={artistFilms} favoriteIds={favoriteIds} watchedIds={watchedIds} />
   );
 }

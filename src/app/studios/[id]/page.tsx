@@ -1,14 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import ArtistProfile from "@/components/ArtistProfile/ArtistProfile";
-import {
-  getFavoriteFilmIds,
-  getFilmsByStudio,
-  getStudio,
-  getStudioMembers,
-  getStudios,
-  getWatchedFilmIds,
-} from "@/db/queries";
+import { getFavoriteFilmIds, getFilmsByStudio, getStudio, getStudios, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function generateStaticParams() {
@@ -42,14 +35,11 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
   const studio = await getStudio(id);
   if (!studio) notFound();
 
-  const [studioFilms, favoriteIds, watchedIds, members] = await Promise.all([
+  const [studioFilms, favoriteIds, watchedIds] = await Promise.all([
     getFilmsByStudio(studio.id),
     getFavoriteFilmIds(user.id),
     getWatchedFilmIds(user.id),
-    getStudioMembers(studio.id),
   ]);
 
-  return (
-    <ArtistProfile artist={studio} artistFilms={studioFilms} favoriteIds={favoriteIds} watchedIds={watchedIds} members={members} />
-  );
+  return <ArtistProfile artist={studio} artistFilms={studioFilms} favoriteIds={favoriteIds} watchedIds={watchedIds} />;
 }

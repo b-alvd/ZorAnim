@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Card from "@/components/Card/Card";
 import type { Artist, Film } from "@/data/types";
-import { getSeriesEpisodeIds, type StudioMemberInfo } from "@/db/queries";
+import { getSeriesEpisodeIds, getStudioTeamDisplay } from "@/db/queries";
 import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
 import styles from "./ArtistProfile.module.css";
 
@@ -10,15 +10,13 @@ export default async function ArtistProfile({
   artistFilms,
   favoriteIds,
   watchedIds,
-  members,
 }: {
   artist: Artist;
   artistFilms: Film[];
   favoriteIds: Set<string>;
   watchedIds: Set<string>;
-  members: StudioMemberInfo[];
 }) {
-  const activeMembers = members.filter((m) => m.status === "active");
+  const team = artist.isStudio ? await getStudioTeamDisplay(artist.id) : [];
   const collapsedFilms = collapseSeries(artistFilms);
   const seriesTitles = [...new Set(collapsedFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
   const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
@@ -39,10 +37,10 @@ export default async function ArtistProfile({
           <p className={styles.count}>
             {collapsedFilms.length} film{collapsedFilms.length > 1 ? "s" : ""} sur ZorAnim
           </p>
-          {artist.isStudio && activeMembers.length > 0 && (
+          {artist.isStudio && team.length > 0 && (
             <div className={styles.members}>
               <span className={styles.membersLabel}>Membres :</span>{" "}
-              {activeMembers.map((m) => m.name).join(", ")}
+              {team.map((m) => (m.isOwner ? `${m.name} (fondateur)` : m.name)).join(", ")}
             </div>
           )}
         </div>
