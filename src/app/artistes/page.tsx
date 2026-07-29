@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import ArtistCard from "@/components/ArtistCard/ArtistCard";
-import { getArtists, getFilms } from "@/db/queries";
+import { getArtists, getArtistStudios, getFilms } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { countFilmsAndSeries } from "@/lib/series";
 import styles from "./artistes.module.css";
 
 export default async function ArtistesPage() {
@@ -10,6 +11,15 @@ export default async function ArtistesPage() {
 
   const [allArtists, films] = await Promise.all([getArtists(), getFilms()]);
   const artists = allArtists.filter((a) => !a.isStudio);
+
+  const counts = await Promise.all(
+    artists.map(async (a) => {
+      const artistStudios = await getArtistStudios(a.id);
+      const studioIds = new Set(artistStudios.map((s) => s.id));
+      const relevantFilms = films.filter((f) => f.artistId === a.id || studioIds.has(f.artistId));
+      return countFilmsAndSeries(relevantFilms);
+    })
+  );
 
   return (
     <main className={styles.page}>
@@ -21,12 +31,8 @@ export default async function ArtistesPage() {
         </p>
       </div>
       <div className={styles.grid}>
-        {artists.map((a) => (
-          <ArtistCard
-            key={a.id}
-            artist={a}
-            filmCount={films.filter((f) => f.artistId === a.id).length}
-          />
+        {artists.map((a, i) => (
+          <ArtistCard key={a.id} artist={a} filmCount={counts[i].filmCount} seriesCount={counts[i].seriesCount} />
         ))}
       </div>
     </main>

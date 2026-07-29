@@ -3,7 +3,7 @@ import Link from "next/link";
 import Card from "@/components/Card/Card";
 import type { Artist, Film } from "@/data/types";
 import { getSeriesEpisodeIds, getStudioTeamDisplay } from "@/db/queries";
-import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
+import { collapseSeries, computeEffectiveWatchedIds, countFilmsAndSeries, formatCatalogCountLabel } from "@/lib/series";
 import styles from "./ArtistProfile.module.css";
 
 export default async function ArtistProfile({
@@ -21,6 +21,7 @@ export default async function ArtistProfile({
 }) {
   const team = artist.isStudio ? await getStudioTeamDisplay(artist.id) : [];
   const collapsedFilms = collapseSeries(artistFilms);
+  const { filmCount, seriesCount } = countFilmsAndSeries(artistFilms);
   const seriesTitles = [...new Set(collapsedFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
   const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
   const effectiveWatchedIds = computeEffectiveWatchedIds(collapsedFilms, watchedIds, episodeIdsMap);
@@ -37,9 +38,7 @@ export default async function ArtistProfile({
             {artist.isStudio && <span className={styles.studioBadge}>Studio</span>}
           </div>
           <p className={styles.bio}>{artist.bio}</p>
-          <p className={styles.count}>
-            {collapsedFilms.length} film{collapsedFilms.length > 1 ? "s" : ""} sur ZorAnim
-          </p>
+          <p className={styles.count}>{formatCatalogCountLabel(filmCount, seriesCount)} sur ZorAnim</p>
           {artist.isStudio && team.length > 0 && (
             <div className={styles.members}>
               <span className={styles.membersLabel}>Membres :</span>{" "}

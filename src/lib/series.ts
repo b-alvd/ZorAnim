@@ -32,6 +32,23 @@ export function collapseSeries(films: Film[], trueEpisodeCounts?: Map<string, nu
   return result;
 }
 
+export function countFilmsAndSeries(films: Film[]): { filmCount: number; seriesCount: number } {
+  let filmCount = 0;
+  const seriesTitles = new Set<string>();
+  for (const f of films) {
+    if (f.seriesTitle) seriesTitles.add(f.seriesTitle);
+    else filmCount++;
+  }
+  return { filmCount, seriesCount: seriesTitles.size };
+}
+
+export function formatCatalogCountLabel(filmCount: number, seriesCount: number): string {
+  const parts: string[] = [];
+  if (filmCount > 0) parts.push(`${filmCount} film${filmCount > 1 ? "s" : ""}`);
+  if (seriesCount > 0) parts.push(`${seriesCount} série${seriesCount > 1 ? "s" : ""}`);
+  return parts.length > 0 ? parts.join(", ") : "Aucun contenu";
+}
+
 export function computeEffectiveWatchedIds(
   collapsed: CollapsedFilm[],
   watchedIds: Set<string>,
