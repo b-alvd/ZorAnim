@@ -33,7 +33,10 @@ async function assertOwnsIdentity(userId: string, identityId: string) {
   const identity = await getIdentityOwnership(identityId);
   if (!identity) throw new Error("Profil introuvable.");
   if (identity.isStudio) {
-    if (identity.ownerId !== userId) throw new Error("Non autorisé.");
+    if (identity.ownerId === userId) return;
+    const identities = await getUserIdentities(userId);
+    if (identities.some((i) => i.id === identityId)) return;
+    throw new Error("Non autorisé.");
   } else if (identity.userId !== userId) {
     throw new Error("Non autorisé.");
   }
