@@ -29,19 +29,21 @@ export default function FilmForm({
   categories,
   initial,
   pending,
+  lockedSeriesTitle,
 }: {
   onSubmit: (formData: FormData) => void;
   artists: Artist[];
   categories: string[];
   initial?: FilmFormValues;
   pending?: boolean;
+  lockedSeriesTitle?: string;
 }) {
   const [rating, setRating] = useState(initial?.rating ?? RATING_OPTIONS[0]);
   const [category, setCategory] = useState(initial?.category ?? categories[0]);
   const [artistId, setArtistId] = useState(initial?.artistId ?? artists[0]?.id ?? "");
   const [poster, setPoster] = useState(initial?.poster ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
-  const [isSeries, setIsSeries] = useState(!!initial?.seriesTitle);
+  const [isSeries, setIsSeries] = useState(!!lockedSeriesTitle || !!initial?.seriesTitle);
   const [valid, setValid] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -63,29 +65,35 @@ export default function FilmForm({
       onInput={updateValidity}
       className={styles.form}
     >
-      <label className={styles.customCheckbox}>
-        <input
-          type="checkbox"
-          checked={isSeries}
-          onChange={(e) => {
-            setIsSeries(e.target.checked);
-            updateValidity();
-          }}
-        />
-        <span className={styles.checkboxBox} />
-        Fait partie d&apos;une série
-      </label>
+      {!lockedSeriesTitle && (
+        <label className={styles.customCheckbox}>
+          <input
+            type="checkbox"
+            checked={isSeries}
+            onChange={(e) => {
+              setIsSeries(e.target.checked);
+              updateValidity();
+            }}
+          />
+          <span className={styles.checkboxBox} />
+          Fait partie d&apos;une série
+        </label>
+      )}
       {isSeries && (
         <>
-          <div className={styles.field}>
-            <label htmlFor="seriesTitle">Titre de la série</label>
-            <input
-              id="seriesTitle"
-              name="seriesTitle"
-              defaultValue={initial?.seriesTitle ?? ""}
-              required={isSeries}
-            />
-          </div>
+          {lockedSeriesTitle ? (
+            <input type="hidden" name="seriesTitle" value={lockedSeriesTitle} />
+          ) : (
+            <div className={styles.field}>
+              <label htmlFor="seriesTitle">Titre de la série</label>
+              <input
+                id="seriesTitle"
+                name="seriesTitle"
+                defaultValue={initial?.seriesTitle ?? ""}
+                required={isSeries}
+              />
+            </div>
+          )}
           <div className={styles.row2}>
             <div className={styles.field}>
               <label htmlFor="seasonNumber">Numéro de saison</label>
@@ -137,31 +145,42 @@ export default function FilmForm({
           />
         </div>
       </div>
-      <div className={styles.row2}>
-        <div className={styles.field}>
-          <label>Classification</label>
+      {lockedSeriesTitle ? (
+        <>
           <input type="hidden" name="rating" value={rating} />
-          <Dropdown options={RATING_OPTIONS} value={rating} onChange={setRating} />
-        </div>
-        <div className={styles.field}>
-          <label>Catégorie</label>
           <input type="hidden" name="category" value={category} />
-          <Dropdown options={categories} value={category} onChange={setCategory} />
-        </div>
-      </div>
-      <div className={styles.field}>
-        <label>Artiste</label>
-        <input type="hidden" name="artistId" value={artistId} />
-        <input type="hidden" name="isStudio" value={selectedArtist?.isStudio ? "1" : ""} />
-        <Dropdown
-          options={artistNames}
-          value={selectedArtistName}
-          onChange={(name) => {
-            const found = artists.find((a) => (a.isStudio ? `${a.name} (studio)` : a.name) === name);
-            if (found) setArtistId(found.id);
-          }}
-        />
-      </div>
+          <input type="hidden" name="artistId" value={artistId} />
+          <input type="hidden" name="isStudio" value={selectedArtist?.isStudio ? "1" : ""} />
+        </>
+      ) : (
+        <>
+          <div className={styles.row2}>
+            <div className={styles.field}>
+              <label>Classification</label>
+              <input type="hidden" name="rating" value={rating} />
+              <Dropdown options={RATING_OPTIONS} value={rating} onChange={setRating} />
+            </div>
+            <div className={styles.field}>
+              <label>Catégorie</label>
+              <input type="hidden" name="category" value={category} />
+              <Dropdown options={categories} value={category} onChange={setCategory} />
+            </div>
+          </div>
+          <div className={styles.field}>
+            <label>Artiste</label>
+            <input type="hidden" name="artistId" value={artistId} />
+            <input type="hidden" name="isStudio" value={selectedArtist?.isStudio ? "1" : ""} />
+            <Dropdown
+              options={artistNames}
+              value={selectedArtistName}
+              onChange={(name) => {
+                const found = artists.find((a) => (a.isStudio ? `${a.name} (studio)` : a.name) === name);
+                if (found) setArtistId(found.id);
+              }}
+            />
+          </div>
+        </>
+      )}
       <div className={styles.field}>
         <label>Poster</label>
         <FileUpload

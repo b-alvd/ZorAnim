@@ -104,16 +104,6 @@ function SeriesGroupRow({
               {episodes.length} épisode{episodes.length > 1 ? "s" : ""}
             </span>
           </div>
-          <button
-            type="button"
-            className={adminStyles.editLink}
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddEpisode(title);
-            }}
-          >
-            + Ajouter un épisode
-          </button>
         </td>
       </tr>
       {expanded &&
@@ -139,6 +129,15 @@ function SeriesGroupRow({
             </td>
           </tr>
         ))}
+      {expanded && (
+        <tr>
+          <td colSpan={6}>
+            <button type="button" className={adminStyles.editLink} onClick={() => onAddEpisode(title)}>
+              + Ajouter un épisode
+            </button>
+          </td>
+        </tr>
+      )}
     </>
   );
 }
@@ -278,6 +277,7 @@ export default function IdentitySection({
           <FilmForm
             artists={identities}
             categories={categories}
+            lockedSeriesTitle={addingEpisodeSeries}
             initial={{
               title: "",
               synopsis: "",
