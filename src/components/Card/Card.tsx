@@ -31,6 +31,7 @@ export default function Card({
           className={styles.bg}
           unoptimized
         />
+        <div className={styles.shadow} />
         <div className={styles.badgeStack}>
           {isWatched && <span className={styles.watchedBadge}>Vu</span>}
           {film.ratingCount > 0 && (
