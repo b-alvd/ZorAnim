@@ -24,7 +24,7 @@ const columns = [
     links: [
       { label: "Devenir artiste", href: "/devenir-artiste" },
       { label: "Créer un studio", href: "/creer-un-studio" },
-      { label: "Soumettre un film", href: "/soumettre-un-film" },
+      { label: "Soumettre un film ou une série", href: "/soumettre-un-film" },
     ],
   },
   {

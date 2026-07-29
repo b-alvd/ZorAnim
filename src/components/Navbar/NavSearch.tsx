@@ -31,7 +31,7 @@ export default function NavSearch({ onNavigate, mobile }: { onNavigate?: () => v
         onChange={(e) => setValue(e.target.value)}
         placeholder="Rechercher..."
         className={styles.navSearchInput}
-        aria-label="Rechercher un film, un artiste"
+        aria-label="Rechercher un film, une série, un artiste"
       />
     </form>
   );

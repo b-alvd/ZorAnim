@@ -15,7 +15,7 @@ export default async function Home() {
   if (films.length === 0) {
     return (
       <main className={styles.empty}>
-        <p className={styles.emptyText}>Aucun film disponible pour l&apos;instant. Reviens bientôt !</p>
+        <p className={styles.emptyText}>Aucun film ou série disponible pour l&apos;instant. Reviens bientôt !</p>
       </main>
     );
   }

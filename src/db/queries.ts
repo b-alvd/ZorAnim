@@ -814,7 +814,7 @@ export async function deleteStudio(studioId: string, requesterUserId: string): P
   if (studio.ownerId !== requesterUserId) throw new Error("Non autorisé.");
 
   const [filmRow] = await db.select({ id: films.id }).from(films).where(eq(films.studioId, studioId));
-  if (filmRow) throw new Error("Impossible de supprimer un studio qui a des films au catalogue.");
+  if (filmRow) throw new Error("Impossible de supprimer un studio qui a des films ou séries au catalogue.");
 
   await db.delete(studios).where(eq(studios.id, studioId));
 }

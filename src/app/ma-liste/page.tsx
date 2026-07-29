@@ -31,7 +31,7 @@ export default async function MaListePage() {
           ))}
         </div>
       ) : (
-        <p className={styles.empty}>Ta liste est vide. Ajoute des films depuis leur fiche.</p>
+        <p className={styles.empty}>Ta liste est vide. Ajoute des films ou séries depuis leur fiche.</p>
       )}
     </main>
   );

@@ -14,9 +14,9 @@ export default function FilmCreateButton({ artists, categories }: { artists: Art
   return (
     <>
       <button type="button" className={styles.addBtn} onClick={() => setOpen(true)}>
-        + Ajouter un film
+        + Ajouter un film ou une série
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} title="Ajouter un film">
+      <Modal open={open} onClose={() => setOpen(false)} title="Ajouter un film ou une série">
         <FilmForm
           artists={artists}
           categories={categories}

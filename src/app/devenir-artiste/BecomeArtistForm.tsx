@@ -44,8 +44,8 @@ export default function BecomeArtistForm({ initialEmail }: { initialEmail: strin
     >
       <div className={styles.fieldRow}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Nom</span>
-          <input name="name" required className={styles.input} placeholder="Ton nom" />
+          <span className={styles.fieldLabel}>Pseudo</span>
+          <input name="name" required className={styles.input} placeholder="Ton pseudo" />
         </label>
         <label className={styles.field}>
           <span className={styles.fieldLabel}>Email de contact</span>

@@ -18,10 +18,10 @@ export default async function AdminDemandesPage() {
   return (
     <main>
       <div className={styles.header}>
-        <h1 className={styles.title}>Demandes de films</h1>
+        <h1 className={styles.title}>Demandes de films et séries</h1>
       </div>
       {filmSubmissions.length === 0 ? (
-        <p className={styles.confirmText}>Aucune demande de film en attente.</p>
+        <p className={styles.confirmText}>Aucune demande de film ou série en attente.</p>
       ) : (
         <div className={styles.tableWrap}>
         <table className={styles.table}>

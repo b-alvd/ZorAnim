@@ -9,41 +9,42 @@ export default function ConditionsPage() {
     >
       <h2>1. Objet</h2>
       <p>
-        ZorAnim est une plateforme de streaming dédiée aux courts-métrages d&apos;animation 2D
-        réalisés par des artistes indépendants. L&apos;utilisation du site implique l&apos;acceptation
-        pleine et entière des présentes conditions.
+        ZorAnim est une plateforme de streaming dédiée aux courts-métrages et séries
+        d&apos;animation 2D réalisés par des artistes indépendants. L&apos;utilisation du site implique
+        l&apos;acceptation pleine et entière des présentes conditions.
       </p>
 
       <h2>2. Compte et accès au service</h2>
       <p>
         La création d&apos;un compte est obligatoire pour parcourir le catalogue et regarder les
-        films : seule la page d&apos;accueil est visible sans compte. Le service est gratuit et ne
-        demande aucune information de paiement. Tu es responsable de la confidentialité de ton mot
-        de passe et de l&apos;activité effectuée depuis ton compte.
+        films et séries : seule la page d&apos;accueil est visible sans compte. Le service est gratuit
+        et ne demande aucune information de paiement. Tu es responsable de la confidentialité de ton
+        mot de passe et de l&apos;activité effectuée depuis ton compte.
       </p>
 
       <h2>3. Devenir artiste et studios</h2>
       <p>
         Tout utilisateur peut candidater pour devenir artiste via la page « Devenir artiste ». Une
-        fois accepté par l&apos;équipe, un artiste peut soumettre des films et créer un studio
-        regroupant plusieurs artistes. Le propriétaire d&apos;un studio est responsable des
+        fois accepté par l&apos;équipe, un artiste peut soumettre des films ou des séries et créer un
+        studio regroupant plusieurs artistes. Le propriétaire d&apos;un studio est responsable des
         invitations qu&apos;il envoie et du contenu soumis au nom du studio.
       </p>
 
       <h2>4. Soumission de contenu</h2>
       <p>
-        Toute personne soumettant un film ou une candidature d&apos;artiste garantit détenir les
-        droits nécessaires sur les fichiers envoyés (vidéo, poster, avatar) et s&apos;engage à ne
-        transmettre aucun contenu illicite, protégé par des droits de tiers non autorisés, ou
-        contraire aux présentes conditions. Chaque soumission est examinée par l&apos;équipe avant
-        publication et peut être refusée sans obligation de justification détaillée.
+        Toute personne soumettant un film, une série ou une candidature d&apos;artiste garantit
+        détenir les droits nécessaires sur les fichiers envoyés (vidéo, poster, avatar) et
+        s&apos;engage à ne transmettre aucun contenu illicite, protégé par des droits de tiers non
+        autorisés, ou contraire aux présentes conditions. Chaque soumission est examinée par
+        l&apos;équipe avant publication et peut être refusée sans obligation de justification
+        détaillée.
       </p>
 
       <h2>5. Contenu et propriété intellectuelle</h2>
       <p>
-        Chaque film reste la propriété exclusive de son artiste ou studio. Toute reproduction,
-        diffusion ou réutilisation en dehors de ZorAnim nécessite l&apos;accord préalable de
-        l&apos;ayant droit concerné.
+        Chaque film ou série reste la propriété exclusive de son artiste ou studio. Toute
+        reproduction, diffusion ou réutilisation en dehors de ZorAnim nécessite l&apos;accord
+        préalable de l&apos;ayant droit concerné.
       </p>
 
       <h2>6. Comportement des utilisateurs</h2>

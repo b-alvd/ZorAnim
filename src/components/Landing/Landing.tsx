@@ -43,8 +43,8 @@ const features = [
 
 const steps = [
   { title: "Crée un compte", description: "Inscris-toi gratuitement en quelques secondes, aucune carte bancaire requise." },
-  { title: "Explore le catalogue", description: "Parcours les films par catégorie, découvre de nouveaux artistes chaque semaine." },
-  { title: "Regarde en illimité", description: "Accède à tous les courts-métrages, sans limite et sans publicité." },
+  { title: "Explore le catalogue", description: "Parcours les films et séries par catégorie, découvre de nouveaux artistes chaque semaine." },
+  { title: "Regarde en illimité", description: "Accède à tous les courts-métrages et séries, sans limite et sans publicité." },
 ];
 
 export default function Landing({ films }: { films: Film[] }) {
@@ -56,7 +56,8 @@ export default function Landing({ films }: { films: Film[] }) {
         <div className={styles.heroInner}>
           <h1 className={styles.title}>ZorAnim</h1>
           <p className={styles.subtitle}>
-            Le catalogue de courts-métrages d&apos;animation 2D créés par des artistes indépendants.
+            Le catalogue de courts-métrages et séries d&apos;animation 2D créés par des artistes
+            indépendants.
           </p>
           <div className={styles.actions}>
             <Link href="/inscription" className={styles.primaryCta}>

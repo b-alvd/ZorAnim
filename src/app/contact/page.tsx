@@ -12,8 +12,8 @@ export default async function ContactPage() {
         <div className={styles.headerInner}>
           <h1 className={styles.title}>Contact</h1>
           <p className={styles.subtitle}>
-            Une question, une suggestion, un film à proposer ? Écris-nous, on te répond dès que
-            possible.
+            Une question, une suggestion, un film ou une série à proposer ? Écris-nous, on te répond
+            dès que possible.
           </p>
         </div>
       </div>

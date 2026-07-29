@@ -362,7 +362,7 @@ export default function IdentitySection({
 
       <div className={styles.list}>
         {rows.length === 0 ? (
-          <p className={styles.empty}>Aucun film publié pour l&apos;instant.</p>
+          <p className={styles.empty}>Aucun film ou série publié pour l&apos;instant.</p>
         ) : (
           rows.map((row) =>
             row.type === "film" ? (

@@ -39,7 +39,7 @@ export default function SearchBar() {
         type="text"
         value={value}
         onChange={(e) => handleChange(e.target.value)}
-        placeholder="Rechercher un film, un artiste..."
+        placeholder="Rechercher un film, une série, un artiste..."
         className={styles.searchInput}
       />
     </div>

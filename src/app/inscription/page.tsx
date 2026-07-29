@@ -48,14 +48,14 @@ export default function InscriptionPage() {
 
         <form className={styles.form} onSubmit={handleSubmit}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Nom</span>
+            <span className={styles.fieldLabel}>Pseudo</span>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
               className={styles.input}
-              placeholder="Ton nom"
+              placeholder="Ton pseudo"
             />
           </label>
           <label className={styles.field}>

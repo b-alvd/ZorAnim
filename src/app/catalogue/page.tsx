@@ -4,7 +4,7 @@ import Pagination from "@/components/Pagination/Pagination";
 import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { matchesQuery } from "@/lib/search";
-import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
+import { collapseSeries, computeEffectiveWatchedIds, countFilmsAndSeries, formatCatalogCountLabel } from "@/lib/series";
 import SearchBar from "./SearchBar";
 import Filters from "./Filters";
 import styles from "./catalogue.module.css";
@@ -40,6 +40,7 @@ export default async function CataloguePage({
   });
 
   const collapsed = collapseSeries(matched);
+  const { filmCount, seriesCount } = countFilmsAndSeries(matched);
   const totalPages = Math.max(1, Math.ceil(collapsed.length / PAGE_SIZE));
   const page = Math.min(Math.max(1, Number(pageParam) || 1), totalPages);
   const films = collapsed.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -52,9 +53,7 @@ export default async function CataloguePage({
     <main className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Catalogue</h1>
-        <p className={styles.subtitle}>
-          {collapsed.length} film{collapsed.length > 1 ? "s" : ""} disponible{collapsed.length > 1 ? "s" : ""}
-        </p>
+        <p className={styles.subtitle}>{formatCatalogCountLabel(filmCount, seriesCount)} disponibles</p>
         <SearchBar />
         <Filters categories={categories} years={years} />
       </div>

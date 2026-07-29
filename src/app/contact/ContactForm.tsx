@@ -42,7 +42,7 @@ export default function ContactForm({ initialName, initialEmail }: { initialName
     <form className={styles.form} onSubmit={handleSubmit}>
       <div className={styles.fieldRow}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Nom</span>
+          <span className={styles.fieldLabel}>Pseudo</span>
           <input type="text" readOnly value={name} className={`${styles.input} ${styles.inputMuted}`} />
         </label>
         <label className={styles.field}>

@@ -9,9 +9,9 @@ export default function ConfidentialitePage() {
     >
       <h2>Données collectées</h2>
       <p>
-        Pour créer un compte, ZorAnim collecte ton nom, ton adresse email et un mot de passe
+        Pour créer un compte, ZorAnim collecte ton pseudo, ton adresse email et un mot de passe
         (stocké de façon chiffrée, jamais en clair). Si tu ajoutes une photo de profil, deviens
-        artiste, crées un studio ou soumets un film, les informations correspondantes (bio,
+        artiste, crées un studio ou soumets un film ou une série, les informations correspondantes (bio,
         avatar, fichiers envoyés) sont également conservées. Les messages envoyés via la page
         Contact sont stockés avec la réponse de l&apos;équipe.
       </p>

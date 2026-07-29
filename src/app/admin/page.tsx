@@ -317,7 +317,7 @@ export default async function AdminDashboard() {
         <RankCard
           icon={icons.tag}
           title="Répartition par catégorie"
-          emptyLabel="Aucun film."
+          emptyLabel="Aucun film ou série."
           rows={stats.categoryBreakdown.map((c) => ({
             id: c.category,
             name: c.category,
@@ -331,10 +331,10 @@ export default async function AdminDashboard() {
         <div className={styles.rankCard}>
           <h3 className={styles.rankTitle}>
             <span className={styles.rankTitleIcon}>{icons.clock}</span>
-            Derniers films ajoutés
+            Derniers films et séries ajoutés
           </h3>
           {stats.recentFilms.length === 0 ? (
-            <p className={styles.rankEmpty}>Aucun film.</p>
+            <p className={styles.rankEmpty}>Aucun film ou série.</p>
           ) : (
             <ul className={styles.activityList}>
               {stats.recentFilms.map((f) => (
