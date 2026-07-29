@@ -3,8 +3,9 @@ import { Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
 import CookieConsent from "@/components/CookieConsent/CookieConsent";
+import RevealOverlay from "@/components/RevealGate/RevealOverlay";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getNotifications, getUnreadNotificationCount } from "@/db/queries";
+import { getNotifications, getSiteSettings, getUnreadNotificationCount } from "@/db/queries";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -23,7 +24,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getCurrentUser();
+  const [user, settings] = await Promise.all([getCurrentUser(), getSiteSettings()]);
   const [notifications, unreadCount] = user
     ? await Promise.all([getNotifications(user.id, 10), getUnreadNotificationCount(user.id)])
     : [[], 0];
@@ -35,6 +36,7 @@ export default async function RootLayout({
         {children}
         <Footer />
         <CookieConsent />
+        <RevealOverlay initialEnabled={settings.revealEnabled} revealAt={settings.revealAt} />
       </body>
     </html>
   );

@@ -16,6 +16,7 @@ import {
   comments,
   commentReactions,
   notifications,
+  siteSettings,
 } from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
@@ -1293,4 +1294,23 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     recentFilms,
     recentComments: recentCommentRows,
   };
+}
+
+const SITE_SETTINGS_ID = "main";
+
+export type SiteSettings = { revealEnabled: boolean; revealAt: string | null };
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+  const [row] = await db.select().from(siteSettings).where(eq(siteSettings.id, SITE_SETTINGS_ID));
+  if (!row) return { revealEnabled: false, revealAt: null };
+  return { revealEnabled: row.revealEnabled, revealAt: row.revealAt };
+}
+
+export async function updateSiteSettings(input: SiteSettings): Promise<void> {
+  const [existing] = await db.select({ id: siteSettings.id }).from(siteSettings).where(eq(siteSettings.id, SITE_SETTINGS_ID));
+  if (existing) {
+    await db.update(siteSettings).set(input).where(eq(siteSettings.id, SITE_SETTINGS_ID));
+  } else {
+    await db.insert(siteSettings).values({ id: SITE_SETTINGS_ID, ...input });
+  }
 }

@@ -59,6 +59,12 @@ const icons = {
       <path d="M3 12h18" />
     </svg>
   ),
+  reveal: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  ),
 };
 
 export default function AdminNav({ demandesCount, messagesCount }: { demandesCount: number; messagesCount: number }) {
@@ -88,6 +94,10 @@ export default function AdminNav({ demandesCount, messagesCount }: { demandesCou
     {
       title: "Comptes",
       items: [{ href: "/admin/utilisateurs", label: "Utilisateurs", icon: icons.utilisateurs }],
+    },
+    {
+      title: "Site",
+      items: [{ href: "/admin/reveal", label: "Compte à rebours", icon: icons.reveal }],
     },
   ];
 

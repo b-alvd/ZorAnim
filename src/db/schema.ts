@@ -221,6 +221,12 @@ export const notifications = sqliteTable("notifications", {
     .default(sql`(current_timestamp)`),
 });
 
+export const siteSettings = sqliteTable("site_settings", {
+  id: text("id").primaryKey(),
+  revealEnabled: integer("reveal_enabled", { mode: "boolean" }).notNull().default(false),
+  revealAt: text("reveal_at"),
+});
+
 export const contactMessages = sqliteTable("contact_messages", {
   id: text("id").primaryKey(),
   userId: text("user_id")

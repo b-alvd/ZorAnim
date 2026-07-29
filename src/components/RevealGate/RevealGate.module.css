@@ -1,0 +1,218 @@
+.wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background, #070707);
+  overflow: hidden;
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.045;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.floaters {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.floater {
+  position: absolute;
+  background-image: url("/logo.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  opacity: 0.07;
+  animation-name: floatDrift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+@keyframes floatDrift {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate(var(--float-dx), var(--float-dy)) rotate(var(--float-rot));
+  }
+}
+
+.revealing .floaters {
+  transition: opacity 0.6s ease;
+  opacity: 0;
+}
+
+.frame {
+  position: absolute;
+  inset: 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+@property --angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.beam {
+  position: absolute;
+  inset: 18px;
+  border-radius: 6px;
+  padding: 2.5px;
+  pointer-events: none;
+  background: conic-gradient(
+    from var(--angle),
+    transparent 0deg,
+    transparent 230deg,
+    rgba(229, 9, 20, 0.08) 260deg,
+    rgba(229, 9, 20, 0.35) 300deg,
+    rgba(255, 130, 130, 0.75) 338deg,
+    #fff 353deg,
+    #fff 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: rotateFrame 7s linear infinite;
+}
+
+@keyframes rotateFrame {
+  to {
+    --angle: 360deg;
+  }
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.4rem;
+  text-align: center;
+  transition: opacity 0.4s ease, transform 0.7s ease;
+}
+
+.logoWrap {
+  width: clamp(220px, 40vw, 340px);
+  filter: drop-shadow(0 0 40px rgba(229, 9, 20, 0.45));
+}
+
+.logoWrap :global(img) {
+  width: 100%;
+  height: auto;
+}
+
+.rule {
+  width: 48px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent, #e50914);
+}
+
+.timer {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 60px;
+}
+
+.digits {
+  font-family: var(--font-montserrat), monospace;
+  font-size: clamp(2.2rem, 6.5vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+}
+
+.label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.colon {
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.2);
+  margin-top: -0.9rem;
+}
+
+.soon {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent, #e50914);
+  box-shadow: 0 0 40px 20px rgba(229, 9, 20, 0.8);
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.revealing .content {
+  opacity: 0;
+  transform: scale(1.08) translateY(-6px);
+  transition: opacity 0.4s ease 0.15s, transform 0.7s ease 0.15s;
+}
+
+.revealing .frame,
+.revealing .beam {
+  transition: opacity 0.5s ease;
+  opacity: 0;
+}
+
+.revealing .burst {
+  animation: burstOut 1s ease-out forwards;
+}
+
+@keyframes burstOut {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(220);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .unit {
+    min-width: 48px;
+  }
+}
