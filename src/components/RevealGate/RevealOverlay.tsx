@@ -25,9 +25,11 @@ const FLOATERS = [
 export default function RevealOverlay({
   initialEnabled,
   revealAt,
+  isAdmin,
 }: {
   initialEnabled: boolean;
   revealAt: string | null;
+  isAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const target = revealAt ? new Date(revealAt).getTime() : null;
@@ -60,7 +62,8 @@ export default function RevealOverlay({
     return () => clearTimeout(t);
   }, [revealing]);
 
-  const bypassed = BYPASS_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  const bypassed =
+    isAdmin || BYPASS_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
   const shown = !bypassed && visible;
 
   useEffect(() => {

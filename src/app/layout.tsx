@@ -37,9 +37,13 @@ export default async function RootLayout({
         {children}
         <Footer />
         <CookieConsent />
-        <MaintenanceOverlay enabled={settings.maintenanceEnabled} />
+        <MaintenanceOverlay enabled={settings.maintenanceEnabled} isAdmin={user?.role === "admin"} />
         {!settings.maintenanceEnabled && (
-          <RevealOverlay initialEnabled={settings.revealEnabled} revealAt={settings.revealAt} />
+          <RevealOverlay
+            initialEnabled={settings.revealEnabled}
+            revealAt={settings.revealAt}
+            isAdmin={user?.role === "admin"}
+          />
         )}
       </body>
     </html>

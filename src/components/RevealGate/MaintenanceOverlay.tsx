@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Logo from "@/components/Logo/Logo";
 import styles from "./RevealGate.module.css";
@@ -17,11 +18,22 @@ const FLOATERS = [
   { top: "40%", left: "92%", size: 28, dur: "15s", delay: "-10s", dx: "-90px", dy: "-100px", rot: "-22deg" },
 ];
 
-export default function MaintenanceOverlay({ enabled }: { enabled: boolean }) {
+export default function MaintenanceOverlay({ enabled, isAdmin }: { enabled: boolean; isAdmin?: boolean }) {
   const pathname = usePathname();
-  const bypassed = BYPASS_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  const bypassed =
+    isAdmin || BYPASS_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  const shown = !bypassed && enabled;
 
-  if (bypassed || !enabled) return null;
+  useEffect(() => {
+    if (!shown) return;
+    const prevOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = prevOverflow;
+    };
+  }, [shown]);
+
+  if (!shown) return null;
 
   return (
     <div className={styles.wrap}>
