@@ -96,6 +96,23 @@
   gap: 1rem;
 }
 
+.filmSlot {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.filmStudioTag {
+  font-size: 0.78rem;
+  color: #a0a0a0;
+  text-decoration: none;
+}
+
+.filmStudioTag:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
 @media (max-width: 640px) {
   .header {
     flex-direction: column;
