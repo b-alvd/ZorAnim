@@ -59,21 +59,8 @@
   margin-top: 1rem;
 }
 
-.filterSelect {
-  background: #1a1a1a;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-  padding: 0.55rem 2rem 0.55rem 0.85rem;
-  color: #d2d2d2;
-  font-size: 0.85rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color 0.15s ease;
-}
-
-.filterSelect:focus {
-  outline: none;
-  border-color: var(--accent, #e50914);
+.filterField {
+  min-width: 180px;
 }
 
 .filterClear {

@@ -1,7 +1,17 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import Dropdown from "@/components/Dropdown/Dropdown";
 import styles from "./catalogue.module.css";
+
+const ALL_CATEGORIES = "Toutes les catégories";
+const ALL_YEARS = "Toutes les années";
+const RATING_OPTIONS = [
+  { label: "Toutes les notes", value: "" },
+  { label: "4 étoiles et +", value: "4" },
+  { label: "3 étoiles et +", value: "3" },
+  { label: "2 étoiles et +", value: "2" },
+];
 
 export default function Filters({ categories, years }: { categories: string[]; years: number[] }) {
   const router = useRouter();
@@ -31,32 +41,36 @@ export default function Filters({ categories, years }: { categories: string[]; y
     router.push(`${pathname}${params.toString() ? `?${params.toString()}` : ""}`);
   };
 
+  const selectedRatingLabel = RATING_OPTIONS.find((o) => o.value === minRating)?.label ?? RATING_OPTIONS[0].label;
+
   return (
     <div className={styles.filters}>
-      <select className={styles.filterSelect} value={category} onChange={(e) => setParam("category", e.target.value)}>
-        <option value="">Toutes les catégories</option>
-        {categories.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-      </select>
+      <div className={styles.filterField}>
+        <Dropdown
+          options={[ALL_CATEGORIES, ...categories]}
+          value={category || ALL_CATEGORIES}
+          onChange={(v) => setParam("category", v === ALL_CATEGORIES ? "" : v)}
+        />
+      </div>
 
-      <select className={styles.filterSelect} value={year} onChange={(e) => setParam("year", e.target.value)}>
-        <option value="">Toutes les années</option>
-        {years.map((y) => (
-          <option key={y} value={y}>
-            {y}
-          </option>
-        ))}
-      </select>
+      <div className={styles.filterField}>
+        <Dropdown
+          options={[ALL_YEARS, ...years.map(String)]}
+          value={year || ALL_YEARS}
+          onChange={(v) => setParam("year", v === ALL_YEARS ? "" : v)}
+        />
+      </div>
 
-      <select className={styles.filterSelect} value={minRating} onChange={(e) => setParam("minRating", e.target.value)}>
-        <option value="">Toutes les notes</option>
-        <option value="4">4 étoiles et +</option>
-        <option value="3">3 étoiles et +</option>
-        <option value="2">2 étoiles et +</option>
-      </select>
+      <div className={styles.filterField}>
+        <Dropdown
+          options={RATING_OPTIONS.map((o) => o.label)}
+          value={selectedRatingLabel}
+          onChange={(label) => {
+            const found = RATING_OPTIONS.find((o) => o.label === label);
+            setParam("minRating", found?.value ?? "");
+          }}
+        />
+      </div>
 
       {hasActiveFilters && (
         <button type="button" className={styles.filterClear} onClick={clearAll}>
