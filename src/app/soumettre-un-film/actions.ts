@@ -14,7 +14,8 @@ export async function submitFilmAction(formData: FormData) {
 
   await createFilmSubmission({
     userId: user.id,
-    artistId: identity.id,
+    artistId: identity.isStudio ? null : identity.id,
+    studioId: identity.isStudio ? identity.id : null,
     artistName: identity.name,
     title: String(formData.get("title") ?? ""),
     synopsis: String(formData.get("synopsis") ?? ""),
@@ -64,7 +65,8 @@ export async function submitSeriesAction(input: {
   for (const episode of input.episodes) {
     await createFilmSubmission({
       userId: user.id,
-      artistId: identity.id,
+      artistId: identity.isStudio ? null : identity.id,
+      studioId: identity.isStudio ? identity.id : null,
       artistName: identity.name,
       title: episode.title,
       synopsis: episode.synopsis,
