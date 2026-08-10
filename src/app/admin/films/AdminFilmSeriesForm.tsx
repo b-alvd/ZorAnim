@@ -21,7 +21,7 @@ const emptyEpisode = (previous?: SeriesEpisodeInput): SeriesEpisodeInput => ({
   synopsis: "",
   year: previous?.year ?? new Date().getFullYear(),
   durationMinutes: 0,
-  episodeKind: previous?.episodeKind ?? "episode",
+  episodeKind: previous?.episodeKind ?? "teaser",
   seasonNumber: previous?.seasonNumber ?? 1,
   episodeNumber: previous ? previous.episodeNumber + 1 : 1,
   poster: "",

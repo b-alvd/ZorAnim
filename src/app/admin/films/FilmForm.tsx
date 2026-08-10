@@ -52,9 +52,12 @@ export default function FilmForm({
   const [poster, setPoster] = useState(initial?.poster ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
   const [seriesTitleValue, setSeriesTitleValue] = useState(lockedSeriesTitle ?? initial?.seriesTitle ?? "");
-  const [seasonType, setSeasonType] = useState(seasonTypeLabel(initial?.episodeKind, initial?.seasonNumber));
+  const [seasonType, setSeasonType] = useState(
+    initial ? seasonTypeLabel(initial.episodeKind, initial.seasonNumber) : "Teaser"
+  );
   const isSeries = !!lockedSeriesTitle || !!seriesTitleValue.trim();
   const isTeaser = seasonType === "Teaser";
+  const [standaloneTeaser, setStandaloneTeaser] = useState(!isSeries && initial?.episodeKind === "teaser");
   const showSeriesTitleInput = !lockedSeriesTitle && (!initial || !!initial.seriesTitle);
   const [valid, setValid] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -115,6 +118,20 @@ export default function FilmForm({
               />
             </div>
           </div>
+        </>
+      )}
+      {!isSeries && (
+        <>
+          <input type="hidden" name="episodeKind" value={standaloneTeaser ? "teaser" : "episode"} />
+          <label className={styles.customCheckbox}>
+            <input
+              type="checkbox"
+              checked={standaloneTeaser}
+              onChange={(e) => setStandaloneTeaser(e.target.checked)}
+            />
+            <span className={styles.checkboxBox} />
+            Teaser uniquement (le film n&apos;est pas encore sorti, affiché dans &quot;Bientôt sur ZorAnim&quot;)
+          </label>
         </>
       )}
       <div className={styles.field}>

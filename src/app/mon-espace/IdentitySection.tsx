@@ -66,9 +66,7 @@ function readFilmInput(formData: FormData, fallbackArtistId: string) {
     seriesTitle: seriesTitle || null,
     seasonNumber: seriesTitle && seasonNumber ? Number(seasonNumber) : null,
     episodeNumber: seriesTitle && episodeNumber ? Number(episodeNumber) : null,
-    episodeKind: (seriesTitle && formData.get("episodeKind") === "teaser" ? "teaser" : "episode") as
-      | "episode"
-      | "teaser",
+    episodeKind: (formData.get("episodeKind") === "teaser" ? "teaser" : "episode") as "episode" | "teaser",
   };
 }
 
