@@ -16,6 +16,7 @@ import {
   toggleFavoriteAction,
 } from "@/lib/actions";
 import StarRating from "@/components/StarRating/StarRating";
+import { formatEpisodeLabel, formatEpisodeTag } from "@/lib/series";
 import CommentItem from "./CommentItem";
 import styles from "./FilmModal.module.css";
 
@@ -179,7 +180,7 @@ export default function FilmModal({
           <h2 className={styles.title}>{activeFilm.title}</h2>
           {activeFilm.seriesTitle && (
             <p className={styles.seriesLabel}>
-              {activeFilm.seriesTitle} · Saison {activeFilm.seasonNumber ?? 1} · Épisode {activeFilm.episodeNumber}
+              {activeFilm.seriesTitle} · {formatEpisodeLabel(activeFilm)}
             </p>
           )}
           <Link
@@ -243,9 +244,7 @@ export default function FilmModal({
                     onClick={() => setActiveFilm(ep)}
                     className={`${styles.episodeItem} ${ep.id === activeFilm.id ? styles.episodeItemActive : ""}`}
                   >
-                    <span className={styles.episodeNumber}>
-                      S{ep.seasonNumber ?? 1}E{ep.episodeNumber}
-                    </span>
+                    <span className={styles.episodeNumber}>{formatEpisodeTag(ep)}</span>
                     <span className={styles.episodeTitle}>{ep.title}</span>
                     {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
                   </button>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import FilmRowActions from "./FilmRowActions";
 import type { Artist, Film } from "@/data/types";
+import { formatEpisodeTag } from "@/lib/series";
 import styles from "../shared.module.css";
 import listStyles from "./films.module.css";
 
@@ -42,9 +43,7 @@ function SeriesRow({ title, episodes, artists, categories }: { title: string; ep
         sorted.map((ep) => (
           <tr key={ep.id} className={listStyles.episodeRow}>
             <td>
-              <span className={listStyles.episodeTag}>
-                S{ep.seasonNumber ?? 1}E{ep.episodeNumber}
-              </span>{" "}
+              <span className={listStyles.episodeTag}>{formatEpisodeTag(ep)}</span>{" "}
               {ep.title}
             </td>
             <td>{ep.artistName}</td>

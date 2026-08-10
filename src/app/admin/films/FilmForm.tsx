@@ -21,7 +21,15 @@ type FilmFormValues = {
   seriesTitle?: string | null;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
+  episodeKind?: "episode" | "teaser";
 };
+
+const SEASON_TYPE_OPTIONS = ["Teaser", "Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
+
+function seasonTypeLabel(episodeKind: string | undefined, seasonNumber: number | null | undefined): string {
+  if (episodeKind === "teaser") return "Teaser";
+  return `Saison ${seasonNumber ?? 1}`;
+}
 
 export default function FilmForm({
   onSubmit,
@@ -44,7 +52,9 @@ export default function FilmForm({
   const [poster, setPoster] = useState(initial?.poster ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
   const [seriesTitleValue, setSeriesTitleValue] = useState(lockedSeriesTitle ?? initial?.seriesTitle ?? "");
+  const [seasonType, setSeasonType] = useState(seasonTypeLabel(initial?.episodeKind, initial?.seasonNumber));
   const isSeries = !!lockedSeriesTitle || !!seriesTitleValue.trim();
+  const isTeaser = seasonType === "Teaser";
   const showSeriesTitleInput = !lockedSeriesTitle && (!initial || !!initial.seriesTitle);
   const [valid, setValid] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -84,20 +94,17 @@ export default function FilmForm({
       )}
       {isSeries && (
         <>
+          <input type="hidden" name="episodeKind" value={isTeaser ? "teaser" : "episode"} />
+          {!isTeaser && (
+            <input type="hidden" name="seasonNumber" value={seasonType.replace("Saison ", "")} />
+          )}
           <div className={styles.row2}>
             <div className={styles.field}>
-              <label htmlFor="seasonNumber">Numéro de saison</label>
-              <input
-                id="seasonNumber"
-                name="seasonNumber"
-                type="number"
-                min={1}
-                defaultValue={initial?.seasonNumber ?? 1}
-                required={isSeries}
-              />
+              <label>Type</label>
+              <Dropdown options={SEASON_TYPE_OPTIONS} value={seasonType} onChange={setSeasonType} />
             </div>
             <div className={styles.field}>
-              <label htmlFor="episodeNumber">Numéro d&apos;épisode</label>
+              <label htmlFor="episodeNumber">Numéro</label>
               <input
                 id="episodeNumber"
                 name="episodeNumber"

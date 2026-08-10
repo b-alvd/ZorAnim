@@ -211,7 +211,7 @@ export default async function AdminDashboard() {
       <h1 className={styles.title}>Tableau de bord</h1>
 
       <div className={styles.grid}>
-        <StatCard icon={icons.film} value={stats.filmCount} label="Films" />
+        <StatCard icon={icons.film} value={stats.filmCount} label="Films et séries" />
         <StatCard icon={icons.artist} value={stats.artistCount} label="Artistes" />
         <StatCard icon={icons.studio} value={stats.studioCount} label="Studios" />
         <StatCard icon={icons.users} value={stats.userCount} label="Utilisateurs" />
@@ -287,7 +287,7 @@ export default async function AdminDashboard() {
           rows={stats.topArtists.map((a) => ({
             id: a.id,
             name: a.name,
-            value: `${a.filmCount} film${a.filmCount > 1 ? "s" : ""}`,
+            value: `${a.filmCount} contenu${a.filmCount > 1 ? "s" : ""}`,
           }))}
         />
       </div>
@@ -296,8 +296,8 @@ export default async function AdminDashboard() {
       <div className={styles.grid}>
         <StatCard icon={icons.trending} value={stats.newUsers7d} label="Nouveaux utilisateurs (7j)" />
         <StatCard icon={icons.trending} value={stats.newUsers30d} label="Nouveaux utilisateurs (30j)" />
-        <StatCard icon={icons.film} value={stats.newFilms7d} label="Nouveaux films (7j)" />
-        <StatCard icon={icons.film} value={stats.newFilms30d} label="Nouveaux films (30j)" />
+        <StatCard icon={icons.film} value={stats.newFilms7d} label="Nouveaux films/séries (7j)" />
+        <StatCard icon={icons.film} value={stats.newFilms30d} label="Nouveaux films/séries (30j)" />
       </div>
 
       <h2 className={styles.sectionTitle}>Taux d&apos;acceptation</h2>
@@ -321,7 +321,7 @@ export default async function AdminDashboard() {
           rows={stats.categoryBreakdown.map((c) => ({
             id: c.category,
             name: c.category,
-            value: `${c.count} film${c.count > 1 ? "s" : ""}`,
+            value: `${c.count} contenu${c.count > 1 ? "s" : ""}`,
           }))}
         />
       </div>

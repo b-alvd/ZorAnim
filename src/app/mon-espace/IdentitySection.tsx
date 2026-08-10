@@ -9,6 +9,7 @@ import FilmForm from "@/app/admin/films/FilmForm";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import type { Artist, Film } from "@/data/types";
 import { RATING_OPTIONS } from "@/lib/ratings";
+import { formatEpisodeTag } from "@/lib/series";
 import {
   addOwnEpisodeAction,
   deleteOwnFilmAction,
@@ -65,6 +66,9 @@ function readFilmInput(formData: FormData, fallbackArtistId: string) {
     seriesTitle: seriesTitle || null,
     seasonNumber: seriesTitle && seasonNumber ? Number(seasonNumber) : null,
     episodeNumber: seriesTitle && episodeNumber ? Number(episodeNumber) : null,
+    episodeKind: (seriesTitle && formData.get("episodeKind") === "teaser" ? "teaser" : "episode") as
+      | "episode"
+      | "teaser",
   };
 }
 
@@ -207,9 +211,7 @@ function EpisodesManager({
       <div className={styles.episodesList}>
         {sorted.map((ep) => (
           <div key={ep.id} className={styles.episodeRow}>
-            <span className={styles.episodeTag}>
-              S{ep.seasonNumber ?? 1}E{ep.episodeNumber}
-            </span>
+            <span className={styles.episodeTag}>{formatEpisodeTag(ep)}</span>
             <div className={styles.episodeInfo}>
               <span className={styles.rowTitle}>{ep.title}</span>
             </div>
@@ -481,6 +483,7 @@ export default function IdentitySection({
               seriesTitle: addingEpisodeSeries,
               seasonNumber: lastEpisode?.seasonNumber ?? 1,
               episodeNumber: (lastEpisode?.episodeNumber ?? 0) + 1,
+              episodeKind: lastEpisode?.episodeKind ?? "episode",
             }}
             pending={isPending}
             onSubmit={(formData) =>

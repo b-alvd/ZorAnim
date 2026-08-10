@@ -26,4 +26,5 @@ export type Film = {
   seriesTitle: string | null;
   seasonNumber: number | null;
   episodeNumber: number | null;
+  episodeKind: "episode" | "teaser";
 };

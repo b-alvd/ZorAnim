@@ -24,6 +24,7 @@ function readFilmInput(formData: FormData): FilmInput {
     seriesTitle: seriesTitle || null,
     seasonNumber: seriesTitle && seasonNumber ? Number(seasonNumber) : null,
     episodeNumber: seriesTitle && episodeNumber ? Number(episodeNumber) : null,
+    episodeKind: seriesTitle ? (formData.get("episodeKind") === "teaser" ? "teaser" : "episode") : "episode",
   };
 }
 
@@ -39,5 +40,52 @@ export async function updateFilmAction(id: string, formData: FormData) {
 
 export async function deleteFilmAction(id: string) {
   await deleteFilm(id);
+  revalidatePath("/admin/films");
+}
+
+export type SeriesEpisodeInput = {
+  title: string;
+  synopsis: string;
+  year: number;
+  durationMinutes: number;
+  episodeKind: "episode" | "teaser";
+  seasonNumber: number;
+  episodeNumber: number;
+  poster: string;
+  videoUrl: string;
+};
+
+export async function createSeriesAction(input: {
+  artistId: string;
+  isStudio: boolean;
+  seriesTitle: string;
+  rating: string;
+  category: string;
+  isNew: boolean;
+  episodes: SeriesEpisodeInput[];
+}) {
+  const seriesTitle = input.seriesTitle.trim();
+  if (!seriesTitle) throw new Error("Le titre de la série est requis.");
+  if (input.episodes.length === 0) throw new Error("Ajoute au moins un épisode.");
+
+  for (const episode of input.episodes) {
+    await createFilm({
+      title: episode.title,
+      synopsis: episode.synopsis,
+      year: episode.year,
+      durationMinutes: episode.durationMinutes,
+      rating: input.rating,
+      category: input.category,
+      artistId: input.isStudio ? null : input.artistId,
+      studioId: input.isStudio ? input.artistId : null,
+      isNew: input.isNew,
+      poster: episode.poster,
+      videoUrl: episode.videoUrl,
+      seriesTitle,
+      seasonNumber: episode.episodeKind === "teaser" ? null : episode.seasonNumber,
+      episodeNumber: episode.episodeNumber,
+      episodeKind: episode.episodeKind,
+    });
+  }
   revalidatePath("/admin/films");
 }

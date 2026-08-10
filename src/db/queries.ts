@@ -40,6 +40,7 @@ const filmSelection = {
   seriesTitle: films.seriesTitle,
   seasonNumber: films.seasonNumber,
   episodeNumber: films.episodeNumber,
+  episodeKind: films.episodeKind,
 };
 
 function filmsQuery() {
@@ -74,12 +75,46 @@ function mapFilm(row: FilmRow): Film {
     seriesTitle: row.seriesTitle,
     seasonNumber: row.seasonNumber,
     episodeNumber: row.episodeNumber,
+    episodeKind: (row.episodeKind as "episode" | "teaser") ?? "episode",
   };
+}
+
+async function getSeriesCanonicalIds(seriesTitles: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (seriesTitles.length === 0) return map;
+  const rows = await db
+    .select({
+      id: films.id,
+      seriesTitle: films.seriesTitle,
+      seasonNumber: films.seasonNumber,
+      episodeNumber: films.episodeNumber,
+    })
+    .from(films)
+    .where(inArray(films.seriesTitle, seriesTitles));
+
+  const bySeries = new Map<string, typeof rows>();
+  for (const r of rows) {
+    if (!r.seriesTitle) continue;
+    const arr = bySeries.get(r.seriesTitle) ?? [];
+    arr.push(r);
+    bySeries.set(r.seriesTitle, arr);
+  }
+  for (const [title, episodes] of bySeries) {
+    const sorted = [...episodes].sort(
+      (a, b) => (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) || (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
+    );
+    map.set(title, sorted[0].id);
+  }
+  return map;
 }
 
 async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
   if (filmsList.length === 0) return filmsList;
-  const ids = filmsList.map((f) => f.id);
+  const seriesTitles = [...new Set(filmsList.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
+  const canonicalMap = await getSeriesCanonicalIds(seriesTitles);
+  const ratingKeyOf = (f: Film) => (f.seriesTitle ? canonicalMap.get(f.seriesTitle) ?? f.id : f.id);
+
+  const ids = [...new Set(filmsList.map(ratingKeyOf))];
   const rows = await db
     .select({
       filmId: filmRatings.filmId,
@@ -92,7 +127,7 @@ async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
 
   const map = new Map(rows.map((r) => [r.filmId, { avg: r.avg, count: r.count }]));
   return filmsList.map((f) => {
-    const summary = map.get(f.id);
+    const summary = map.get(ratingKeyOf(f));
     return { ...f, avgRating: summary ? summary.avg : null, ratingCount: summary?.count ?? 0 };
   });
 }
@@ -191,7 +226,7 @@ export async function getSeriesEpisodes(seriesTitle: string): Promise<Film[]> {
   );
 }
 
-export async function resolveCommentFilmId(filmId: string): Promise<string> {
+export async function resolveSeriesCanonicalId(filmId: string): Promise<string> {
   const [film] = await db.select({ seriesTitle: films.seriesTitle }).from(films).where(eq(films.id, filmId));
   if (!film?.seriesTitle) return filmId;
   const episodes = await getSeriesEpisodes(film.seriesTitle);
@@ -245,6 +280,7 @@ export type FilmInput = {
   seriesTitle?: string | null;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
+  episodeKind?: "episode" | "teaser";
 };
 
 export async function createFilm(input: FilmInput): Promise<string> {
@@ -390,6 +426,7 @@ export async function acceptFilmSubmission(id: string, identity?: { id: string; 
     seriesTitle: submission.seriesTitle,
     seasonNumber: submission.seasonNumber,
     episodeNumber: submission.episodeNumber,
+    episodeKind: submission.episodeKind as "episode" | "teaser",
   });
 
   await db.update(filmSubmissions).set({ status: "accepted" }).where(eq(filmSubmissions.id, id));
@@ -1161,6 +1198,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         studioId: films.studioId,
         createdAt: films.createdAt,
         category: films.category,
+        seriesTitle: films.seriesTitle,
       })
       .from(films),
     db.select({ id: artists.id, name: artists.name }).from(artists),
@@ -1199,26 +1237,39 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   ]);
   const creatorIdOf = (f: { artistId: string | null; studioId: string | null }) => f.artistId ?? f.studioId ?? "";
 
+  // Group raw film rows by content (a series' episodes collapse into a single
+  // entry) so dashboard counts reflect distinct films/series, not episode rows.
+  const contentGroups = new Map<string, typeof filmRows>();
+  for (const f of filmRows) {
+    const key = f.seriesTitle ?? f.id;
+    const arr = contentGroups.get(key) ?? [];
+    arr.push(f);
+    contentGroups.set(key, arr);
+  }
+  const contentRepresentatives = [...contentGroups.values()].map((group) =>
+    group.reduce((latest, f) => (new Date(f.createdAt) > new Date(latest.createdAt) ? f : latest))
+  );
+
   const now = Date.now();
   const DAY = 24 * 60 * 60 * 1000;
   const since = (days: number) => now - days * DAY;
   const newUsers7d = userRows.filter((u) => new Date(u.createdAt).getTime() >= since(7)).length;
   const newUsers30d = userRows.filter((u) => new Date(u.createdAt).getTime() >= since(30)).length;
-  const newFilms7d = filmRows.filter((f) => new Date(f.createdAt).getTime() >= since(7)).length;
-  const newFilms30d = filmRows.filter((f) => new Date(f.createdAt).getTime() >= since(30)).length;
+  const newFilms7d = contentRepresentatives.filter((f) => new Date(f.createdAt).getTime() >= since(7)).length;
+  const newFilms30d = contentRepresentatives.filter((f) => new Date(f.createdAt).getTime() >= since(30)).length;
 
   const categoryCounts = new Map<string, number>();
-  for (const f of filmRows) categoryCounts.set(f.category, (categoryCounts.get(f.category) ?? 0) + 1);
+  for (const f of contentRepresentatives) categoryCounts.set(f.category, (categoryCounts.get(f.category) ?? 0) + 1);
   const categoryBreakdown = [...categoryCounts.entries()]
     .map(([category, count]) => ({ category, count }))
     .sort((a, b) => b.count - a.count);
 
-  const recentFilms = [...filmRows]
+  const recentFilms = [...contentRepresentatives]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5)
     .map((f) => ({
       id: f.id,
-      title: f.title,
+      title: f.seriesTitle ?? f.title,
       artistName: creatorMap.get(creatorIdOf(f))?.name ?? "?",
       createdAt: f.createdAt,
     }));
@@ -1234,8 +1285,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   }
 
   const filmCountByArtist = new Map<string, number>();
+  const seenContentByArtist = new Set<string>();
   for (const f of filmRows) {
     const cid = creatorIdOf(f);
+    const contentKey = `${cid}::${f.seriesTitle ?? f.id}`;
+    if (seenContentByArtist.has(contentKey)) continue;
+    seenContentByArtist.add(contentKey);
     filmCountByArtist.set(cid, (filmCountByArtist.get(cid) ?? 0) + 1);
   }
 
@@ -1247,7 +1302,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const topRatedFilms = [...ratingSumByFilm.entries()]
     .map(([id, sum]) => ({
       id,
-      title: filmMap.get(id)?.title ?? "?",
+      title: filmMap.get(id)?.seriesTitle ?? filmMap.get(id)?.title ?? "?",
       average: sum / (ratingCountByFilm.get(id) ?? 1),
       count: ratingCountByFilm.get(id) ?? 0,
     }))
@@ -1263,7 +1318,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const ratingTotal = ratingRows.reduce((sum, r) => sum + r.value, 0);
 
   return {
-    filmCount: filmRows.length,
+    filmCount: contentRepresentatives.length,
     artistCount: artistRows.length,
     studioCount: studioRows.length,
     userCount: userRows.length,

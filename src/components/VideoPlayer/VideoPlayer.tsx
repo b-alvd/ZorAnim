@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Film } from "@/data/types";
 import { getWatchedEpisodeIdsAction } from "@/lib/actions";
+import { formatEpisodeTag } from "@/lib/series";
 import styles from "./VideoPlayer.module.css";
 
 function formatTime(seconds: number) {
@@ -207,7 +208,7 @@ export default function VideoPlayer({
                       href={`/watch/${ep.id}?autoplay=1`}
                       className={`${styles.episodeItem} ${ep.id === film.id ? styles.episodeItemActive : ""}`}
                     >
-                      <span className={styles.episodeNumber}>S{ep.seasonNumber ?? 1}E{ep.episodeNumber}</span>
+                      <span className={styles.episodeNumber}>{formatEpisodeTag(ep)}</span>
                       <span className={styles.episodeTitle}>{ep.title}</span>
                       {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
                     </Link>
@@ -241,7 +242,7 @@ export default function VideoPlayer({
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
                 </svg>
-                S{nextEpisode.seasonNumber ?? 1}E{nextEpisode.episodeNumber} : {nextEpisode.title}
+                {formatEpisodeTag(nextEpisode)} : {nextEpisode.title}
               </Link>
             )}
           </div>

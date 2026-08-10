@@ -32,6 +32,20 @@ export function collapseSeries(films: Film[], trueEpisodeCounts?: Map<string, nu
   return result;
 }
 
+export function formatEpisodeTag(film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">): string {
+  if (film.episodeKind === "teaser") {
+    return film.episodeNumber && film.episodeNumber > 1 ? `Teaser ${film.episodeNumber}` : "Teaser";
+  }
+  return `S${film.seasonNumber ?? 1}E${film.episodeNumber ?? 1}`;
+}
+
+export function formatEpisodeLabel(film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">): string {
+  if (film.episodeKind === "teaser") {
+    return film.episodeNumber && film.episodeNumber > 1 ? `Teaser ${film.episodeNumber}` : "Teaser";
+  }
+  return `Saison ${film.seasonNumber ?? 1} · Épisode ${film.episodeNumber ?? 1}`;
+}
+
 export function countFilmsAndSeries(films: Film[]): { filmCount: number; seriesCount: number } {
   let filmCount = 0;
   const seriesTitles = new Set<string>();
