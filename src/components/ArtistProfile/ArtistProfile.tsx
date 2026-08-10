@@ -30,6 +30,8 @@ export default async function ArtistProfile({
   const collapsedFilms = collapseSeries(released);
   const collapsedComingSoon = collapseSeries(comingSoon);
   const { filmCount, seriesCount } = countFilmsAndSeries(artistFilms);
+  const soloFilms = collapsedFilms.filter((f) => !f.seriesTitle);
+  const seriesFilms = collapsedFilms.filter((f) => f.seriesTitle);
   const seriesTitles = [...new Set(collapsedFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
   const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
   const effectiveWatchedIds = computeEffectiveWatchedIds(collapsedFilms, watchedIds, episodeIdsMap);
@@ -95,26 +97,51 @@ export default async function ArtistProfile({
         </div>
       )}
 
-      <div className={styles.filmsSection}>
-        <h2 className={styles.filmsTitle}>Films</h2>
-        <div className={styles.grid}>
-          {collapsedFilms.map((f) => (
-            <div key={f.id} className={styles.filmSlot}>
-              <Card
-                film={f}
-                isFavorite={favoriteIds.has(f.id)}
-                isWatched={effectiveWatchedIds.has(f.id)}
-                episodeCount={f.episodeCount}
-              />
-              {!artist.isStudio && f.isStudioAttribution && (
-                <Link href={`/studios/${f.artistId}`} className={styles.filmStudioTag}>
-                  Avec {f.artistName}
-                </Link>
-              )}
-            </div>
-          ))}
+      {soloFilms.length > 0 && (
+        <div className={styles.filmsSection}>
+          <h2 className={styles.filmsTitle}>Films</h2>
+          <div className={styles.grid}>
+            {soloFilms.map((f) => (
+              <div key={f.id} className={styles.filmSlot}>
+                <Card
+                  film={f}
+                  isFavorite={favoriteIds.has(f.id)}
+                  isWatched={effectiveWatchedIds.has(f.id)}
+                  episodeCount={f.episodeCount}
+                />
+                {!artist.isStudio && f.isStudioAttribution && (
+                  <Link href={`/studios/${f.artistId}`} className={styles.filmStudioTag}>
+                    Avec {f.artistName}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {seriesFilms.length > 0 && (
+        <div className={styles.filmsSection}>
+          <h2 className={styles.filmsTitle}>Séries</h2>
+          <div className={styles.grid}>
+            {seriesFilms.map((f) => (
+              <div key={f.id} className={styles.filmSlot}>
+                <Card
+                  film={f}
+                  isFavorite={favoriteIds.has(f.id)}
+                  isWatched={effectiveWatchedIds.has(f.id)}
+                  episodeCount={f.episodeCount}
+                />
+                {!artist.isStudio && f.isStudioAttribution && (
+                  <Link href={`/studios/${f.artistId}`} className={styles.filmStudioTag}>
+                    Avec {f.artistName}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </main>
   );
 }

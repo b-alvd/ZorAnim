@@ -82,6 +82,11 @@
 
 .filmsSection {
   padding: 0 clamp(1rem, 4vw, 3.5rem);
+  margin-top: 2.5rem;
+}
+
+.filmsSection:first-of-type {
+  margin-top: 0;
 }
 
 .filmsTitle {
