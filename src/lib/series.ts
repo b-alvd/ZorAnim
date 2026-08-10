@@ -2,6 +2,24 @@ import type { Film } from "@/data/types";
 
 export type CollapsedFilm = Film & { episodeCount: number };
 
+// A film/série is "coming soon" (not yet released) if it has no episode that
+// isn't a teaser: a standalone teaser film, or a series with only teasers.
+export function splitComingSoon<T extends Pick<Film, "seriesTitle" | "episodeKind">>(
+  filmsList: T[]
+): { released: T[]; comingSoon: T[] } {
+  const seriesHasRealEpisode = new Set<string>();
+  for (const f of filmsList) {
+    if (f.seriesTitle && f.episodeKind !== "teaser") seriesHasRealEpisode.add(f.seriesTitle);
+  }
+  const released: T[] = [];
+  const comingSoon: T[] = [];
+  for (const f of filmsList) {
+    const isComingSoon = f.seriesTitle ? !seriesHasRealEpisode.has(f.seriesTitle) : f.episodeKind === "teaser";
+    (isComingSoon ? comingSoon : released).push(f);
+  }
+  return { released, comingSoon };
+}
+
 export function collapseSeries(films: Film[], trueEpisodeCounts?: Map<string, number>): CollapsedFilm[] {
   const result: CollapsedFilm[] = [];
   const groups = new Map<string, Film[]>();

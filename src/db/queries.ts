@@ -20,6 +20,7 @@ import {
 } from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
+import { splitComingSoon } from "@/lib/series";
 import { placeholderAvatar } from "@/lib/placeholder";
 
 const filmSelection = {
@@ -132,32 +133,14 @@ async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
   });
 }
 
-function partitionComingSoon<T extends { seriesTitle: string | null; episodeKind: "episode" | "teaser" }>(
-  list: T[]
-): { released: T[]; comingSoon: T[] } {
-  const seriesHasRealEpisode = new Set<string>();
-  for (const f of list) {
-    if (f.seriesTitle && f.episodeKind !== "teaser") seriesHasRealEpisode.add(f.seriesTitle);
-  }
-  const released: T[] = [];
-  const comingSoon: T[] = [];
-  for (const f of list) {
-    const isComingSoon = f.seriesTitle ? !seriesHasRealEpisode.has(f.seriesTitle) : f.episodeKind === "teaser";
-    (isComingSoon ? comingSoon : released).push(f);
-  }
-  return { released, comingSoon };
-}
-
 export async function getFilms(): Promise<Film[]> {
   const rows = await filmsQuery();
-  const all = await attachRatingSummaries(rows.map(mapFilm));
-  return partitionComingSoon(all).released;
+  return attachRatingSummaries(rows.map(mapFilm));
 }
 
 export async function getComingSoonFilms(): Promise<Film[]> {
-  const rows = await filmsQuery();
-  const all = await attachRatingSummaries(rows.map(mapFilm));
-  return partitionComingSoon(all).comingSoon;
+  const all = await getFilms();
+  return splitComingSoon(all).comingSoon;
 }
 
 export async function getFilm(id: string): Promise<Film | undefined> {
@@ -169,14 +152,13 @@ export async function getFilm(id: string): Promise<Film | undefined> {
 
 export async function getNewFilms(): Promise<Film[]> {
   const rows = await filmsQuery();
-  const all = await attachRatingSummaries(rows.map(mapFilm));
-  return partitionComingSoon(all).released.filter((f) => f.isNew);
+  const all = await attachRatingSummaries(rows.map(mapFilm).filter((f) => f.isNew));
+  return splitComingSoon(all).released;
 }
 
 export async function getFilmsByCategory(category: string): Promise<Film[]> {
   const rows = await filmsQuery().where(eq(films.category, category));
-  const all = await attachRatingSummaries(rows.map(mapFilm));
-  return partitionComingSoon(all).released;
+  return attachRatingSummaries(rows.map(mapFilm));
 }
 
 export async function getFilmsByArtist(artistId: string): Promise<Film[]> {

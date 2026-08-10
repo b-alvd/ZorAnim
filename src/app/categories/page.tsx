@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Card from "@/components/Card/Card";
 import { getCategories, getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
+import { collapseSeries, computeEffectiveWatchedIds, splitComingSoon } from "@/lib/series";
 import gridStyles from "../catalogue/catalogue.module.css";
 import styles from "./categories.module.css";
 
@@ -29,7 +29,7 @@ export default async function CategoriesPage() {
         </p>
       </div>
       {categories.map((cat) => {
-        const catFilms = collapseSeries(films.filter((f) => f.category === cat));
+        const catFilms = collapseSeries(splitComingSoon(films.filter((f) => f.category === cat)).released);
         const effectiveWatchedIds = computeEffectiveWatchedIds(catFilms, watchedIds, episodeIdsMap);
         return (
           <section key={cat} className={styles.section}>

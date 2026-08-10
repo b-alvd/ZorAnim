@@ -1,14 +1,15 @@
 import Hero from "@/components/Hero/Hero";
 import Row from "@/components/Row/Row";
 import Landing from "@/components/Landing/Landing";
-import { getComingSoonFilms, getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
+import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
+import { collapseSeries, computeEffectiveWatchedIds, splitComingSoon } from "@/lib/series";
 import styles from "./home.module.css";
 
 export default async function Home() {
   const user = await getCurrentUser();
-  const films = await getFilms();
+  const allFilms = await getFilms();
+  const { released: films, comingSoon: comingSoonFilms } = splitComingSoon(allFilms);
 
   if (!user) return <Landing films={films} />;
 
@@ -20,11 +21,7 @@ export default async function Home() {
     );
   }
 
-  const [favoriteIds, watchedIds, comingSoonFilms] = await Promise.all([
-    getFavoriteFilmIds(user.id),
-    getWatchedFilmIds(user.id),
-    getComingSoonFilms(),
-  ]);
+  const [favoriteIds, watchedIds] = await Promise.all([getFavoriteFilmIds(user.id), getWatchedFilmIds(user.id)]);
   const collapsedFilms = collapseSeries(films);
   const collapsedComingSoon = collapseSeries(comingSoonFilms);
   const seriesTitles = [...new Set(collapsedFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];

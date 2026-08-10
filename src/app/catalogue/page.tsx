@@ -4,7 +4,13 @@ import Pagination from "@/components/Pagination/Pagination";
 import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { matchesQuery } from "@/lib/search";
-import { collapseSeries, computeEffectiveWatchedIds, countFilmsAndSeries, formatCatalogCountLabel } from "@/lib/series";
+import {
+  collapseSeries,
+  computeEffectiveWatchedIds,
+  countFilmsAndSeries,
+  formatCatalogCountLabel,
+  splitComingSoon,
+} from "@/lib/series";
 import SearchBar from "./SearchBar";
 import Filters from "./Filters";
 import styles from "./catalogue.module.css";
@@ -39,7 +45,8 @@ export default async function CataloguePage({
     return true;
   });
 
-  const collapsed = collapseSeries(matched);
+  const { released } = splitComingSoon(matched);
+  const collapsed = collapseSeries(released);
   const { filmCount, seriesCount } = countFilmsAndSeries(matched);
   const totalPages = Math.max(1, Math.ceil(collapsed.length / PAGE_SIZE));
   const page = Math.min(Math.max(1, Number(pageParam) || 1), totalPages);

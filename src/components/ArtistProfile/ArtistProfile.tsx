@@ -3,7 +3,13 @@ import Link from "next/link";
 import Card from "@/components/Card/Card";
 import type { Artist, Film } from "@/data/types";
 import { getSeriesEpisodeIds, getStudioTeamDisplay } from "@/db/queries";
-import { collapseSeries, computeEffectiveWatchedIds, countFilmsAndSeries, formatCatalogCountLabel } from "@/lib/series";
+import {
+  collapseSeries,
+  computeEffectiveWatchedIds,
+  countFilmsAndSeries,
+  formatCatalogCountLabel,
+  splitComingSoon,
+} from "@/lib/series";
 import styles from "./ArtistProfile.module.css";
 
 export default async function ArtistProfile({
@@ -20,7 +26,7 @@ export default async function ArtistProfile({
   studios?: { id: string; name: string; isOwner: boolean }[];
 }) {
   const team = artist.isStudio ? await getStudioTeamDisplay(artist.id) : [];
-  const collapsedFilms = collapseSeries(artistFilms);
+  const collapsedFilms = collapseSeries(splitComingSoon(artistFilms).released);
   const { filmCount, seriesCount } = countFilmsAndSeries(artistFilms);
   const seriesTitles = [...new Set(collapsedFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
   const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
