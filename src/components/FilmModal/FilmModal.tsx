@@ -23,10 +23,8 @@ import styles from "./FilmModal.module.css";
 
 const ANIM_MS = 250;
 
-function episodeOptionLabel(ep: Film, watchedEpisodeIds: Set<string>): string {
-  const tag = formatEpisodeTag(ep);
-  const watched = watchedEpisodeIds.has(ep.id) ? " · Vu" : "";
-  return `${tag} · ${ep.title}${watched}`;
+function seasonOptionFor(ep: Pick<Film, "episodeKind" | "seasonNumber">): string {
+  return ep.episodeKind === "teaser" ? "Teaser" : `Saison ${ep.seasonNumber ?? 1}`;
 }
 
 export default function FilmModal({
@@ -54,16 +52,12 @@ export default function FilmModal({
   const [isCommenting, startCommenting] = useTransition();
   const [episodes, setEpisodes] = useState<Film[]>([]);
   const [watchedEpisodeIds, setWatchedEpisodeIds] = useState<Set<string>>(new Set());
-  const [videoVariant, setVideoVariant] = useState<"Film" | "Teaser">("Film");
+  const [selectedSeason, setSelectedSeason] = useState<string>(seasonOptionFor(film));
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
     return () => cancelAnimationFrame(id);
   }, []);
-
-  useEffect(() => {
-    setVideoVariant("Film");
-  }, [activeFilm.id]);
 
   useEffect(() => {
     getFilmSocialDataAction(activeFilm.id).then((data) => {
@@ -162,6 +156,16 @@ export default function FilmModal({
     });
   };
 
+  const seasonNumbers = [
+    ...new Set(episodes.filter((ep) => ep.episodeKind !== "teaser").map((ep) => ep.seasonNumber ?? 1)),
+  ].sort((a, b) => a - b);
+  const hasTeaserEpisodes = episodes.some((ep) => ep.episodeKind === "teaser");
+  const seasonOptions = [
+    ...(hasTeaserEpisodes ? ["Teaser"] : []),
+    ...seasonNumbers.map((n) => `Saison ${n}`),
+  ];
+  const episodesForSeason = episodes.filter((ep) => seasonOptionFor(ep) === selectedSeason);
+
   const topLevelComments = comments.filter((c) => !c.parentId);
   const repliesByParent = new Map<string, Comment[]>();
   for (const c of comments) {
@@ -219,22 +223,21 @@ export default function FilmModal({
 
           <p className={styles.synopsis}>{activeFilm.synopsis}</p>
 
-          {!activeFilm.seriesTitle && activeFilm.teaserVideoUrl && activeFilm.episodeKind !== "teaser" && (
-            <div className={styles.versionPicker}>
-              <Dropdown options={["Film", "Teaser"]} value={videoVariant} onChange={(v) => setVideoVariant(v as "Film" | "Teaser")} />
-            </div>
-          )}
-
           <div className={styles.actions}>
-            <Link
-              href={`/watch/${activeFilm.id}?autoplay=1${videoVariant === "Teaser" ? "&variant=teaser" : ""}`}
-              className={styles.playBtn}
-            >
+            <Link href={`/watch/${activeFilm.id}?autoplay=1`} className={styles.playBtn}>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path d="M8 5v14l11-7z" />
               </svg>
               Lecture
             </Link>
+            {!activeFilm.seriesTitle && activeFilm.teaserVideoUrl && activeFilm.episodeKind !== "teaser" && (
+              <Link href={`/watch/${activeFilm.id}?autoplay=1&variant=teaser`} className={styles.teaserBtn}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                Bande-annonce
+              </Link>
+            )}
             <button
               type="button"
               className={`${styles.favBtn} ${favorite ? styles.favActive : ""}`}
@@ -258,14 +261,21 @@ export default function FilmModal({
           {episodes.length >= 1 && film.seriesTitle && (
             <div className={styles.episodesSection}>
               <h3 className={styles.episodesTitle}>Épisodes de {film.seriesTitle}</h3>
-              <Dropdown
-                options={episodes.map((ep) => episodeOptionLabel(ep, watchedEpisodeIds))}
-                value={episodeOptionLabel(activeFilm, watchedEpisodeIds)}
-                onChange={(label) => {
-                  const found = episodes.find((ep) => episodeOptionLabel(ep, watchedEpisodeIds) === label);
-                  if (found) setActiveFilm(found);
-                }}
-              />
+              <Dropdown options={seasonOptions} value={selectedSeason} onChange={setSelectedSeason} />
+              <div className={styles.episodesList}>
+                {episodesForSeason.map((ep) => (
+                  <button
+                    key={ep.id}
+                    type="button"
+                    onClick={() => setActiveFilm(ep)}
+                    className={`${styles.episodeItem} ${ep.id === activeFilm.id ? styles.episodeItemActive : ""}`}
+                  >
+                    <span className={styles.episodeNumber}>{formatEpisodeTag(ep)}</span>
+                    <span className={styles.episodeTitle}>{ep.title}</span>
+                    {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
