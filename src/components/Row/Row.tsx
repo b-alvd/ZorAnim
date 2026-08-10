@@ -11,12 +11,14 @@ export default function Row({
   cardWidth,
   favoriteIds,
   watchedIds,
+  comingSoon = false,
 }: {
   title: string;
   films: (Film & { episodeCount?: number })[];
   cardWidth?: number;
   favoriteIds?: string[];
   watchedIds?: string[];
+  comingSoon?: boolean;
 }) {
   const favoriteSet = new Set(favoriteIds);
   const watchedSet = new Set(watchedIds);
@@ -87,6 +89,7 @@ export default function Row({
                 isFavorite={favoriteSet.has(f.id)}
                 isWatched={watchedSet.has(f.id)}
                 episodeCount={f.episodeCount}
+                comingSoon={comingSoon}
               />
             </div>
           ))}

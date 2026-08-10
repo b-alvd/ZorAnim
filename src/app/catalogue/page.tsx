@@ -45,7 +45,8 @@ export default async function CataloguePage({
     return true;
   });
 
-  const { released } = splitComingSoon(matched);
+  const { released, comingSoon } = splitComingSoon(matched);
+  const collapsedComingSoon = collapseSeries(comingSoon);
   const collapsed = collapseSeries(released);
   const { filmCount, seriesCount } = countFilmsAndSeries(matched);
   const totalPages = Math.max(1, Math.ceil(collapsed.length / PAGE_SIZE));
@@ -64,6 +65,16 @@ export default async function CataloguePage({
         <SearchBar />
         <Filters categories={categories} years={years} />
       </div>
+      {collapsedComingSoon.length > 0 && (
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Bientôt sur ZorAnim</h2>
+          <div className={styles.grid}>
+            {collapsedComingSoon.map((f) => (
+              <Card key={f.id} film={f} episodeCount={f.episodeCount} comingSoon />
+            ))}
+          </div>
+        </div>
+      )}
       {films.length > 0 ? (
         <>
           <div className={styles.grid}>

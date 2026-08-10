@@ -1193,6 +1193,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     commentRows,
     reactionRows,
     inviteRows,
+    activeMemberships,
     allFilmSubs,
     allArtistSubs,
     recentCommentRows,
@@ -1208,7 +1209,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         seriesTitle: films.seriesTitle,
       })
       .from(films),
-    db.select({ id: artists.id, name: artists.name }).from(artists),
+    db.select({ id: artists.id, name: artists.name, userId: artists.userId }).from(artists),
     db.select({ id: studios.id, name: studios.name }).from(studios),
     db.select({ id: users.id, createdAt: users.createdAt }).from(users),
     getPendingFilmSubmissions(),
@@ -1220,6 +1221,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     db.select({ id: comments.id }).from(comments),
     db.select({ type: commentReactions.type }).from(commentReactions),
     db.select({ id: studioMembers.id }).from(studioMembers).where(eq(studioMembers.status, "invited")),
+    db
+      .select({ studioId: studioMembers.studioId, userId: studioMembers.userId })
+      .from(studioMembers)
+      .where(eq(studioMembers.status, "active")),
     db.select({ status: filmSubmissions.status }).from(filmSubmissions),
     db.select({ status: artistSubmissions.status }).from(artistSubmissions),
     db
@@ -1291,14 +1296,33 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     ratingCountByFilm.set(r.filmId, (ratingCountByFilm.get(r.filmId) ?? 0) + 1);
   }
 
+  // Content credited to a studio also counts toward each of that studio's
+  // active member artists, so a member's personal + studio work both show up.
+  const artistIdByUserId = new Map(artistRows.filter((a) => a.userId).map((a) => [a.userId as string, a.id]));
+  const memberArtistIdsByStudio = new Map<string, string[]>();
+  for (const m of activeMemberships) {
+    const memberArtistId = artistIdByUserId.get(m.userId);
+    if (!memberArtistId) continue;
+    const arr = memberArtistIdsByStudio.get(m.studioId) ?? [];
+    arr.push(memberArtistId);
+    memberArtistIdsByStudio.set(m.studioId, arr);
+  }
+
   const filmCountByArtist = new Map<string, number>();
   const seenContentByArtist = new Set<string>();
-  for (const f of filmRows) {
-    const cid = creatorIdOf(f);
-    const contentKey = `${cid}::${f.seriesTitle ?? f.id}`;
-    if (seenContentByArtist.has(contentKey)) continue;
+  const countFor = (id: string, f: (typeof filmRows)[number]) => {
+    const contentKey = `${id}::${f.seriesTitle ?? f.id}`;
+    if (seenContentByArtist.has(contentKey)) return;
     seenContentByArtist.add(contentKey);
-    filmCountByArtist.set(cid, (filmCountByArtist.get(cid) ?? 0) + 1);
+    filmCountByArtist.set(id, (filmCountByArtist.get(id) ?? 0) + 1);
+  };
+  for (const f of filmRows) {
+    countFor(creatorIdOf(f), f);
+    if (f.studioId) {
+      for (const memberArtistId of memberArtistIdsByStudio.get(f.studioId) ?? []) {
+        countFor(memberArtistId, f);
+      }
+    }
   }
 
   const topViewedFilms = [...viewsByFilm.entries()]

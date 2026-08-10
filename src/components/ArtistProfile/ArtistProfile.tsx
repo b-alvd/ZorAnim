@@ -26,7 +26,9 @@ export default async function ArtistProfile({
   studios?: { id: string; name: string; isOwner: boolean }[];
 }) {
   const team = artist.isStudio ? await getStudioTeamDisplay(artist.id) : [];
-  const collapsedFilms = collapseSeries(splitComingSoon(artistFilms).released);
+  const { released, comingSoon } = splitComingSoon(artistFilms);
+  const collapsedFilms = collapseSeries(released);
+  const collapsedComingSoon = collapseSeries(comingSoon);
   const { filmCount, seriesCount } = countFilmsAndSeries(artistFilms);
   const seriesTitles = [...new Set(collapsedFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
   const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
@@ -79,6 +81,19 @@ export default async function ArtistProfile({
           )}
         </div>
       </div>
+
+      {collapsedComingSoon.length > 0 && (
+        <div className={styles.filmsSection}>
+          <h2 className={styles.filmsTitle}>Bientôt sur ZorAnim</h2>
+          <div className={styles.grid}>
+            {collapsedComingSoon.map((f) => (
+              <div key={f.id} className={styles.filmSlot}>
+                <Card film={f} episodeCount={f.episodeCount} comingSoon />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className={styles.filmsSection}>
         <h2 className={styles.filmsTitle}>Films</h2>

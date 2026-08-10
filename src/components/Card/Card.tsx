@@ -11,11 +11,13 @@ export default function Card({
   isFavorite = false,
   isWatched = false,
   episodeCount = 1,
+  comingSoon = false,
 }: {
   film: Film;
   isFavorite?: boolean;
   isWatched?: boolean;
   episodeCount?: number;
+  comingSoon?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const isSeries = !!film.seriesTitle;
@@ -32,10 +34,14 @@ export default function Card({
           unoptimized
         />
         <div className={styles.shadow} />
-        {isSeries && (
-          <span className={styles.seriesBadge}>
-            Série ({episodeCount} ép{episodeCount > 1 ? "s" : ""}.)
-          </span>
+        {comingSoon ? (
+          <span className={styles.seriesBadge}>Bientôt · Teaser</span>
+        ) : (
+          isSeries && (
+            <span className={styles.seriesBadge}>
+              Série ({episodeCount} ép{episodeCount > 1 ? "s" : ""}.)
+            </span>
+          )
         )}
         <div className={styles.badgeStack}>
           {isWatched && <span className={styles.watchedBadge}>Vu</span>}

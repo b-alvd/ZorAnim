@@ -24,20 +24,30 @@ export default async function Home() {
   const [favoriteIds, watchedIds] = await Promise.all([getFavoriteFilmIds(user.id), getWatchedFilmIds(user.id)]);
   const collapsedFilms = collapseSeries(films);
   const collapsedComingSoon = collapseSeries(comingSoonFilms);
+  const collapsedNewFilms = collapseSeries(films.filter((f) => f.isNew));
+  const categories = [...new Set(films.map((f) => f.category))];
   const seriesTitles = [...new Set(collapsedFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
   const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
   const effectiveWatchedIds = computeEffectiveWatchedIds(collapsedFilms, watchedIds, episodeIdsMap);
+  const favoriteIdsArr = [...favoriteIds];
+  const watchedIdsArr = [...effectiveWatchedIds];
 
   return (
     <main>
       <Hero films={collapsedFilms} />
-      <Row
-        title="Nouveautés"
-        films={collapsedFilms}
-        favoriteIds={[...favoriteIds]}
-        watchedIds={[...effectiveWatchedIds]}
-      />
-      {collapsedComingSoon.length > 0 && <Row title="Bientôt sur ZorAnim" films={collapsedComingSoon} />}
+      {collapsedComingSoon.length > 0 && <Row title="Bientôt sur ZorAnim" films={collapsedComingSoon} comingSoon />}
+      {collapsedNewFilms.length > 0 && (
+        <Row title="Nouveautés" films={collapsedNewFilms} favoriteIds={favoriteIdsArr} watchedIds={watchedIdsArr} />
+      )}
+      {categories.map((cat) => (
+        <Row
+          key={cat}
+          title={cat}
+          films={collapseSeries(films.filter((f) => f.category === cat))}
+          favoriteIds={favoriteIdsArr}
+          watchedIds={watchedIdsArr}
+        />
+      ))}
     </main>
   );
 }
