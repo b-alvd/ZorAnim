@@ -1210,7 +1210,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       })
       .from(films),
     db.select({ id: artists.id, name: artists.name, userId: artists.userId }).from(artists),
-    db.select({ id: studios.id, name: studios.name }).from(studios),
+    db.select({ id: studios.id, name: studios.name, ownerId: studios.ownerId }).from(studios),
     db.select({ id: users.id, createdAt: users.createdAt }).from(users),
     getPendingFilmSubmissions(),
     getPendingArtistSubmissions(),
@@ -1297,7 +1297,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   }
 
   // Content credited to a studio also counts toward each of that studio's
-  // active member artists, so a member's personal + studio work both show up.
+  // active member artists AND its owner, so a member's or owner's personal +
+  // studio work both show up.
   const artistIdByUserId = new Map(artistRows.filter((a) => a.userId).map((a) => [a.userId as string, a.id]));
   const memberArtistIdsByStudio = new Map<string, string[]>();
   for (const m of activeMemberships) {
@@ -1306,6 +1307,14 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     const arr = memberArtistIdsByStudio.get(m.studioId) ?? [];
     arr.push(memberArtistId);
     memberArtistIdsByStudio.set(m.studioId, arr);
+  }
+  for (const s of studioRows) {
+    if (!s.ownerId) continue;
+    const ownerArtistId = artistIdByUserId.get(s.ownerId);
+    if (!ownerArtistId) continue;
+    const arr = memberArtistIdsByStudio.get(s.id) ?? [];
+    if (!arr.includes(ownerArtistId)) arr.push(ownerArtistId);
+    memberArtistIdsByStudio.set(s.id, arr);
   }
 
   const filmCountByArtist = new Map<string, number>();
