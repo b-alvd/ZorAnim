@@ -28,13 +28,13 @@ export default async function WatchPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ autoplay?: string }>;
+  searchParams: Promise<{ autoplay?: string; variant?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
 
   const { id } = await params;
-  const { autoplay } = await searchParams;
+  const { autoplay, variant } = await searchParams;
   const film = await getFilm(id);
   if (!film) notFound();
 
@@ -44,9 +44,11 @@ export default async function WatchPage({
     markWatched(user.id, film.id),
   ]);
 
+  const playbackFilm = variant === "teaser" && film.teaserVideoUrl ? { ...film, videoUrl: film.teaserVideoUrl } : film;
+
   return (
     <main className={styles.page}>
-      <VideoPlayer film={film} suggestions={suggestions} episodes={episodes} autoplay={autoplay === "1"} />
+      <VideoPlayer film={playbackFilm} suggestions={suggestions} episodes={episodes} autoplay={autoplay === "1"} />
     </main>
   );
 }

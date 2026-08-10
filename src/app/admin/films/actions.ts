@@ -25,6 +25,7 @@ function readFilmInput(formData: FormData): FilmInput {
     seasonNumber: seriesTitle && seasonNumber ? Number(seasonNumber) : null,
     episodeNumber: seriesTitle && episodeNumber ? Number(episodeNumber) : null,
     episodeKind: formData.get("episodeKind") === "teaser" ? "teaser" : "episode",
+    teaserVideoUrl: String(formData.get("teaserVideoUrl") ?? "") || null,
   };
 }
 

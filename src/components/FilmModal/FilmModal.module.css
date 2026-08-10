@@ -199,6 +199,11 @@
   color: var(--accent, #e50914);
 }
 
+.versionPicker {
+  max-width: 220px;
+  margin-top: 1rem;
+}
+
 .episodesSection {
   margin-top: 1.25rem;
   padding-top: 1.25rem;

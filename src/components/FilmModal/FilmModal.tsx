@@ -16,11 +16,18 @@ import {
   toggleFavoriteAction,
 } from "@/lib/actions";
 import StarRating from "@/components/StarRating/StarRating";
+import Dropdown from "@/components/Dropdown/Dropdown";
 import { formatEpisodeLabel, formatEpisodeTag } from "@/lib/series";
 import CommentItem from "./CommentItem";
 import styles from "./FilmModal.module.css";
 
 const ANIM_MS = 250;
+
+function episodeOptionLabel(ep: Film, watchedEpisodeIds: Set<string>): string {
+  const tag = formatEpisodeTag(ep);
+  const watched = watchedEpisodeIds.has(ep.id) ? " · Vu" : "";
+  return `${tag} · ${ep.title}${watched}`;
+}
 
 export default function FilmModal({
   film,
@@ -47,11 +54,16 @@ export default function FilmModal({
   const [isCommenting, startCommenting] = useTransition();
   const [episodes, setEpisodes] = useState<Film[]>([]);
   const [watchedEpisodeIds, setWatchedEpisodeIds] = useState<Set<string>>(new Set());
+  const [videoVariant, setVideoVariant] = useState<"Film" | "Teaser">("Film");
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setShown(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  useEffect(() => {
+    setVideoVariant("Film");
+  }, [activeFilm.id]);
 
   useEffect(() => {
     getFilmSocialDataAction(activeFilm.id).then((data) => {
@@ -206,8 +218,18 @@ export default function FilmModal({
           </div>
 
           <p className={styles.synopsis}>{activeFilm.synopsis}</p>
+
+          {!activeFilm.seriesTitle && activeFilm.teaserVideoUrl && activeFilm.episodeKind !== "teaser" && (
+            <div className={styles.versionPicker}>
+              <Dropdown options={["Film", "Teaser"]} value={videoVariant} onChange={(v) => setVideoVariant(v as "Film" | "Teaser")} />
+            </div>
+          )}
+
           <div className={styles.actions}>
-            <Link href={`/watch/${activeFilm.id}?autoplay=1`} className={styles.playBtn}>
+            <Link
+              href={`/watch/${activeFilm.id}?autoplay=1${videoVariant === "Teaser" ? "&variant=teaser" : ""}`}
+              className={styles.playBtn}
+            >
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                 <path d="M8 5v14l11-7z" />
               </svg>
@@ -236,20 +258,14 @@ export default function FilmModal({
           {episodes.length >= 1 && film.seriesTitle && (
             <div className={styles.episodesSection}>
               <h3 className={styles.episodesTitle}>Épisodes de {film.seriesTitle}</h3>
-              <div className={styles.episodesList}>
-                {episodes.map((ep) => (
-                  <button
-                    key={ep.id}
-                    type="button"
-                    onClick={() => setActiveFilm(ep)}
-                    className={`${styles.episodeItem} ${ep.id === activeFilm.id ? styles.episodeItemActive : ""}`}
-                  >
-                    <span className={styles.episodeNumber}>{formatEpisodeTag(ep)}</span>
-                    <span className={styles.episodeTitle}>{ep.title}</span>
-                    {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
-                  </button>
-                ))}
-              </div>
+              <Dropdown
+                options={episodes.map((ep) => episodeOptionLabel(ep, watchedEpisodeIds))}
+                value={episodeOptionLabel(activeFilm, watchedEpisodeIds)}
+                onChange={(label) => {
+                  const found = episodes.find((ep) => episodeOptionLabel(ep, watchedEpisodeIds) === label);
+                  if (found) setActiveFilm(found);
+                }}
+              />
             </div>
           )}
 

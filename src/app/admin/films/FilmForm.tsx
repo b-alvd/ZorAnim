@@ -22,6 +22,7 @@ type FilmFormValues = {
   seasonNumber?: number | null;
   episodeNumber?: number | null;
   episodeKind?: "episode" | "teaser";
+  teaserVideoUrl?: string | null;
 };
 
 const SEASON_TYPE_OPTIONS = ["Teaser", "Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
@@ -51,6 +52,7 @@ export default function FilmForm({
   const [artistId, setArtistId] = useState(initial?.artistId ?? artists[0]?.id ?? "");
   const [poster, setPoster] = useState(initial?.poster ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
+  const [teaserVideoUrl, setTeaserVideoUrl] = useState(initial?.teaserVideoUrl ?? "");
   const [seriesTitleValue, setSeriesTitleValue] = useState(lockedSeriesTitle ?? initial?.seriesTitle ?? "");
   const [seasonType, setSeasonType] = useState(
     initial ? seasonTypeLabel(initial.episodeKind, initial.seasonNumber) : "Teaser"
@@ -134,6 +136,19 @@ export default function FilmForm({
           </label>
         </>
       )}
+      {!isSeries && !standaloneTeaser && (
+        <div className={styles.field}>
+          <label>Bande-annonce (optionnel)</label>
+          <FileUpload
+            name="teaserVideoUrl"
+            label="Choisir une vidéo"
+            accept="video/*"
+            value={teaserVideoUrl}
+            onChange={setTeaserVideoUrl}
+            maxSizeMB={100}
+          />
+        </div>
+      )}
       <div className={styles.field}>
         <label htmlFor="title">Titre</label>
         <input id="title" name="title" defaultValue={initial?.title} required />
@@ -207,7 +222,7 @@ export default function FilmForm({
         />
       </div>
       <div className={styles.field}>
-        <label>Vidéo</label>
+        <label>{!isSeries && standaloneTeaser ? "Vidéo (teaser)" : "Vidéo"}</label>
         <FileUpload
           name="videoUrl"
           label="Choisir une vidéo"

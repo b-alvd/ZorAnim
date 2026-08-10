@@ -42,6 +42,7 @@ const filmSelection = {
   seasonNumber: films.seasonNumber,
   episodeNumber: films.episodeNumber,
   episodeKind: films.episodeKind,
+  teaserVideoUrl: films.teaserVideoUrl,
 };
 
 function filmsQuery() {
@@ -77,6 +78,7 @@ function mapFilm(row: FilmRow): Film {
     seasonNumber: row.seasonNumber,
     episodeNumber: row.episodeNumber,
     episodeKind: (row.episodeKind as "episode" | "teaser") ?? "episode",
+    teaserVideoUrl: row.teaserVideoUrl,
   };
 }
 
@@ -288,6 +290,7 @@ export type FilmInput = {
   seasonNumber?: number | null;
   episodeNumber?: number | null;
   episodeKind?: "episode" | "teaser";
+  teaserVideoUrl?: string | null;
 };
 
 export async function createFilm(input: FilmInput): Promise<string> {
@@ -434,6 +437,7 @@ export async function acceptFilmSubmission(id: string, identity?: { id: string; 
     seasonNumber: submission.seasonNumber,
     episodeNumber: submission.episodeNumber,
     episodeKind: submission.episodeKind as "episode" | "teaser",
+    teaserVideoUrl: submission.teaserVideoUrl,
   });
 
   await db.update(filmSubmissions).set({ status: "accepted" }).where(eq(filmSubmissions.id, id));
