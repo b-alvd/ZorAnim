@@ -262,7 +262,7 @@ export default async function AdminDashboard() {
       <div className={styles.rankings}>
         <RankCard
           icon={icons.eye}
-          title="Films les plus vus"
+          title="Films et séries les plus vus"
           emptyLabel="Aucun visionnage."
           rows={stats.topViewedFilms.map((f) => ({
             id: f.id,
@@ -272,7 +272,7 @@ export default async function AdminDashboard() {
         />
         <RankCard
           icon={icons.star}
-          title="Films les mieux notés"
+          title="Films et séries les mieux notés"
           emptyLabel="Aucune note."
           rows={stats.topRatedFilms.map((f) => ({
             id: f.id,

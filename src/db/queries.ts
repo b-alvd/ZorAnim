@@ -20,7 +20,7 @@ import {
 } from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
-import { splitComingSoon } from "@/lib/series";
+import { formatEpisodeTag, splitComingSoon } from "@/lib/series";
 import { placeholderAvatar } from "@/lib/placeholder";
 
 const filmSelection = {
@@ -1220,6 +1220,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         createdAt: films.createdAt,
         category: films.category,
         seriesTitle: films.seriesTitle,
+        seasonNumber: films.seasonNumber,
+        episodeNumber: films.episodeNumber,
+        episodeKind: films.episodeKind,
         guestViewCount: films.guestViewCount,
       })
       .from(films),
@@ -1351,15 +1354,23 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }
   }
 
+  const rankingTitleFor = (id: string) => {
+    const f = filmMap.get(id);
+    if (!f) return "?";
+    return f.seriesTitle
+      ? `${f.seriesTitle} - ${formatEpisodeTag({ ...f, episodeKind: f.episodeKind as "episode" | "teaser" })}`
+      : f.title;
+  };
+
   const topViewedFilms = [...viewsByFilm.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([id, views]) => ({ id, title: filmMap.get(id)?.seriesTitle ?? filmMap.get(id)?.title ?? "?", views }));
+    .map(([id, views]) => ({ id, title: rankingTitleFor(id), views }));
 
   const topRatedFilms = [...ratingSumByFilm.entries()]
     .map(([id, sum]) => ({
       id,
-      title: filmMap.get(id)?.seriesTitle ?? filmMap.get(id)?.title ?? "?",
+      title: rankingTitleFor(id),
       average: sum / (ratingCountByFilm.get(id) ?? 1),
       count: ratingCountByFilm.get(id) ?? 0,
     }))
