@@ -587,18 +587,27 @@ export async function markWatched(userId: string, filmId: string): Promise<void>
   }
 }
 
+export async function incrementGuestView(filmId: string): Promise<void> {
+  await db
+    .update(films)
+    .set({ guestViewCount: sql`${films.guestViewCount} + 1` })
+    .where(eq(films.id, filmId));
+}
+
 export async function getFilmEngagement(filmIds: string[]): Promise<Map<string, { views: number; comments: number }>> {
   const map = new Map<string, { views: number; comments: number }>();
   if (filmIds.length === 0) return map;
 
-  const [viewRows, commentRows] = await Promise.all([
+  const [viewRows, commentRows, guestViewRows] = await Promise.all([
     db.select({ filmId: watchHistory.filmId }).from(watchHistory).where(inArray(watchHistory.filmId, filmIds)),
     db.select({ filmId: comments.filmId }).from(comments).where(inArray(comments.filmId, filmIds)),
+    db.select({ id: films.id, guestViewCount: films.guestViewCount }).from(films).where(inArray(films.id, filmIds)),
   ]);
 
   for (const id of filmIds) map.set(id, { views: 0, comments: 0 });
   for (const r of viewRows) map.get(r.filmId)!.views += 1;
   for (const r of commentRows) map.get(r.filmId)!.comments += 1;
+  for (const r of guestViewRows) map.get(r.id)!.views += r.guestViewCount;
   return map;
 }
 
@@ -1211,6 +1220,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         createdAt: films.createdAt,
         category: films.category,
         seriesTitle: films.seriesTitle,
+        guestViewCount: films.guestViewCount,
       })
       .from(films),
     db.select({ id: artists.id, name: artists.name, userId: artists.userId }).from(artists),
@@ -1292,6 +1302,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
   const viewsByFilm = new Map<string, number>();
   for (const w of watchRows) viewsByFilm.set(w.filmId, (viewsByFilm.get(w.filmId) ?? 0) + 1);
+  for (const f of filmRows) {
+    if (f.guestViewCount > 0) viewsByFilm.set(f.id, (viewsByFilm.get(f.id) ?? 0) + f.guestViewCount);
+  }
 
   const ratingSumByFilm = new Map<string, number>();
   const ratingCountByFilm = new Map<string, number>();
@@ -1368,7 +1381,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     userCount: userRows.length,
     pendingCount: filmSubs.length + artistSubs.length,
     openMessageCount: messages.filter((m) => m.status === "open").length,
-    totalViews: watchRows.length,
+    totalViews: watchRows.length + filmRows.reduce((sum, f) => sum + f.guestViewCount, 0),
     totalFavorites: favoriteRows.length,
     ratingCount: ratingRows.length,
     averageRating: ratingRows.length > 0 ? ratingTotal / ratingRows.length : null,

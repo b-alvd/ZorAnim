@@ -97,30 +97,42 @@ export default function CommentItem({
           <span className={styles.commentDate}>{formatRelativeTime(comment.createdAt)}</span>
 
           <div className={styles.commentReactions}>
-            <button
-              type="button"
-              className={`${styles.reactBtn} ${comment.myReaction === "up" ? styles.reactActiveUp : ""}`}
-              onClick={() => onReact(comment.id, "up")}
-              disabled={disabled}
-              aria-label="Pouce en haut"
-            >
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-                <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z" />
-              </svg>
-              {comment.upCount > 0 && comment.upCount}
-            </button>
-            <button
-              type="button"
-              className={`${styles.reactBtn} ${comment.myReaction === "down" ? styles.reactActiveDown : ""}`}
-              onClick={() => onReact(comment.id, "down")}
-              disabled={disabled}
-              aria-label="Pouce en bas"
-            >
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
-                <path d="M23 3h-4v12h4V3zM1 14c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.58-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2z" />
-              </svg>
-              {comment.downCount > 0 && comment.downCount}
-            </button>
+            {currentUserId ? (
+              <>
+                <button
+                  type="button"
+                  className={`${styles.reactBtn} ${comment.myReaction === "up" ? styles.reactActiveUp : ""}`}
+                  onClick={() => onReact(comment.id, "up")}
+                  disabled={disabled}
+                  aria-label="Pouce en haut"
+                >
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                    <path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z" />
+                  </svg>
+                  {comment.upCount > 0 && comment.upCount}
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.reactBtn} ${comment.myReaction === "down" ? styles.reactActiveDown : ""}`}
+                  onClick={() => onReact(comment.id, "down")}
+                  disabled={disabled}
+                  aria-label="Pouce en bas"
+                >
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor">
+                    <path d="M23 3h-4v12h4V3zM1 14c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.58-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2z" />
+                  </svg>
+                  {comment.downCount > 0 && comment.downCount}
+                </button>
+              </>
+            ) : (
+              (comment.upCount > 0 || comment.downCount > 0) && (
+                <span className={styles.reactCounts}>
+                  {comment.upCount > 0 && `+${comment.upCount}`}
+                  {comment.upCount > 0 && comment.downCount > 0 && " · "}
+                  {comment.downCount > 0 && `-${comment.downCount}`}
+                </span>
+              )
+            )}
 
             {canDelete && (
               <div className={styles.commentMenu} ref={menuRef}>
@@ -159,7 +171,7 @@ export default function CommentItem({
 
         <p className={styles.commentBody}>{comment.body}</p>
 
-        {onReply && (
+        {onReply && currentUserId && (
           <button type="button" className={styles.replyToggle} onClick={() => setReplying((r) => !r)}>
             Répondre
           </button>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
-import { getFilm, getSeriesEpisodes, getSuggestions, markWatched } from "@/db/queries";
+import { notFound } from "next/navigation";
+import { getFilm, getSeriesEpisodes, getSuggestions, incrementGuestView, markWatched } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import VideoPlayer from "@/components/VideoPlayer/VideoPlayer";
 import styles from "./watch.module.css";
@@ -31,7 +31,6 @@ export default async function WatchPage({
   searchParams: Promise<{ autoplay?: string; variant?: string }>;
 }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/connexion");
 
   const { id } = await params;
   const { autoplay, variant } = await searchParams;
@@ -41,7 +40,7 @@ export default async function WatchPage({
   const [suggestions, episodes] = await Promise.all([
     getSuggestions(film.id),
     film.seriesTitle ? getSeriesEpisodes(film.seriesTitle) : Promise.resolve([]),
-    markWatched(user.id, film.id),
+    user ? markWatched(user.id, film.id) : incrementGuestView(film.id),
   ]);
 
   const playbackFilm = variant === "teaser" && film.teaserVideoUrl ? { ...film, videoUrl: film.teaserVideoUrl } : film;

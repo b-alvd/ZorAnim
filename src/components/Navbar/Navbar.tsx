@@ -112,9 +112,14 @@ export default function Navbar({
               </button>
             </>
           ) : (
-            <Link href="/connexion" className={styles.loginLink}>
-              Connexion
-            </Link>
+            <>
+              <Link href="/connexion" className={styles.loginLink}>
+                Connexion
+              </Link>
+              <Link href="/inscription" className={styles.signupLink}>
+                Inscription
+              </Link>
+            </>
           )}
         </div>
         <div className={styles.mobileActions}>
@@ -164,9 +169,14 @@ export default function Navbar({
               </button>
             </>
           ) : (
-            <Link href="/connexion" className={styles.mobileLink}>
-              Connexion
-            </Link>
+            <>
+              <Link href="/connexion" className={styles.mobileLink}>
+                Connexion
+              </Link>
+              <Link href="/inscription" className={styles.mobileLink}>
+                Inscription
+              </Link>
+            </>
           )}
         </div>
       </nav>

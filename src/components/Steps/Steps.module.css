@@ -6,16 +6,29 @@
 }
 
 .step {
+  position: relative;
   display: flex;
   gap: 1rem;
 }
 
+.step:not(:last-child) .number::after {
+  content: "";
+  position: absolute;
+  top: 32px;
+  left: 15px;
+  width: 1px;
+  height: calc(100% + 1.5rem - 32px);
+  background: linear-gradient(180deg, rgba(229, 9, 20, 0.35), rgba(229, 9, 20, 0));
+}
+
 .number {
+  position: relative;
   flex: 0 0 auto;
   width: 32px;
   height: 32px;
   border-radius: 50%;
   background: rgba(229, 9, 20, 0.15);
+  border: 1px solid rgba(229, 9, 20, 0.3);
   color: var(--accent, #e50914);
   display: flex;
   align-items: center;

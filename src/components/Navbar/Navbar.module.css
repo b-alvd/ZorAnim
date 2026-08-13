@@ -145,6 +145,16 @@
   border-color: #ff1a25;
 }
 
+.signupLink {
+  composes: navBtn;
+  color: #fff;
+}
+
+.signupLink:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .adminLink {
   composes: navBtn;
   color: #b3b3b3;

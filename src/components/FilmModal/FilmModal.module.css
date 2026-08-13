@@ -292,12 +292,15 @@
 }
 
 .myRating {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
   margin-top: 1.25rem;
   padding-top: 1.25rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.myRatingRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .myRatingLabel {
@@ -367,6 +370,27 @@
   font-size: 0.8rem;
   color: #ff6b6b;
   margin-top: -0.4rem;
+}
+
+.guestPrompt {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  margin-bottom: 1.25rem;
+}
+
+.guestPromptRating {
+  margin-top: 0.6rem;
+  margin-bottom: 0;
+}
+
+.guestPrompt a {
+  color: #fff;
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.guestPrompt a:hover {
+  color: var(--accent, #e50914);
 }
 
 .commentsList {
@@ -625,6 +649,12 @@
 
 .reactBtn:disabled {
   cursor: not-allowed;
+}
+
+.reactCounts {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .reactActiveUp {

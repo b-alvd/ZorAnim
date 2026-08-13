@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import ArtistProfile from "@/components/ArtistProfile/ArtistProfile";
 import { getFavoriteFilmIds, getFilmsByStudio, getStudio, getStudios, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -29,7 +29,6 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function StudioPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/connexion");
 
   const { id } = await params;
   const studio = await getStudio(id);
@@ -37,8 +36,8 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
 
   const [studioFilms, favoriteIds, watchedIds] = await Promise.all([
     getFilmsByStudio(studio.id),
-    getFavoriteFilmIds(user.id),
-    getWatchedFilmIds(user.id),
+    user ? getFavoriteFilmIds(user.id) : Promise.resolve(new Set<string>()),
+    user ? getWatchedFilmIds(user.id) : Promise.resolve(new Set<string>()),
   ]);
 
   return <ArtistProfile artist={studio} artistFilms={studioFilms} favoriteIds={favoriteIds} watchedIds={watchedIds} />;

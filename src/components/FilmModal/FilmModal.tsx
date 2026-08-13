@@ -238,24 +238,33 @@ export default function FilmModal({
                 Bande-annonce
               </Link>
             )}
-            <button
-              type="button"
-              className={`${styles.favBtn} ${favorite ? styles.favActive : ""}`}
-              onClick={handleToggleFavorite}
-              disabled={isPending}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill={favorite ? "currentColor" : "none"}
-                stroke="currentColor"
-                strokeWidth="2"
+            {currentUserId ? (
+              <button
+                type="button"
+                className={`${styles.favBtn} ${favorite ? styles.favActive : ""}`}
+                onClick={handleToggleFavorite}
+                disabled={isPending}
               >
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-              {favorite ? "Dans ma liste" : "Ajouter à ma liste"}
-            </button>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="18"
+                  height="18"
+                  fill={favorite ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                {favorite ? "Dans ma liste" : "Ajouter à ma liste"}
+              </button>
+            ) : (
+              <Link href="/connexion" className={styles.favBtn}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                Se connecter pour l&apos;ajouter
+              </Link>
+            )}
           </div>
 
           {episodes.length >= 1 && film.seriesTitle && (
@@ -280,8 +289,15 @@ export default function FilmModal({
           )}
 
           <div className={styles.myRating}>
-            <span className={styles.myRatingLabel}>Ta note</span>
-            <StarRating value={userRating ?? 0} onRate={handleRate} readOnly={isRating} />
+            <div className={styles.myRatingRow}>
+              <span className={styles.myRatingLabel}>Ta note</span>
+              <StarRating value={currentUserId ? userRating ?? 0 : 0} onRate={currentUserId ? handleRate : undefined} readOnly={!currentUserId || isRating} />
+            </div>
+            {!currentUserId && (
+              <p className={`${styles.guestPrompt} ${styles.guestPromptRating}`}>
+                <Link href="/connexion">Connecte-toi</Link> pour noter ce contenu.
+              </p>
+            )}
           </div>
 
           <div className={styles.commentsSection}>
@@ -290,18 +306,24 @@ export default function FilmModal({
               {comments.length > 0 && `(${comments.length})`}
             </h3>
 
-            <form className={styles.commentForm} onSubmit={handleAddComment}>
-              <textarea
-                className={styles.commentInput}
-                rows={2}
-                placeholder="Ton avis sur ce film..."
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-              />
-              <button type="submit" className={styles.commentSubmit} disabled={isCommenting || !commentText.trim()}>
-                Publier
-              </button>
-            </form>
+            {currentUserId ? (
+              <form className={styles.commentForm} onSubmit={handleAddComment}>
+                <textarea
+                  className={styles.commentInput}
+                  rows={2}
+                  placeholder="Ton avis sur ce film..."
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                />
+                <button type="submit" className={styles.commentSubmit} disabled={isCommenting || !commentText.trim()}>
+                  Publier
+                </button>
+              </form>
+            ) : (
+              <p className={styles.guestPrompt}>
+                <Link href="/connexion">Connecte-toi</Link> pour laisser un avis.
+              </p>
+            )}
             {commentError && <p className={styles.commentError}>{commentError}</p>}
             <div className={styles.commentsList}>
               {topLevelComments.map((c) => (

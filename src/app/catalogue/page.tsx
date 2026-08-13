@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import Card from "@/components/Card/Card";
+import GuestBanner from "@/components/GuestBanner/GuestBanner";
 import Pagination from "@/components/Pagination/Pagination";
 import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
@@ -23,14 +23,13 @@ export default async function CataloguePage({
   searchParams: Promise<{ q?: string; page?: string; category?: string; year?: string; minRating?: string }>;
 }) {
   const user = await getCurrentUser();
-  if (!user) redirect("/connexion");
 
   const { q, page: pageParam, category, year, minRating } = await searchParams;
   const query = q ?? "";
   const [allFilms, favoriteIds, watchedIds] = await Promise.all([
     getFilms(),
-    getFavoriteFilmIds(user.id),
-    getWatchedFilmIds(user.id),
+    user ? getFavoriteFilmIds(user.id) : Promise.resolve(new Set<string>()),
+    user ? getWatchedFilmIds(user.id) : Promise.resolve(new Set<string>()),
   ]);
 
   const categories = [...new Set(allFilms.map((f) => f.category))].sort((a, b) => a.localeCompare(b));
@@ -59,6 +58,7 @@ export default async function CataloguePage({
 
   return (
     <main className={styles.page}>
+      {!user && <GuestBanner />}
       <div className={styles.header}>
         <h1 className={styles.title}>Catalogue</h1>
         <p className={styles.subtitle}>{formatCatalogCountLabel(filmCount, seriesCount)} disponibles</p>

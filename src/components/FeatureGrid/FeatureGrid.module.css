@@ -7,20 +7,28 @@
 .card {
   background: #0e0e0e;
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
-  padding: 1.25rem;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, background-color 0.25s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(229, 9, 20, 0.35);
+  background: #131111;
 }
 
 .icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background: rgba(229, 9, 20, 0.15);
+  border: 1px solid rgba(229, 9, 20, 0.3);
   color: var(--accent, #e50914);
-  margin-bottom: 0.9rem;
+  margin-bottom: 1rem;
 }
 
 .title {

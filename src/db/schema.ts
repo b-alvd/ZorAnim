@@ -65,6 +65,7 @@ export const films = sqliteTable("films", {
   episodeNumber: integer("episode_number"),
   episodeKind: text("episode_kind").notNull().default("episode"),
   teaserVideoUrl: text("teaser_video_url"),
+  guestViewCount: integer("guest_view_count").notNull().default(0),
 });
 
 export const filmSubmissions = sqliteTable("film_submissions", {

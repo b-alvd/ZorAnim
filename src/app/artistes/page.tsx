@@ -1,14 +1,9 @@
-import { redirect } from "next/navigation";
 import ArtistCard from "@/components/ArtistCard/ArtistCard";
 import { getArtists, getArtistStudios, getFilms } from "@/db/queries";
-import { getCurrentUser } from "@/lib/auth/current-user";
 import { countFilmsAndSeries } from "@/lib/series";
 import styles from "./artistes.module.css";
 
 export default async function ArtistesPage() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/connexion");
-
   const [allArtists, films] = await Promise.all([getArtists(), getFilms()]);
   const artists = allArtists.filter((a) => !a.isStudio);
 
