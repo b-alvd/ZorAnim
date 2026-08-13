@@ -2,7 +2,7 @@ import Card from "@/components/Card/Card";
 import GuestBanner from "@/components/GuestBanner/GuestBanner";
 import { getFavoriteFilmIds, getNewFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { collapseSeries, computeEffectiveWatchedIds } from "@/lib/series";
+import { collapseSeries, computeEffectiveWatchedIds, countFilmsAndSeries } from "@/lib/series";
 import styles from "../catalogue/catalogue.module.css";
 
 export default async function NouveautesPage() {
@@ -14,6 +14,7 @@ export default async function NouveautesPage() {
     user ? getWatchedFilmIds(user.id) : Promise.resolve(new Set<string>()),
   ]);
   const newFilms = collapseSeries(rawNewFilms);
+  const { filmCount, seriesCount } = countFilmsAndSeries(rawNewFilms);
   const seriesTitles = [...new Set(newFilms.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
   const episodeIdsMap = await getSeriesEpisodeIds(seriesTitles);
   const effectiveWatchedIds = computeEffectiveWatchedIds(newFilms, watchedIds, episodeIdsMap);
@@ -25,7 +26,12 @@ export default async function NouveautesPage() {
         <h1 className={styles.title}>Nouveautés</h1>
         <p className={styles.subtitle}>
           {newFilms.length > 0
-            ? `${newFilms.length} nouveau${newFilms.length > 1 ? "x" : ""} film${newFilms.length > 1 ? "s" : ""}`
+            ? [
+                filmCount > 0 && `${filmCount} nouveau${filmCount > 1 ? "x" : ""} film${filmCount > 1 ? "s" : ""}`,
+                seriesCount > 0 && `${seriesCount} nouvelle${seriesCount > 1 ? "s" : ""} série${seriesCount > 1 ? "s" : ""}`,
+              ]
+                .filter(Boolean)
+                .join(", ")
             : "Rien de nouveau pour l'instant"}
         </p>
       </div>
