@@ -1354,7 +1354,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const topViewedFilms = [...viewsByFilm.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([id, views]) => ({ id, title: filmMap.get(id)?.title ?? "?", views }));
+    .map(([id, views]) => ({ id, title: filmMap.get(id)?.seriesTitle ?? filmMap.get(id)?.title ?? "?", views }));
 
   const topRatedFilms = [...ratingSumByFilm.entries()]
     .map(([id, sum]) => ({
