@@ -106,6 +106,7 @@ export default function AdminFilmSeriesForm({
           artists={artists}
           categories={categories}
           pending={filmPending}
+          allowSeries={false}
           onSubmit={(formData) =>
             startTransition(async () => {
               await createFilmAction(formData);

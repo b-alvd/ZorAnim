@@ -83,7 +83,7 @@ export default function AdminNav({ demandesCount, messagesCount }: { demandesCou
     {
       title: "Contenu",
       items: [
-        { href: "/admin/films", label: "Films", icon: icons.films },
+        { href: "/admin/films", label: "Films & Séries", icon: icons.films },
         { href: "/admin/artistes", label: "Artistes", icon: icons.artistes },
         { href: "/admin/studios", label: "Studios", icon: icons.studios },
       ],

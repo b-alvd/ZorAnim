@@ -39,6 +39,7 @@ export default function FilmForm({
   initial,
   pending,
   lockedSeriesTitle,
+  allowSeries = true,
 }: {
   onSubmit: (formData: FormData) => void;
   artists: Artist[];
@@ -46,6 +47,7 @@ export default function FilmForm({
   initial?: FilmFormValues;
   pending?: boolean;
   lockedSeriesTitle?: string;
+  allowSeries?: boolean;
 }) {
   const [rating, setRating] = useState(initial?.rating ?? RATING_OPTIONS[0]);
   const [category, setCategory] = useState(initial?.category ?? categories[0]);
@@ -60,7 +62,7 @@ export default function FilmForm({
   const isSeries = !!lockedSeriesTitle || !!seriesTitleValue.trim();
   const isTeaser = seasonType === "Teaser";
   const [standaloneTeaser, setStandaloneTeaser] = useState(!isSeries && initial?.episodeKind === "teaser");
-  const showSeriesTitleInput = !lockedSeriesTitle && (!initial || !!initial.seriesTitle);
+  const showSeriesTitleInput = allowSeries && !lockedSeriesTitle && (!initial || !!initial.seriesTitle);
   const [valid, setValid] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
