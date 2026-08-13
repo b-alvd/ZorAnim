@@ -17,7 +17,6 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: "ZorAnim",
-  description: "ZorAnim est la plateforme de streaming dédiée aux courts-métrages et séries d'animation 2D et 3D d'artistes indépendants.",
 };
 
 export default async function RootLayout({
