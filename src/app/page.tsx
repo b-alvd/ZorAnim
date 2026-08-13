@@ -11,7 +11,7 @@ export default async function Home() {
   const allFilms = await getFilms();
   const { released: films, comingSoon: comingSoonFilms } = splitComingSoon(allFilms);
 
-  if (!user) return <Landing films={films} />;
+  if (!user) return <Landing films={allFilms} />;
 
   if (films.length === 0) {
     return (

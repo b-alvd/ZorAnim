@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import type { Film } from "@/data/types";
 import styles from "./CatalogueCarousel.module.css";
 
 const BASE_SPEED = 45;
 const HOVER_SPEED = 10;
+const MIN_LOOP_ITEMS = 16;
+const STATIC_THRESHOLD = 4;
 
 export default function CatalogueCarousel({ films }: { films: (Film & { episodeCount?: number })[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -14,11 +16,19 @@ export default function CatalogueCarousel({ films }: { films: (Film & { episodeC
   const targetSpeedRef = useRef(BASE_SPEED);
   const offsetRef = useRef(0);
 
-  const items = [...films, ...films];
+  // Too few distinct posters make the loop's repeats obvious (looks like
+  // duplicates); below the threshold, show them once, static, no looping.
+  const isStatic = films.length < STATIC_THRESHOLD;
+  const rawRepeat = Math.ceil(MIN_LOOP_ITEMS / films.length);
+  const repeatCount = isStatic ? 1 : Math.max(2, rawRepeat % 2 === 0 ? rawRepeat : rawRepeat + 1);
+  const items = useMemo(
+    () => (isStatic ? films : Array.from({ length: repeatCount }, () => films).flat()),
+    [films, isStatic, repeatCount]
+  );
 
   useEffect(() => {
     const track = trackRef.current;
-    if (!track || films.length === 0) return;
+    if (!track || isStatic || films.length === 0) return;
     let raf: number;
     let last = performance.now();
 
@@ -34,26 +44,29 @@ export default function CatalogueCarousel({ films }: { films: (Film & { episodeC
     };
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
-  }, [films.length]);
+  }, [films.length, isStatic]);
 
   if (films.length === 0) return null;
 
   return (
     <div
-      className={styles.viewport}
+      className={`${styles.viewport} ${isStatic ? styles.staticViewport : ""}`}
       onMouseEnter={() => (targetSpeedRef.current = HOVER_SPEED)}
       onMouseLeave={() => (targetSpeedRef.current = BASE_SPEED)}
     >
       <div className={styles.track} ref={trackRef}>
-        {items.map((f, i) => (
-          <div key={`${f.id}-${i}`} className={styles.card}>
-            <div className={styles.imgWrap}>
-              <Image src={f.poster} alt={f.title} fill sizes="260px" unoptimized className={styles.img} />
+        {items.map((f, i) => {
+          const title = f.seriesTitle ?? f.title;
+          return (
+            <div key={`${f.id}-${i}`} className={styles.card}>
+              <div className={styles.imgWrap}>
+                <Image src={f.poster} alt={title} fill sizes="260px" unoptimized className={styles.img} />
+              </div>
+              <div className={styles.shade} />
+              <span className={styles.title}>{title}</span>
             </div>
-            <div className={styles.shade} />
-            <span className={styles.title}>{f.title}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
