@@ -10,7 +10,7 @@ export default function ConditionsPage() {
       <h2>1. Objet</h2>
       <p>
         ZorAnim est une plateforme de streaming dédiée aux courts-métrages et séries
-        d&apos;animation 2D réalisés par des artistes indépendants. L&apos;utilisation du site implique
+        d&apos;animation 2D et 3D réalisés par des artistes indépendants. L&apos;utilisation du site implique
         l&apos;acceptation pleine et entière des présentes conditions.
       </p>
 

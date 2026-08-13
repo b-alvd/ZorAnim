@@ -10,7 +10,7 @@ import styles from "../devenir-artiste/community.module.css";
 const steps = [
   {
     title: "Prépare ton film ou ta série",
-    description: "Un court-métrage d'animation 2D terminé (ou les épisodes d'une série), avec une affiche et un résumé courts.",
+    description: "Un court-métrage d'animation 2D/3D terminé (ou les épisodes d'une série), avec une affiche et un résumé courts.",
   },
   {
     title: "Contacte-nous",

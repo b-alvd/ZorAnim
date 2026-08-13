@@ -20,7 +20,7 @@ const FLOATERS = [
 const features = [
   {
     title: "Courts-métrages indépendants",
-    description: "Un catalogue d'animations 2D créées par des artistes indépendants, introuvables ailleurs.",
+    description: "Un catalogue d'animations 2D et 3D créées par des artistes indépendants, introuvables ailleurs.",
     icon: (
       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="2" y="4" width="20" height="14" rx="2" />
@@ -88,7 +88,7 @@ export default function Landing({ films }: { films: Film[] }) {
         <div className={styles.heroInner}>
           <h1 className={styles.title}>ZorAnim</h1>
           <p className={styles.subtitle}>
-            Le catalogue de courts-métrages et séries d&apos;animation 2D créés par des artistes
+            Le catalogue de courts-métrages et séries d&apos;animation 2D et 3D créés par des artistes
             indépendants. Navigation et lecture libres, sans compte.
           </p>
           <div className={styles.actions}>
