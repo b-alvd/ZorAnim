@@ -202,6 +202,43 @@
   animation: burstOut 1s ease-out forwards;
 }
 
+.gag {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+  animation: gagPop 1s ease-out forwards;
+}
+
+@keyframes gagPop {
+  0% {
+    transform: translate(-50%, -50%) scale(0) rotate(-15deg);
+    opacity: 0;
+  }
+  30% {
+    transform: translate(-50%, -50%) scale(1.15) rotate(4deg);
+    opacity: 1;
+  }
+  45% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  78% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8) rotate(6deg);
+    opacity: 0;
+  }
+}
+
 @keyframes burstOut {
   0% {
     transform: translate(-50%, -50%) scale(0);

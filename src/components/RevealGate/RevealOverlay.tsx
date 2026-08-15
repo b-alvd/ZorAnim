@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import Logo from "@/components/Logo/Logo";
 import styles from "./RevealGate.module.css";
 
@@ -36,23 +37,32 @@ export default function RevealOverlay({
   const initiallyLocked = initialEnabled && (!target || Date.now() < target);
 
   const [visible, setVisible] = useState(initiallyLocked);
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(target ?? 0);
+  const [mounted, setMounted] = useState(false);
   const [revealing, setRevealing] = useState(false);
   const triggeredRef = useRef(false);
 
+  // `now` starts equal to `target` (remaining = 0) so the server-rendered
+  // countdown digits match the client's first paint; the real ticking value
+  // only kicks in once mounted, avoiding a hydration mismatch on the seconds.
   useEffect(() => {
-    if (!visible) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [visible]);
+    setMounted(true);
+    setNow(Date.now());
+  }, []);
 
   useEffect(() => {
-    if (!visible || !target || triggeredRef.current) return;
+    if (!visible || !mounted) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [visible, mounted]);
+
+  useEffect(() => {
+    if (!visible || !mounted || !target || triggeredRef.current) return;
     if (now >= target) {
       triggeredRef.current = true;
       setRevealing(true);
     }
-  }, [now, target, visible]);
+  }, [now, target, visible, mounted]);
 
   // Own effect (deps: [revealing] only) so the ticking `now` state above can't
   // cancel this timeout mid-flight via the other effect's cleanup.
@@ -148,6 +158,9 @@ export default function RevealOverlay({
       </div>
 
       <div className={styles.burst} />
+      {revealing && (
+        <Image src="/vieux.png" alt="" width={180} height={180} unoptimized className={styles.gag} />
+      )}
     </div>
   );
 }
