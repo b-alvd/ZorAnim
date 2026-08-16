@@ -1,7 +1,7 @@
 import Link from "next/link";
 import CatalogueCarousel from "@/components/CatalogueCarousel/CatalogueCarousel";
 import FeatureGrid from "@/components/FeatureGrid/FeatureGrid";
-import PatchNoteBanner from "@/components/PatchNoteBanner/PatchNoteBanner";
+import PatchNoteBubble from "@/components/PatchNoteBubble/PatchNoteBubble";
 import Steps from "@/components/Steps/Steps";
 import type { Film } from "@/data/types";
 import type { SiteSettings } from "@/db/queries";
@@ -111,7 +111,7 @@ export default function Landing({ films, patchNote }: { films: Film[]; patchNote
       </section>
 
       {patchNote?.patchNoteEnabled && patchNote.patchNoteMessage?.trim() && (
-        <PatchNoteBanner title={patchNote.patchNoteTitle} message={patchNote.patchNoteMessage} />
+        <PatchNoteBubble title={patchNote.patchNoteTitle} message={patchNote.patchNoteMessage} />
       )}
 
       <section className={styles.section}>

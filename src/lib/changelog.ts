@@ -16,6 +16,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Ajout d'un indicateur de version et de cette page des mises à jour.",
       "Un encart de nouveautés personnalisable par l'équipe peut désormais apparaître sur la page d'accueil.",
       "Les notes affichent maintenant les demi-étoiles (et plus généralement la vraie note, plus d'arrondi à l'étoile supérieure).",
+      "Le hero de la page d'accueil (connecté) occupe maintenant tout l'écran sous la navbar.",
     ],
   },
   {

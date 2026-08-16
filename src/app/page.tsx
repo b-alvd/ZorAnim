@@ -1,7 +1,7 @@
 import Hero from "@/components/Hero/Hero";
 import Row from "@/components/Row/Row";
 import Landing from "@/components/Landing/Landing";
-import PatchNoteBanner from "@/components/PatchNoteBanner/PatchNoteBanner";
+import PatchNoteBubble from "@/components/PatchNoteBubble/PatchNoteBubble";
 import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getSiteSettings, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { collapseSeries, computeEffectiveWatchedIds, splitComingSoon } from "@/lib/series";
@@ -37,7 +37,7 @@ export default async function Home() {
     <main>
       <Hero films={collapsedFilms} />
       {showPatchNote && (
-        <PatchNoteBanner title={settings.patchNoteTitle} message={settings.patchNoteMessage!} />
+        <PatchNoteBubble title={settings.patchNoteTitle} message={settings.patchNoteMessage!} />
       )}
       {collapsedComingSoon.length > 0 && <Row title="Bientôt sur ZorAnim" films={collapsedComingSoon} comingSoon />}
       {collapsedNewFilms.length > 0 && (
