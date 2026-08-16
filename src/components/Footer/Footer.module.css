@@ -68,6 +68,17 @@
   color: #6b6b6b;
 }
 
+.version {
+  color: #6b6b6b;
+  text-decoration: none;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s ease;
+}
+
+.version:hover {
+  color: #fff;
+}
+
 @media (max-width: 560px) {
   .footer {
     margin-top: 2.5rem;

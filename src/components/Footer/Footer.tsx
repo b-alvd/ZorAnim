@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Logo from "@/components/Logo/Logo";
+import { CURRENT_VERSION } from "@/lib/changelog";
 import styles from "./Footer.module.css";
 
 const columns = [
@@ -34,6 +35,7 @@ const columns = [
       { label: "Contact", href: "/contact" },
       { label: "Conditions d'utilisation", href: "/conditions-utilisation" },
       { label: "Confidentialité", href: "/confidentialite" },
+      { label: "Mises à jour", href: "/mises-a-jour" },
     ],
   },
 ];
@@ -71,6 +73,9 @@ export default function Footer() {
           ZorAnim. Une plateforme pour l&apos;animation indépendante.
         </p>
         <p className={styles.credit}>Développé par b_alvd</p>
+        <Link href="/mises-a-jour" className={styles.version}>
+          v{CURRENT_VERSION}
+        </Link>
       </div>
     </footer>
   );
