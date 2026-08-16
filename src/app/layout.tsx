@@ -5,8 +5,10 @@ import Footer from "@/components/Footer/Footer";
 import CookieConsent from "@/components/CookieConsent/CookieConsent";
 import RevealOverlay from "@/components/RevealGate/RevealOverlay";
 import MaintenanceOverlay from "@/components/RevealGate/MaintenanceOverlay";
+import BanGate from "@/components/BanGate/BanGate";
+import BanWatcher from "@/components/BanWatcher/BanWatcher";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getNotifications, getSiteSettings, getUnreadNotificationCount } from "@/db/queries";
+import { getLatestBanAppeal, getNotifications, getSiteSettings, getUnreadNotificationCount } from "@/db/queries";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -28,10 +30,26 @@ export default async function RootLayout({
   const [notifications, unreadCount] = user
     ? await Promise.all([getNotifications(user.id, 10), getUnreadNotificationCount(user.id)])
     : [[], 0];
+  const latestAppeal = user?.banned ? await getLatestBanAppeal(user.id) : null;
+
+  if (user?.banned) {
+    return (
+      <html lang="fr" className={montserrat.variable}>
+        <body>
+          <BanGate
+            banReason={user.banReason}
+            appealStatus={latestAppeal?.status ?? null}
+            appealMessage={latestAppeal?.message ?? null}
+          />
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html lang="fr" className={montserrat.variable}>
       <body>
+        {user && <BanWatcher />}
         <Navbar user={user} notifications={notifications} unreadCount={unreadCount} />
         {children}
         <Footer />

@@ -1,8 +1,9 @@
 import { getUsers, PROTECTED_EMAIL } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import Pagination from "@/components/Pagination/Pagination";
-import { deleteUserAction, toggleRoleAction } from "./actions";
+import { banUserAction, deleteUserAction, toggleRoleAction, unbanUserAction } from "./actions";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
+import BanUserButton from "./BanUserButton";
 import styles from "../shared.module.css";
 
 const PAGE_SIZE = 20;
@@ -47,6 +48,11 @@ export default async function AdminUsersPage({
                   <span className={`${styles.badge} ${u.role === "admin" ? styles.badgeAdmin : ""}`}>
                     {u.role === "admin" ? "Admin" : "Utilisateur"}
                   </span>
+                  {u.banned && (
+                    <span className={styles.badge} title={u.banReason ?? undefined} style={{ marginLeft: 6 }}>
+                      Banni
+                    </span>
+                  )}
                 </td>
                 <td>{new Date(u.createdAt).toLocaleDateString("fr-FR")}</td>
                 <td>
@@ -57,6 +63,15 @@ export default async function AdminUsersPage({
                           {u.role === "admin" ? "Retirer admin" : "Passer admin"}
                         </button>
                       </form>
+                      {u.banned ? (
+                        <form action={unbanUserAction.bind(null, u.id)}>
+                          <button type="submit" className={styles.linkBtn}>
+                            Débannir
+                          </button>
+                        </form>
+                      ) : (
+                        <BanUserButton userId={u.id} userName={u.name} banAction={banUserAction} />
+                      )}
                       <ConfirmDeleteButton action={deleteUserAction.bind(null, u.id)} itemName={u.name} />
                     </div>
                   )}

@@ -12,6 +12,9 @@ export const users = sqliteTable("users", {
   createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),
+  banned: integer("banned", { mode: "boolean" }).notNull().default(false),
+  banReason: text("ban_reason"),
+  bannedAt: text("banned_at"),
 });
 
 export const sessions = sqliteTable("sessions", {
@@ -23,6 +26,19 @@ export const sessions = sqliteTable("sessions", {
   createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),
+});
+
+export const banAppeals = sqliteTable("ban_appeals", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  status: text("status").notNull().default("pending"), // pending | accepted | rejected
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
+  reviewedAt: text("reviewed_at"),
 });
 
 export const artists = sqliteTable("artists", {

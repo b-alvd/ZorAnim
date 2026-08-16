@@ -6,6 +6,7 @@ import {
   acceptFilmSubmission,
   refuseArtistSubmission,
   refuseFilmSubmission,
+  resolveBanAppeal,
   updateArtistSubmission,
   updateFilmSubmission,
   type ArtistSubmissionInput,
@@ -69,5 +70,16 @@ export async function acceptArtistSubmissionAction(id: string) {
 
 export async function refuseArtistSubmissionAction(id: string) {
   await refuseArtistSubmission(id);
+  revalidatePath("/admin/demandes");
+}
+
+export async function acceptBanAppealAction(appealId: string) {
+  await resolveBanAppeal(appealId, true);
+  revalidatePath("/admin/demandes");
+  revalidatePath("/admin/utilisateurs");
+}
+
+export async function rejectBanAppealAction(appealId: string) {
+  await resolveBanAppeal(appealId, false);
   revalidatePath("/admin/demandes");
 }

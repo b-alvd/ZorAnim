@@ -1,13 +1,22 @@
-import { getArtists, getCategories, getPendingArtistSubmissions, getPendingFilmSubmissions, getStudios } from "@/db/queries";
+import {
+  getArtists,
+  getCategories,
+  getPendingArtistSubmissions,
+  getPendingBanAppeals,
+  getPendingFilmSubmissions,
+  getStudios,
+} from "@/db/queries";
 import { mergeCategories } from "@/lib/categories";
 import FilmSubmissionRowActions from "./FilmSubmissionRowActions";
 import ArtistSubmissionRowActions from "./ArtistSubmissionRowActions";
+import BanAppealActions from "./BanAppealActions";
 import styles from "../shared.module.css";
 
 export default async function AdminDemandesPage() {
-  const [filmSubmissions, artistSubmissions, artists, studios, existingCategories] = await Promise.all([
+  const [filmSubmissions, artistSubmissions, banAppeals, artists, studios, existingCategories] = await Promise.all([
     getPendingFilmSubmissions(),
     getPendingArtistSubmissions(),
+    getPendingBanAppeals(),
     getArtists(),
     getStudios(),
     getCategories(),
@@ -75,6 +84,40 @@ export default async function AdminDemandesPage() {
                 <td>{s.bio.length > 80 ? `${s.bio.slice(0, 80)}…` : s.bio}</td>
                 <td>
                   <ArtistSubmissionRowActions submission={s} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
+      )}
+
+      <div className={styles.header} style={{ marginTop: 40 }}>
+        <h1 className={styles.title}>Demandes de déban</h1>
+      </div>
+      {banAppeals.length === 0 ? (
+        <p className={styles.confirmText}>Aucune demande de déban en attente.</p>
+      ) : (
+        <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Email</th>
+              <th>Raison du ban</th>
+              <th>Message</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {banAppeals.map((a) => (
+              <tr key={a.id}>
+                <td>{a.userName}</td>
+                <td>{a.userEmail}</td>
+                <td>{a.banReason ?? "—"}</td>
+                <td>{a.message}</td>
+                <td>
+                  <BanAppealActions appealId={a.id} />
                 </td>
               </tr>
             ))}

@@ -17,6 +17,7 @@ import {
   commentReactions,
   notifications,
   siteSettings,
+  banAppeals,
 } from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
@@ -375,11 +376,21 @@ export type AdminUser = {
   name: string;
   role: string;
   createdAt: string;
+  banned: boolean;
+  banReason: string | null;
 };
 
 export async function getUsers(): Promise<AdminUser[]> {
   return db
-    .select({ id: users.id, email: users.email, name: users.name, role: users.role, createdAt: users.createdAt })
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      role: users.role,
+      createdAt: users.createdAt,
+      banned: users.banned,
+      banReason: users.banReason,
+    })
     .from(users);
 }
 
@@ -402,6 +413,84 @@ export async function updateUserRole(id: string, role: "user" | "admin"): Promis
 export async function deleteUser(id: string): Promise<void> {
   await assertNotProtectedUser(id);
   await db.delete(users).where(eq(users.id, id));
+}
+
+export async function banUser(id: string, reason: string | null): Promise<void> {
+  await assertNotProtectedUser(id);
+  await db
+    .update(users)
+    .set({ banned: true, banReason: reason, bannedAt: new Date().toISOString() })
+    .where(eq(users.id, id));
+  // Sessions are kept alive on purpose: validateSession still resolves them
+  // (now flagged banned), so the next request/reload shows the ban page
+  // instead of silently logging them out into an anonymous guest.
+}
+
+export async function unbanUser(id: string): Promise<void> {
+  await db.update(users).set({ banned: false, banReason: null, bannedAt: null }).where(eq(users.id, id));
+}
+
+export type BanAppeal = {
+  id: string;
+  userId: string;
+  message: string;
+  status: "pending" | "accepted" | "rejected";
+  createdAt: string;
+  reviewedAt: string | null;
+};
+
+export async function createBanAppeal(userId: string, message: string): Promise<void> {
+  const [existing] = await db
+    .select({ id: banAppeals.id })
+    .from(banAppeals)
+    .where(and(eq(banAppeals.userId, userId), eq(banAppeals.status, "pending")));
+  if (existing) throw new Error("Tu as déjà une demande en cours d'examen.");
+
+  await db.insert(banAppeals).values({ id: randomUUID(), userId, message, status: "pending" });
+}
+
+export async function getLatestBanAppeal(userId: string): Promise<BanAppeal | null> {
+  const [row] = await db
+    .select()
+    .from(banAppeals)
+    .where(eq(banAppeals.userId, userId))
+    .orderBy(desc(banAppeals.createdAt))
+    .limit(1);
+  return row ? (row as BanAppeal) : null;
+}
+
+export type PendingBanAppeal = BanAppeal & { userName: string; userEmail: string; banReason: string | null };
+
+export async function getPendingBanAppeals(): Promise<PendingBanAppeal[]> {
+  const rows = await db
+    .select({
+      id: banAppeals.id,
+      userId: banAppeals.userId,
+      message: banAppeals.message,
+      status: banAppeals.status,
+      createdAt: banAppeals.createdAt,
+      reviewedAt: banAppeals.reviewedAt,
+      userName: users.name,
+      userEmail: users.email,
+      banReason: users.banReason,
+    })
+    .from(banAppeals)
+    .innerJoin(users, eq(banAppeals.userId, users.id))
+    .where(eq(banAppeals.status, "pending"))
+    .orderBy(desc(banAppeals.createdAt));
+  return rows as PendingBanAppeal[];
+}
+
+export async function resolveBanAppeal(appealId: string, accept: boolean): Promise<void> {
+  const [appeal] = await db.select({ userId: banAppeals.userId }).from(banAppeals).where(eq(banAppeals.id, appealId));
+  if (!appeal) return;
+
+  await db
+    .update(banAppeals)
+    .set({ status: accept ? "accepted" : "rejected", reviewedAt: new Date().toISOString() })
+    .where(eq(banAppeals.id, appealId));
+
+  if (accept) await unbanUser(appeal.userId);
 }
 
 export type FilmSubmission = typeof filmSubmissions.$inferSelect;

@@ -13,6 +13,8 @@ export type SessionUser = {
   avatarUrl: string | null;
   role: string;
   createdAt: string;
+  banned: boolean;
+  banReason: string | null;
 };
 
 export async function createSession(userId: string): Promise<{ id: string; expiresAt: Date }> {
@@ -33,6 +35,8 @@ export async function validateSession(sessionId: string): Promise<SessionUser | 
       avatarUrl: users.avatarUrl,
       role: users.role,
       createdAt: users.createdAt,
+      banned: users.banned,
+      banReason: users.banReason,
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
@@ -52,9 +56,15 @@ export async function validateSession(sessionId: string): Promise<SessionUser | 
     avatarUrl: row.avatarUrl,
     role: row.role,
     createdAt: row.createdAt,
+    banned: row.banned,
+    banReason: row.banReason,
   };
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.id, sessionId));
+}
+
+export async function deleteAllSessionsForUser(userId: string): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.userId, userId));
 }

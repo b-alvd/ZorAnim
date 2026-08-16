@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { isRateLimited } from "@/lib/rateLimit";
 import {
   addComment,
+  createBanAppeal,
   deleteComment,
   getFilmComments,
   getFilmCreatorUserIds,
@@ -23,6 +24,15 @@ import {
   type Notification,
 } from "@/db/queries";
 import type { Film } from "@/data/types";
+
+export async function submitBanAppealAction(message: string): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Non authentifié.");
+  if (!user.banned) throw new Error("Ce compte n'est pas banni.");
+  const trimmed = message.trim();
+  if (!trimmed) throw new Error("Merci d'expliquer ta demande.");
+  await createBanAppeal(user.id, trimmed);
+}
 
 export async function toggleFavoriteAction(filmId: string): Promise<boolean> {
   const user = await getCurrentUser();
