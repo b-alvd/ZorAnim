@@ -77,6 +77,11 @@ export default async function CataloguePage({
       )}
       {films.length > 0 ? (
         <>
+          <div className={styles.section}>
+            <h2 className={styles.sectionTitle}>
+              {query || category || year || minRating ? "Résultats" : "Tout le catalogue"}
+            </h2>
+          </div>
           <div className={styles.grid}>
             {films.map((f) => (
               <Card

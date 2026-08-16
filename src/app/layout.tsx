@@ -5,7 +5,6 @@ import Footer from "@/components/Footer/Footer";
 import CookieConsent from "@/components/CookieConsent/CookieConsent";
 import RevealOverlay from "@/components/RevealGate/RevealOverlay";
 import MaintenanceOverlay from "@/components/RevealGate/MaintenanceOverlay";
-import WelcomeMessage from "@/components/WelcomeMessage/WelcomeMessage";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getNotifications, getSiteSettings, getUnreadNotificationCount } from "@/db/queries";
 import "./globals.css";
@@ -45,7 +44,6 @@ export default async function RootLayout({
             isAdmin={user?.role === "admin"}
           />
         )}
-        <WelcomeMessage revealAt={settings.revealAt} />
       </body>
     </html>
   );

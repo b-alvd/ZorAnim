@@ -346,6 +346,13 @@
   flex-direction: column;
   gap: 0.4rem;
   z-index: 1;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.controlsHidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .progressWrap {

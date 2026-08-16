@@ -43,6 +43,8 @@ export default function VideoPlayer({
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [watchedEpisodeIds, setWatchedEpisodeIds] = useState<Set<string>>(new Set());
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!film.seriesTitle) {
@@ -91,6 +93,25 @@ export default function VideoPlayer({
     if (autoplay) videoRef.current?.play().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const wakeControls = () => {
+    setControlsVisible(true);
+    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    hideTimeoutRef.current = setTimeout(() => setControlsVisible(false), 3000);
+  };
+
+  useEffect(() => {
+    if (!playing) {
+      setControlsVisible(true);
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+      return;
+    }
+    wakeControls();
+    return () => {
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -159,7 +180,7 @@ export default function VideoPlayer({
   const nextEpisode = currentEpisodeIndex >= 0 ? episodes[currentEpisodeIndex + 1] : undefined;
 
   return (
-    <div className={styles.player} ref={containerRef}>
+    <div className={styles.player} ref={containerRef} onMouseMove={wakeControls}>
       <video
         ref={videoRef}
         src={film.videoUrl}
@@ -287,7 +308,7 @@ export default function VideoPlayer({
       )}
 
       {!isPaused && !ended && (
-        <div className={styles.controls}>
+        <div className={`${styles.controls} ${!controlsVisible ? styles.controlsHidden : ""}`}>
           <div className={styles.progressWrap}>
             <input
               type="range"

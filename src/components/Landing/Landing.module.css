@@ -173,6 +173,22 @@
   padding: 0 clamp(1rem, 4vw, 3.5rem);
 }
 
+.founderMessage {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  color: #d2d2d2;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+
+.founderMessage p:first-child {
+  color: #fff;
+  font-weight: 600;
+}
+
 .featuresSection {
   position: relative;
   background: radial-gradient(65% 100% at 50% 0%, rgba(229, 9, 20, 0.08) 0%, transparent 70%);
