@@ -336,7 +336,7 @@ export default function IdentitySection({
     <section className={styles.section}>
       <div className={styles.sectionHeader}>
         <div className={styles.identityAvatarWrap}>
-          <Image src={identity.avatar} alt={identity.name} fill sizes="56px" unoptimized />
+          <Image src={identity.avatar} alt={identity.name} fill sizes="56px" unoptimized className={styles.identityAvatarImg} />
         </div>
         <div className={styles.identityInfo}>
           <div className={styles.identityRow}>

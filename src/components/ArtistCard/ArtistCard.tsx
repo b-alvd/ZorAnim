@@ -16,7 +16,7 @@ export default function ArtistCard({
   return (
     <Link href={artist.isStudio ? `/studios/${artist.id}` : `/artistes/${artist.id}`} className={styles.card}>
       <div className={styles.avatarWrap}>
-        <Image src={artist.avatar} alt={artist.name} fill sizes="140px" unoptimized />
+        <Image src={artist.avatar} alt={artist.name} fill sizes="140px" unoptimized className={styles.avatarImg} />
       </div>
       <p className={styles.name}>{artist.name}</p>
       <p className={styles.count}>{formatCatalogCountLabel(filmCount, seriesCount)}</p>

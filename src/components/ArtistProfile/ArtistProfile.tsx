@@ -40,7 +40,7 @@ export default async function ArtistProfile({
     <main className={styles.page}>
       <div className={styles.header}>
         <div className={styles.avatarWrap}>
-          <Image src={artist.avatar} alt={artist.name} fill sizes="140px" unoptimized />
+          <Image src={artist.avatar} alt={artist.name} fill sizes="140px" unoptimized className={styles.avatarImg} />
         </div>
         <div>
           <div className={styles.nameRow}>

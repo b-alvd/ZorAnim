@@ -22,6 +22,11 @@
   overflow: hidden;
 }
 
+.avatarImg {
+  object-fit: cover;
+  object-position: center;
+}
+
 .nameRow {
   display: flex;
   align-items: center;
