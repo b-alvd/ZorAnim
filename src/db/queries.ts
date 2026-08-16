@@ -1421,12 +1421,35 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 const SITE_SETTINGS_ID = "main";
 
-export type SiteSettings = { revealEnabled: boolean; revealAt: string | null; maintenanceEnabled: boolean };
+export type SiteSettings = {
+  revealEnabled: boolean;
+  revealAt: string | null;
+  maintenanceEnabled: boolean;
+  patchNoteEnabled: boolean;
+  patchNoteTitle: string | null;
+  patchNoteMessage: string | null;
+};
 
 export async function getSiteSettings(): Promise<SiteSettings> {
   const [row] = await db.select().from(siteSettings).where(eq(siteSettings.id, SITE_SETTINGS_ID));
-  if (!row) return { revealEnabled: false, revealAt: null, maintenanceEnabled: false };
-  return { revealEnabled: row.revealEnabled, revealAt: row.revealAt, maintenanceEnabled: row.maintenanceEnabled };
+  if (!row) {
+    return {
+      revealEnabled: false,
+      revealAt: null,
+      maintenanceEnabled: false,
+      patchNoteEnabled: false,
+      patchNoteTitle: null,
+      patchNoteMessage: null,
+    };
+  }
+  return {
+    revealEnabled: row.revealEnabled,
+    revealAt: row.revealAt,
+    maintenanceEnabled: row.maintenanceEnabled,
+    patchNoteEnabled: row.patchNoteEnabled,
+    patchNoteTitle: row.patchNoteTitle,
+    patchNoteMessage: row.patchNoteMessage,
+  };
 }
 
 export async function updateSiteSettings(input: Partial<SiteSettings>): Promise<void> {
@@ -1439,6 +1462,9 @@ export async function updateSiteSettings(input: Partial<SiteSettings>): Promise<
       revealEnabled: false,
       revealAt: null,
       maintenanceEnabled: false,
+      patchNoteEnabled: false,
+      patchNoteTitle: null,
+      patchNoteMessage: null,
       ...input,
     });
   }

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import CatalogueCarousel from "@/components/CatalogueCarousel/CatalogueCarousel";
 import FeatureGrid from "@/components/FeatureGrid/FeatureGrid";
+import PatchNoteBanner from "@/components/PatchNoteBanner/PatchNoteBanner";
 import Steps from "@/components/Steps/Steps";
 import type { Film } from "@/data/types";
+import type { SiteSettings } from "@/db/queries";
 import { collapseSeries } from "@/lib/series";
 import styles from "./Landing.module.css";
 
@@ -58,7 +60,7 @@ const steps = [
   { title: "Crée un compte (optionnel)", description: "Pour noter, commenter et sauvegarder tes favoris, inscris-toi gratuitement en quelques secondes." },
 ];
 
-export default function Landing({ films }: { films: Film[] }) {
+export default function Landing({ films, patchNote }: { films: Film[]; patchNote?: SiteSettings | null }) {
   const catalogue = collapseSeries(films);
 
   return (
@@ -107,6 +109,10 @@ export default function Landing({ films }: { films: Film[] }) {
           </div>
         </div>
       </section>
+
+      {patchNote?.patchNoteEnabled && patchNote.patchNoteMessage?.trim() && (
+        <PatchNoteBanner title={patchNote.patchNoteTitle} message={patchNote.patchNoteMessage} />
+      )}
 
       <section className={styles.section}>
         <span className={styles.eyebrow}>Le mot de N1wad</span>

@@ -231,6 +231,9 @@ export const siteSettings = sqliteTable("site_settings", {
   revealEnabled: integer("reveal_enabled", { mode: "boolean" }).notNull().default(false),
   revealAt: text("reveal_at"),
   maintenanceEnabled: integer("maintenance_enabled", { mode: "boolean" }).notNull().default(false),
+  patchNoteEnabled: integer("patch_note_enabled", { mode: "boolean" }).notNull().default(false),
+  patchNoteTitle: text("patch_note_title"),
+  patchNoteMessage: text("patch_note_message"),
 });
 
 export const contactMessages = sqliteTable("contact_messages", {

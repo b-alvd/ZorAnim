@@ -1,17 +1,18 @@
 import Hero from "@/components/Hero/Hero";
 import Row from "@/components/Row/Row";
 import Landing from "@/components/Landing/Landing";
-import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getWatchedFilmIds } from "@/db/queries";
+import PatchNoteBanner from "@/components/PatchNoteBanner/PatchNoteBanner";
+import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getSiteSettings, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { collapseSeries, computeEffectiveWatchedIds, splitComingSoon } from "@/lib/series";
 import styles from "./home.module.css";
 
 export default async function Home() {
-  const user = await getCurrentUser();
-  const allFilms = await getFilms();
+  const [user, allFilms, settings] = await Promise.all([getCurrentUser(), getFilms(), getSiteSettings()]);
   const { released: films, comingSoon: comingSoonFilms } = splitComingSoon(allFilms);
+  const showPatchNote = settings.patchNoteEnabled && !!settings.patchNoteMessage?.trim();
 
-  if (!user) return <Landing films={allFilms} />;
+  if (!user) return <Landing films={allFilms} patchNote={showPatchNote ? settings : null} />;
 
   if (films.length === 0) {
     return (
@@ -35,6 +36,9 @@ export default async function Home() {
   return (
     <main>
       <Hero films={collapsedFilms} />
+      {showPatchNote && (
+        <PatchNoteBanner title={settings.patchNoteTitle} message={settings.patchNoteMessage!} />
+      )}
       {collapsedComingSoon.length > 0 && <Row title="Bientôt sur ZorAnim" films={collapsedComingSoon} comingSoon />}
       {collapsedNewFilms.length > 0 && (
         <Row title="Nouveautés" films={collapsedNewFilms} favoriteIds={favoriteIdsArr} watchedIds={watchedIdsArr} />
