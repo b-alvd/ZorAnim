@@ -1,4 +1,4 @@
-import { getUsers } from "@/db/queries";
+import { getUsers, PROTECTED_EMAIL } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import Pagination from "@/components/Pagination/Pagination";
 import { deleteUserAction, toggleRoleAction } from "./actions";
@@ -38,6 +38,7 @@ export default async function AdminUsersPage({
         <tbody>
           {users.map((u) => {
             const isSelf = u.id === me?.id;
+            const isProtected = u.email === PROTECTED_EMAIL;
             return (
               <tr key={u.id}>
                 <td>{u.name}</td>
@@ -49,7 +50,7 @@ export default async function AdminUsersPage({
                 </td>
                 <td>{new Date(u.createdAt).toLocaleDateString("fr-FR")}</td>
                 <td>
-                  {!isSelf && (
+                  {!isSelf && !isProtected && (
                     <div className={styles.rowActions}>
                       <form action={toggleRoleAction.bind(null, u.id, u.role)}>
                         <button type="submit" className={styles.linkBtn}>
@@ -60,6 +61,7 @@ export default async function AdminUsersPage({
                     </div>
                   )}
                   {isSelf && <span className={styles.badge}>Toi</span>}
+                  {!isSelf && isProtected && <span className={styles.badge}>Protégé</span>}
                 </td>
               </tr>
             );

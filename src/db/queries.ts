@@ -383,11 +383,24 @@ export async function getUsers(): Promise<AdminUser[]> {
     .from(users);
 }
 
+// Owner account: never editable/removable from the admin panel, no matter
+// who's performing the action (including other admins).
+export const PROTECTED_EMAIL = "dark.alv69@gmail.com";
+
+async function assertNotProtectedUser(id: string): Promise<void> {
+  const [row] = await db.select({ email: users.email }).from(users).where(eq(users.id, id));
+  if (row?.email === PROTECTED_EMAIL) {
+    throw new Error("Ce compte est protégé et ne peut pas être modifié depuis l'admin.");
+  }
+}
+
 export async function updateUserRole(id: string, role: "user" | "admin"): Promise<void> {
+  await assertNotProtectedUser(id);
   await db.update(users).set({ role }).where(eq(users.id, id));
 }
 
 export async function deleteUser(id: string): Promise<void> {
+  await assertNotProtectedUser(id);
   await db.delete(users).where(eq(users.id, id));
 }
 
