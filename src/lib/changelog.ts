@@ -14,6 +14,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       "La page Catalogue affiche des noms de section (« Tout le catalogue », « Bientôt sur ZorAnim »).",
       "Le message d'accueil de l'équipe n'est plus une popup : il est désormais intégré directement sur la page d'accueil.",
       "Ajout d'un indicateur de version et de cette page des mises à jour.",
+      "Un encart de nouveautés personnalisable par l'équipe peut désormais apparaître sur la page d'accueil.",
+      "Les notes affichent maintenant les demi-étoiles (et plus généralement la vraie note, plus d'arrondi à l'étoile supérieure).",
     ],
   },
   {

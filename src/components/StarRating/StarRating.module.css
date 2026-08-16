@@ -8,8 +8,6 @@
   border: none;
   padding: 0;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.25);
-  transition: color 0.1s ease;
   display: flex;
 }
 
@@ -17,6 +15,26 @@
   cursor: default;
 }
 
-.star.filled {
+.starWrap {
+  position: relative;
+  display: inline-block;
+}
+
+.starBase {
+  display: block;
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.starFillClip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  overflow: hidden;
+  display: block;
+}
+
+.starFill {
+  display: block;
   color: var(--accent, #e50914);
 }
