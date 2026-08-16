@@ -112,36 +112,33 @@ export default function Landing({ films }: { films: Film[] }) {
         <span className={styles.eyebrow}>Le mot de N1wad</span>
         <h2 className={styles.sectionTitle}>Message de N1wad</h2>
         <div className={styles.founderMessage}>
-          <p>Voilà la plateforme officiel de streaming des Zorins.</p>
+          <p>Voici la plateforme officielle de streaming des Zorins.</p>
           <p>
-            Avec l&apos;aide du goat Mauritz on a réalisé un site de streaming qui compile toutes
-            les animations phares du stream comme par exemple &quot;Gueux Vs Noble&quot; (qui est
-            pour l&apos;instant la seul chose disponible en intégralité sur le site).
+            Avec l&apos;aide du goat Mauritz (b_alvd), on a réalisé un site de streaming qui compile toutes
+            les animations phares du stream, comme par exemple &quot;Gueux Vs Noble&quot; (qui est
+            pour l&apos;instant la seule chose disponible en intégralité sur le site).
           </p>
           <p>
-            Le site est fait pour que vous puissiez profitez d&apos;un endroit où toutes les
-            animations sont rassemblées pour pouvoir les regarder quand vous voulez mais aussi
-            pour que vous puissiez partager les votre.
+            Le site est fait pour que vous puissiez profiter d&apos;un endroit où toutes les
+            animations sont rassemblées, afin de pouvoir les regarder quand vous voulez, mais
+            aussi pour que vous puissiez partager les vôtres.
           </p>
           <p>
             Le site permet de s&apos;enregistrer en tant qu&apos;artiste pour partager ses
-            animations (plus d&apos;une minutes) venant d&apos;un projet perso pour ceux qui
-            peuvent être intéressé par le fait de faire une série. Vous pouvez aussi vous
-            rassemblez afin de créer votre propre studio pour travailler en groupe. Il vous
-            suffit de trouver un nom et d&apos;avoir l&apos;accord des participants. Chaque
-            profil d&apos;artiste ou proposition de film/série sera vérifier par les staff, vous
-            avez aussi un service contact en cas de problème ou de question, sinon vous pouvez
-            aussi me mp.
+            animations (plus d&apos;une minute) issues d&apos;un projet perso, pour ceux qui
+            seraient intéressés par l&apos;idée d&apos;en faire une série. Vous pouvez aussi vous
+            rassembler pour créer votre propre studio et travailler en groupe : il vous suffit de
+            trouver un nom et d&apos;avoir l&apos;accord des participants. Chaque profil
+            d&apos;artiste ou proposition de film/série est vérifié par le staff. Vous disposez
+            aussi d&apos;un service contact en cas de problème ou de question, ou vous pouvez
+            aussi me mp directement ou mp Mauritz (b_alvd) si c'est à des fins techniques.
           </p>
           <p>
-            Comme dit précédemment seul Gueux Vs Noble est disponible pour le moment mais des
-            productions sont déjà en cours d&apos;écriture des nouveautés devraient arriver et on
-            attend aussi les vôtres.
+            Comme dit précédemment, seul Gueux Vs Noble est disponible pour le moment, mais des
+            productions sont déjà en cours d&apos;écriture. De nouveaux contenus devraient
+            arriver, et on attend aussi les vôtres.
           </p>
-          <p>
-            Chaque nouvel série/Film ou nouvel saison vous sera notifié avec un message dans ce
-            post.
-          </p>
+          <p>Vous pourrez trouver les nouvelles et prochaines sorties, directement sur le catalogue.</p>
         </div>
       </section>
 
