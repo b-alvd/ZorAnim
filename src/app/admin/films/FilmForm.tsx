@@ -90,7 +90,20 @@ export default function FilmForm({
       ref={formRef}
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit(new FormData(e.currentTarget));
+        const data = new FormData(e.currentTarget);
+        // <input type="datetime-local"> has no timezone info; `new Date()`
+        // here runs in the browser so it resolves against the admin's own
+        // local time. Doing this same parsing server-side instead (as we
+        // used to) resolved it against the SERVER's timezone (UTC in prod),
+        // which is why a time typed in France came out shifted by 2 hours.
+        for (const field of ["premiereAt", "releaseAt"]) {
+          const raw = String(data.get(field) ?? "").trim();
+          if (raw) {
+            const date = new Date(raw);
+            if (!Number.isNaN(date.getTime())) data.set(field, date.toISOString());
+          }
+        }
+        onSubmit(data);
       }}
       onChange={updateValidity}
       onInput={updateValidity}
