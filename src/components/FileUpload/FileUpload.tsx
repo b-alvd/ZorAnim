@@ -7,7 +7,7 @@ function uploadWithProgress(
   url: string,
   formData: FormData,
   onProgress: (pct: number) => void
-): Promise<{ secure_url?: string }> {
+): Promise<{ secure_url?: string; duration?: number }> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", url);
@@ -39,6 +39,7 @@ export default function FileUpload({
   accept,
   value,
   onChange,
+  onDurationChange,
   maxSizeMB = 10,
   preview = false,
 }: {
@@ -47,6 +48,7 @@ export default function FileUpload({
   accept: string;
   value: string;
   onChange: (url: string) => void;
+  onDurationChange?: (seconds: number) => void;
   maxSizeMB?: number;
   preview?: boolean;
 }) {
@@ -94,6 +96,7 @@ export default function FileUpload({
       }
 
       onChange(uploadData.secure_url);
+      if (typeof uploadData.duration === "number") onDurationChange?.(uploadData.duration);
       setStatus("idle");
     } catch {
       setStatus("error");

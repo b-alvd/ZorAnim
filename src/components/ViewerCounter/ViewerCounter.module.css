@@ -1,0 +1,37 @@
+.wrap {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #e50914);
+  box-shadow: 0 0 0 0 rgba(229, 9, 20, 0.6);
+  animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(229, 9, 20, 0.6);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(229, 9, 20, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 9, 20, 0);
+  }
+}

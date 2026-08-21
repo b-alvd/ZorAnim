@@ -2,6 +2,7 @@ import Link from "next/link";
 import CatalogueCarousel from "@/components/CatalogueCarousel/CatalogueCarousel";
 import FeatureGrid from "@/components/FeatureGrid/FeatureGrid";
 import PatchNoteBubble from "@/components/PatchNoteBubble/PatchNoteBubble";
+import PremiereBanner from "@/components/PremiereBanner/PremiereBanner";
 import Steps from "@/components/Steps/Steps";
 import type { Film } from "@/data/types";
 import type { SiteSettings } from "@/db/queries";
@@ -109,6 +110,8 @@ export default function Landing({ films, patchNote }: { films: Film[]; patchNote
           </div>
         </div>
       </section>
+
+      <PremiereBanner films={films} />
 
       {patchNote?.patchNoteEnabled && patchNote.patchNoteMessage?.trim() && (
         <PatchNoteBubble title={patchNote.patchNoteTitle} message={patchNote.patchNoteMessage} />

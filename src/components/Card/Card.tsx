@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import type { Film } from "@/data/types";
 import FilmModal from "@/components/FilmModal/FilmModal";
+import { getPremiereBadge } from "@/lib/premiere";
 import styles from "./Card.module.css";
 
 export default function Card({
@@ -21,6 +22,7 @@ export default function Card({
 }) {
   const [open, setOpen] = useState(false);
   const isSeries = !!film.seriesTitle;
+  const premiereBadge = getPremiereBadge(film);
 
   return (
     <>
@@ -34,7 +36,9 @@ export default function Card({
           unoptimized
         />
         <div className={styles.shadow} />
-        {comingSoon ? (
+        {premiereBadge ? (
+          <span className={styles.seriesBadge}>{premiereBadge}</span>
+        ) : comingSoon ? (
           <span className={styles.seriesBadge}>Bientôt · Teaser</span>
         ) : (
           isSeries && (

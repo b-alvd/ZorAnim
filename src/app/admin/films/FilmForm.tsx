@@ -23,7 +23,18 @@ type FilmFormValues = {
   episodeNumber?: number | null;
   episodeKind?: "episode" | "teaser";
   teaserVideoUrl?: string | null;
+  premiereAt?: string | null;
+  releaseAt?: string | null;
+  videoDurationSeconds?: number | null;
 };
+
+function toDatetimeLocal(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 const SEASON_TYPE_OPTIONS = ["Teaser", "Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
 
@@ -54,6 +65,7 @@ export default function FilmForm({
   const [artistId, setArtistId] = useState(initial?.artistId ?? artists[0]?.id ?? "");
   const [poster, setPoster] = useState(initial?.poster ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
+  const [videoDurationSeconds, setVideoDurationSeconds] = useState(initial?.videoDurationSeconds ?? null);
   const [teaserVideoUrl, setTeaserVideoUrl] = useState(initial?.teaserVideoUrl ?? "");
   const [seriesTitleValue, setSeriesTitleValue] = useState(lockedSeriesTitle ?? initial?.seriesTitle ?? "");
   const [seasonType, setSeasonType] = useState(
@@ -225,12 +237,17 @@ export default function FilmForm({
       </div>
       <div className={styles.field}>
         <label>{!isSeries && standaloneTeaser ? "Vidéo (teaser)" : "Vidéo"}</label>
+        <input type="hidden" name="videoDurationSeconds" value={videoDurationSeconds ?? ""} />
         <FileUpload
           name="videoUrl"
           label="Choisir une vidéo"
           accept="video/*"
           value={videoUrl}
-          onChange={setVideoUrl}
+          onChange={(url) => {
+            setVideoUrl(url);
+            setVideoDurationSeconds(null);
+          }}
+          onDurationChange={(seconds) => setVideoDurationSeconds(Math.round(seconds))}
           maxSizeMB={100}
         />
       </div>
@@ -239,6 +256,26 @@ export default function FilmForm({
         <span className={styles.checkboxBox} />
         Marquer comme nouveauté (visible 7 jours)
       </label>
+      <div className={styles.row2}>
+        <div className={styles.field}>
+          <label htmlFor="premiereAt">Avant-première (optionnel)</label>
+          <input
+            id="premiereAt"
+            name="premiereAt"
+            type="datetime-local"
+            defaultValue={toDatetimeLocal(initial?.premiereAt)}
+          />
+        </div>
+        <div className={styles.field}>
+          <label htmlFor="releaseAt">Sortie officielle (optionnel)</label>
+          <input
+            id="releaseAt"
+            name="releaseAt"
+            type="datetime-local"
+            defaultValue={toDatetimeLocal(initial?.releaseAt)}
+          />
+        </div>
+      </div>
       <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !poster || !videoUrl}>
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>

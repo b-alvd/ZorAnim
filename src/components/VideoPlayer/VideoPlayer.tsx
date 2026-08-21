@@ -39,7 +39,11 @@ export default function VideoPlayer({
   const [ended, setEnded] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [muted, setMuted] = useState(false);
+  // Browsers only ever allow autoplay unconditionally when muted -- setting
+  // this on the very first render (rather than reacting to a failed
+  // unmuted play() attempt) means the <video muted> DOM attribute is
+  // correct from the start instead of racing a play()/catch/retry.
+  const [muted, setMuted] = useState(() => autoplay);
   const [volume, setVolume] = useState(1);
   const [fullscreen, setFullscreen] = useState(false);
   const [watchedEpisodeIds, setWatchedEpisodeIds] = useState<Set<string>>(new Set());
@@ -90,7 +94,8 @@ export default function VideoPlayer({
   }, []);
 
   useEffect(() => {
-    if (autoplay) videoRef.current?.play().catch(() => {});
+    if (!autoplay) return;
+    videoRef.current?.play().catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -188,6 +193,7 @@ export default function VideoPlayer({
         className={styles.video}
         onClick={togglePlay}
         autoPlay={autoplay}
+        muted={muted}
         playsInline
       />
 

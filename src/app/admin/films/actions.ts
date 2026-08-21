@@ -1,7 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createFilm, deleteFilm, updateFilm, type FilmInput } from "@/db/queries";
+import { createFilm, deleteFilm, launchPremiere, updateFilm, type FilmInput } from "@/db/queries";
+
+function readDateTimeLocal(formData: FormData, name: string): string | null {
+  const raw = String(formData.get(name) ?? "").trim();
+  if (!raw) return null;
+  const date = new Date(raw);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
 
 function readFilmInput(formData: FormData): FilmInput {
   const seriesTitle = String(formData.get("seriesTitle") ?? "").trim();
@@ -26,6 +33,12 @@ function readFilmInput(formData: FormData): FilmInput {
     episodeNumber: seriesTitle && episodeNumber ? Number(episodeNumber) : null,
     episodeKind: formData.get("episodeKind") === "teaser" ? "teaser" : "episode",
     teaserVideoUrl: String(formData.get("teaserVideoUrl") ?? "") || null,
+    premiereAt: readDateTimeLocal(formData, "premiereAt"),
+    releaseAt: readDateTimeLocal(formData, "releaseAt"),
+    videoDurationSeconds: (() => {
+      const raw = String(formData.get("videoDurationSeconds") ?? "").trim();
+      return raw ? Number(raw) : null;
+    })(),
   };
 }
 
@@ -41,6 +54,11 @@ export async function updateFilmAction(id: string, formData: FormData) {
 
 export async function deleteFilmAction(id: string) {
   await deleteFilm(id);
+  revalidatePath("/admin/films");
+}
+
+export async function launchPremiereAction(id: string) {
+  await launchPremiere(id);
   revalidatePath("/admin/films");
 }
 

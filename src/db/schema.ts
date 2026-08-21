@@ -82,6 +82,9 @@ export const films = sqliteTable("films", {
   episodeKind: text("episode_kind").notNull().default("episode"),
   teaserVideoUrl: text("teaser_video_url"),
   guestViewCount: integer("guest_view_count").notNull().default(0),
+  premiereAt: text("premiere_at"),
+  releaseAt: text("release_at"),
+  videoDurationSeconds: integer("video_duration_seconds"),
 });
 
 export const filmSubmissions = sqliteTable("film_submissions", {
@@ -250,6 +253,16 @@ export const siteSettings = sqliteTable("site_settings", {
   patchNoteEnabled: integer("patch_note_enabled", { mode: "boolean" }).notNull().default(false),
   patchNoteTitle: text("patch_note_title"),
   patchNoteMessage: text("patch_note_message"),
+});
+
+export const premiereViewers = sqliteTable("premiere_viewers", {
+  id: text("id").primaryKey(),
+  filmId: text("film_id")
+    .notNull()
+    .references(() => films.id, { onDelete: "cascade" }),
+  lastSeenAt: text("last_seen_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
 });
 
 export const contactMessages = sqliteTable("contact_messages", {

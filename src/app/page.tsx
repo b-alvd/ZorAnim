@@ -2,6 +2,7 @@ import Hero from "@/components/Hero/Hero";
 import Row from "@/components/Row/Row";
 import Landing from "@/components/Landing/Landing";
 import PatchNoteBubble from "@/components/PatchNoteBubble/PatchNoteBubble";
+import PremiereBanner from "@/components/PremiereBanner/PremiereBanner";
 import { getFavoriteFilmIds, getFilms, getSeriesEpisodeIds, getSiteSettings, getWatchedFilmIds } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { collapseSeries, computeEffectiveWatchedIds, splitComingSoon } from "@/lib/series";
@@ -36,6 +37,7 @@ export default async function Home() {
   return (
     <main>
       <Hero films={collapsedFilms} />
+      <PremiereBanner films={allFilms} />
       {showPatchNote && (
         <PatchNoteBubble title={settings.patchNoteTitle} message={settings.patchNoteMessage!} />
       )}

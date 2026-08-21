@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getFilm, getSeriesEpisodes, getSuggestions, incrementGuestView, markWatched } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getPremiereStatus, getPremiereUnlockAt } from "@/lib/premiere";
 import VideoPlayer from "@/components/VideoPlayer/VideoPlayer";
+import PremiereVideoPlayer from "@/components/PremiereVideoPlayer/PremiereVideoPlayer";
+import PremiereLock from "@/components/PremiereLock/PremiereLock";
 import styles from "./watch.module.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -37,6 +40,26 @@ export default async function WatchPage({
   const film = await getFilm(id);
   if (!film) notFound();
 
+  if (getPremiereStatus(film) === "locked" && user?.role !== "admin") {
+    const hasAired = !!film.premiereAt && new Date(film.premiereAt).getTime() <= Date.now();
+    return (
+      <main className={styles.page}>
+        <PremiereLock film={film} unlockAt={getPremiereUnlockAt(film)} hasAired={hasAired} />
+      </main>
+    );
+  }
+
+  const livePremiere = getPremiereStatus(film) === "preview";
+
+  if (livePremiere) {
+    await (user ? markWatched(user.id, film.id) : incrementGuestView(film.id));
+    return (
+      <main className={styles.page}>
+        <PremiereVideoPlayer film={film} />
+      </main>
+    );
+  }
+
   const [suggestions, episodes] = await Promise.all([
     getSuggestions(film.id),
     film.seriesTitle ? getSeriesEpisodes(film.seriesTitle) : Promise.resolve([]),
@@ -47,7 +70,12 @@ export default async function WatchPage({
 
   return (
     <main className={styles.page}>
-      <VideoPlayer film={playbackFilm} suggestions={suggestions} episodes={episodes} autoplay={autoplay === "1"} />
+      <VideoPlayer
+        film={playbackFilm}
+        suggestions={suggestions}
+        episodes={episodes}
+        autoplay={autoplay === "1"}
+      />
     </main>
   );
 }

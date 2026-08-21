@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   films,
@@ -18,6 +18,7 @@ import {
   notifications,
   siteSettings,
   banAppeals,
+  premiereViewers,
 } from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
@@ -44,6 +45,9 @@ const filmSelection = {
   episodeNumber: films.episodeNumber,
   episodeKind: films.episodeKind,
   teaserVideoUrl: films.teaserVideoUrl,
+  premiereAt: films.premiereAt,
+  releaseAt: films.releaseAt,
+  videoDurationSeconds: films.videoDurationSeconds,
 };
 
 function filmsQuery() {
@@ -80,6 +84,9 @@ function mapFilm(row: FilmRow): Film {
     episodeNumber: row.episodeNumber,
     episodeKind: (row.episodeKind as "episode" | "teaser") ?? "episode",
     teaserVideoUrl: row.teaserVideoUrl,
+    premiereAt: row.premiereAt,
+    releaseAt: row.releaseAt,
+    videoDurationSeconds: row.videoDurationSeconds,
   };
 }
 
@@ -292,7 +299,34 @@ export type FilmInput = {
   episodeNumber?: number | null;
   episodeKind?: "episode" | "teaser";
   teaserVideoUrl?: string | null;
+  premiereAt?: string | null;
+  releaseAt?: string | null;
+  videoDurationSeconds?: number | null;
 };
+
+export async function launchPremiere(id: string): Promise<void> {
+  await db.update(films).set({ premiereAt: new Date().toISOString() }).where(eq(films.id, id));
+}
+
+const PREMIERE_VIEWER_TIMEOUT_MS = 30_000;
+
+export async function heartbeatPremiereViewer(viewerId: string, filmId: string): Promise<number> {
+  const now = new Date().toISOString();
+  await db
+    .insert(premiereViewers)
+    .values({ id: viewerId, filmId, lastSeenAt: now })
+    .onConflictDoUpdate({ target: premiereViewers.id, set: { filmId, lastSeenAt: now } });
+  return getPremiereViewerCount(filmId);
+}
+
+export async function getPremiereViewerCount(filmId: string): Promise<number> {
+  const cutoff = new Date(Date.now() - PREMIERE_VIEWER_TIMEOUT_MS).toISOString();
+  const [row] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(premiereViewers)
+    .where(and(eq(premiereViewers.filmId, filmId), gt(premiereViewers.lastSeenAt, cutoff)));
+  return row?.count ?? 0;
+}
 
 export async function createFilm(input: FilmInput): Promise<string> {
   const id = randomUUID();
