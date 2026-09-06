@@ -10,12 +10,14 @@ import {
   deleteStudioAction,
   inviteToStudioAction,
   removeStudioMembershipAction,
+  respondToJoinRequestAction,
   respondToStudioInviteAction,
 } from "./studioActions";
 import styles from "./StudiosCard.module.css";
 
 type OwnedStudio = Artist & { members: StudioMemberInfo[] };
 type PendingInvite = StudioMember & { studioName: string };
+type JoinRequest = StudioMember & { studioName: string; requesterName: string };
 
 function InviteForm({ studioId, invitable, onDone }: { studioId: string; invitable: Artist[]; onDone: () => void }) {
   const [artistId, setArtistId] = useState(invitable[0]?.id ?? "");
@@ -98,7 +100,15 @@ function DeleteStudioConfirm({
   );
 }
 
-function OwnedStudioItem({ studio, invitable }: { studio: OwnedStudio; invitable: Artist[] }) {
+function OwnedStudioItem({
+  studio,
+  invitable,
+  joinRequests,
+}: {
+  studio: OwnedStudio;
+  invitable: Artist[];
+  joinRequests: JoinRequest[];
+}) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -110,23 +120,59 @@ function OwnedStudioItem({ studio, invitable }: { studio: OwnedStudio; invitable
         <span className={styles.itemTitle}>{studio.name}</span>
         <span className={styles.badge}>Studio (toi)</span>
       </div>
-      {studio.members.length > 0 && (
-        <div className={styles.members}>
-          {studio.members.map((m) => (
-            <span key={m.id} className={styles.member}>
-              {m.name}
-              {m.status === "invited" && <span className={styles.badge}>En attente</span>}
-              <button
-                type="button"
-                className={styles.removeBtn}
-                disabled={isPending}
-                onClick={() => startTransition(() => removeStudioMembershipAction(m.id))}
-              >
-                Retirer
-              </button>
-            </span>
-          ))}
-        </div>
+      {joinRequests.length > 0 && (
+        <>
+          <span className={styles.subLabel}>Demandes pour rejoindre</span>
+          <div className={styles.members}>
+            {joinRequests.map((req) => (
+              <span key={req.id} className={styles.member}>
+                {req.requesterName}
+                <button
+                  type="button"
+                  className={styles.acceptBtn}
+                  disabled={isPending}
+                  onClick={() => startTransition(() => respondToJoinRequestAction(req.id, true))}
+                >
+                  Accepter
+                </button>
+                <button
+                  type="button"
+                  className={styles.refuseBtn}
+                  disabled={isPending}
+                  onClick={() => startTransition(() => respondToJoinRequestAction(req.id, false))}
+                >
+                  Refuser
+                </button>
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+      {/* "requested" rows are shown above, in the review section -- listing
+          them here too, without a clear badge, made a pending request look
+          like an already-accepted member. */}
+      {studio.members.filter((m) => m.status !== "requested").length > 0 && (
+        <>
+          <span className={styles.subLabel}>Membres</span>
+          <div className={styles.members}>
+            {studio.members
+              .filter((m) => m.status !== "requested")
+              .map((m) => (
+                <span key={m.id} className={styles.member}>
+                  {m.name}
+                  {m.status === "invited" && <span className={styles.badge}>Invitation en attente</span>}
+                  <button
+                    type="button"
+                    className={styles.removeBtn}
+                    disabled={isPending}
+                    onClick={() => startTransition(() => removeStudioMembershipAction(m.id))}
+                  >
+                    Retirer
+                  </button>
+                </span>
+              ))}
+          </div>
+        </>
       )}
       <div className={styles.itemActions}>
         <button type="button" className={styles.linkBtn} onClick={() => setInviteOpen(true)}>
@@ -157,12 +203,14 @@ export default function StudiosCard({
   ownedStudios,
   memberStudios,
   pendingInvites,
+  joinRequests,
   invitableArtists,
 }: {
   personalArtist: Artist | null;
   ownedStudios: OwnedStudio[];
   memberStudios: StudioMembership[];
   pendingInvites: PendingInvite[];
+  joinRequests: JoinRequest[];
   invitableArtists: Artist[];
 }) {
   const [isPending, startTransition] = useTransition();
@@ -222,6 +270,7 @@ export default function StudiosCard({
               key={studio.id}
               studio={studio}
               invitable={invitableArtists.filter((a) => !studio.members.some((m) => m.name === a.name))}
+              joinRequests={joinRequests.filter((r) => r.studioId === studio.id)}
             />
           ))}
           {memberStudios.map(({ membershipId, studio }) => (

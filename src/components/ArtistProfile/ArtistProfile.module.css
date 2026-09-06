@@ -67,6 +67,10 @@
   text-decoration: none;
 }
 
+.joinButtonWrap {
+  margin-top: 0.6rem;
+}
+
 .memberLink:hover {
   color: #fff;
   text-decoration: underline;

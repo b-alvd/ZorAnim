@@ -8,6 +8,7 @@ import {
   getInvitableArtists,
   getPendingArtistSubmissionsByUser,
   getPendingFilmSubmissionsByUser,
+  getPendingJoinRequests,
   getPendingStudioInvites,
   getStudioMembers,
   getStudiosOwnedBy,
@@ -29,16 +30,25 @@ export default async function ProfilPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/connexion");
 
-  const [filmSubmissions, artistSubmissions, messages, personalArtist, ownedStudiosRaw, memberStudios, pendingInvites] =
-    await Promise.all([
-      getPendingFilmSubmissionsByUser(user.id),
-      getPendingArtistSubmissionsByUser(user.id),
-      getContactMessagesByUser(user.id),
-      getArtistByUserId(user.id),
-      getStudiosOwnedBy(user.id),
-      getActiveStudioMembershipsDetailed(user.id),
-      getPendingStudioInvites(user.id),
-    ]);
+  const [
+    filmSubmissions,
+    artistSubmissions,
+    messages,
+    personalArtist,
+    ownedStudiosRaw,
+    memberStudios,
+    pendingInvites,
+    joinRequests,
+  ] = await Promise.all([
+    getPendingFilmSubmissionsByUser(user.id),
+    getPendingArtistSubmissionsByUser(user.id),
+    getContactMessagesByUser(user.id),
+    getArtistByUserId(user.id),
+    getStudiosOwnedBy(user.id),
+    getActiveStudioMembershipsDetailed(user.id),
+    getPendingStudioInvites(user.id),
+    getPendingJoinRequests(user.id),
+  ]);
 
   const [ownedStudios, invitableArtists] = await Promise.all([
     Promise.all(
@@ -94,6 +104,7 @@ export default async function ProfilPage() {
           ownedStudios={ownedStudios}
           memberStudios={memberStudios}
           pendingInvites={pendingInvites}
+          joinRequests={joinRequests}
           invitableArtists={invitableArtists}
         />
       </div>

@@ -2,7 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { deleteStudio, inviteToStudio, removeStudioMembership, respondToStudioInvite } from "@/db/queries";
+import {
+  deleteStudio,
+  inviteToStudio,
+  removeStudioMembership,
+  respondToJoinRequest,
+  respondToStudioInvite,
+} from "@/db/queries";
 
 export async function inviteToStudioAction(studioId: string, artistId: string) {
   await inviteToStudio(studioId, artistId);
@@ -13,8 +19,21 @@ export async function respondToStudioInviteAction(memberId: string, accept: bool
   const user = await getCurrentUser();
   if (!user) throw new Error("Non authentifié.");
 
-  await respondToStudioInvite(memberId, user.id, accept);
+  const result = await respondToStudioInvite(memberId, user.id, accept);
   revalidatePath("/profil");
+  if (result) revalidatePath(`/studios/${result.studioId}`);
+}
+
+export async function respondToJoinRequestAction(memberId: string, accept: boolean) {
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Non authentifié.");
+
+  const result = await respondToJoinRequest(memberId, user.id, accept);
+  revalidatePath("/profil");
+  // The public studio page is statically generated (generateStaticParams),
+  // so an accepted member wouldn't show up there until this path is
+  // explicitly revalidated.
+  if (result) revalidatePath(`/studios/${result.studioId}`);
 }
 
 export async function removeStudioMembershipAction(memberId: string) {

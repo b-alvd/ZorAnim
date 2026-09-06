@@ -915,9 +915,13 @@ export async function getPendingStudioInvites(userId: string): Promise<(StudioMe
     .where(and(eq(studioMembers.userId, userId), eq(studioMembers.status, "invited")));
 }
 
-export async function respondToStudioInvite(memberId: string, userId: string, accept: boolean): Promise<void> {
+export async function respondToStudioInvite(
+  memberId: string,
+  userId: string,
+  accept: boolean
+): Promise<{ studioId: string } | null> {
   const [row] = await db.select().from(studioMembers).where(eq(studioMembers.id, memberId));
-  if (!row || row.userId !== userId) return;
+  if (!row || row.userId !== userId) return null;
 
   if (accept) {
     await db.update(studioMembers).set({ status: "active" }).where(eq(studioMembers.id, memberId));
@@ -937,6 +941,94 @@ export async function respondToStudioInvite(memberId: string, userId: string, ac
       "/profil"
     );
   }
+
+  return { studioId: row.studioId };
+}
+
+// Owner-initiated invites use status "invited"; artist-initiated requests to
+// join use status "requested" -- same table, same accept/decline shape,
+// just who started it and who has to respond.
+export async function requestToJoinStudio(studioId: string, userId: string): Promise<void> {
+  const [existing] = await db
+    .select({ id: studioMembers.id })
+    .from(studioMembers)
+    .where(and(eq(studioMembers.studioId, studioId), eq(studioMembers.userId, userId)));
+  if (existing) return;
+
+  await db.insert(studioMembers).values({ id: randomUUID(), studioId, userId, status: "requested" });
+
+  const [studio] = await db.select({ name: studios.name, ownerId: studios.ownerId }).from(studios).where(eq(studios.id, studioId));
+  const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId));
+  if (studio?.ownerId && user) {
+    await createNotification(
+      studio.ownerId,
+      "studio_join_request",
+      `${user.name} souhaite rejoindre le studio "${studio.name}".`,
+      "/profil"
+    );
+  }
+}
+
+export async function getPendingJoinRequests(
+  ownerId: string
+): Promise<(StudioMember & { studioName: string; requesterName: string })[]> {
+  return db
+    .select({
+      id: studioMembers.id,
+      studioId: studioMembers.studioId,
+      userId: studioMembers.userId,
+      status: studioMembers.status,
+      createdAt: studioMembers.createdAt,
+      studioName: studios.name,
+      requesterName: users.name,
+    })
+    .from(studioMembers)
+    .innerJoin(studios, eq(studioMembers.studioId, studios.id))
+    .innerJoin(users, eq(studioMembers.userId, users.id))
+    .where(and(eq(studios.ownerId, ownerId), eq(studioMembers.status, "requested")));
+}
+
+export async function respondToJoinRequest(
+  memberId: string,
+  ownerId: string,
+  accept: boolean
+): Promise<{ studioId: string } | null> {
+  const [row] = await db.select().from(studioMembers).where(eq(studioMembers.id, memberId));
+  if (!row) return null;
+
+  const [studio] = await db.select({ name: studios.name, ownerId: studios.ownerId }).from(studios).where(eq(studios.id, row.studioId));
+  if (!studio || studio.ownerId !== ownerId) return null;
+
+  if (accept) {
+    await db.update(studioMembers).set({ status: "active" }).where(eq(studioMembers.id, memberId));
+  } else {
+    await db.delete(studioMembers).where(eq(studioMembers.id, memberId));
+  }
+
+  await createNotification(
+    row.userId,
+    "studio_join_request_response",
+    accept
+      ? `Ta demande pour rejoindre le studio "${studio.name}" a été acceptée.`
+      : `Ta demande pour rejoindre le studio "${studio.name}" a été refusée.`,
+    "/profil"
+  );
+
+  return { studioId: row.studioId };
+}
+
+export async function getStudioMembershipStatus(
+  studioId: string,
+  userId: string
+): Promise<"owner" | "active" | "invited" | "requested" | null> {
+  const [studio] = await db.select({ ownerId: studios.ownerId }).from(studios).where(eq(studios.id, studioId));
+  if (studio?.ownerId === userId) return "owner";
+
+  const [member] = await db
+    .select({ status: studioMembers.status })
+    .from(studioMembers)
+    .where(and(eq(studioMembers.studioId, studioId), eq(studioMembers.userId, userId)));
+  return (member?.status as "active" | "invited" | "requested" | undefined) ?? null;
 }
 
 export type StudioMemberInfo = { id: string; name: string; email: string; status: string };

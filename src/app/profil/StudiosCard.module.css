@@ -64,10 +64,18 @@
   color: #4ade80;
 }
 
+.subLabel {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #666;
+}
+
 .members {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  margin-bottom: 0.4rem;
 }
 
 .member {

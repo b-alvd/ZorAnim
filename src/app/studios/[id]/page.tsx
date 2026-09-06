@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ArtistProfile from "@/components/ArtistProfile/ArtistProfile";
-import { getFavoriteFilmIds, getFilmsByStudio, getStudio, getStudios, getWatchedFilmIds } from "@/db/queries";
+import RequestToJoinButton from "@/components/RequestToJoinButton/RequestToJoinButton";
+import {
+  getArtistByUserId,
+  getFavoriteFilmIds,
+  getFilmsByStudio,
+  getStudio,
+  getStudioMembershipStatus,
+  getStudios,
+  getWatchedFilmIds,
+} from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 
 export async function generateStaticParams() {
@@ -34,11 +43,28 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
   const studio = await getStudio(id);
   if (!studio) notFound();
 
-  const [studioFilms, favoriteIds, watchedIds] = await Promise.all([
+  const [studioFilms, favoriteIds, watchedIds, personalArtist, membershipStatus] = await Promise.all([
     getFilmsByStudio(studio.id),
     user ? getFavoriteFilmIds(user.id) : Promise.resolve(new Set<string>()),
     user ? getWatchedFilmIds(user.id) : Promise.resolve(new Set<string>()),
+    user ? getArtistByUserId(user.id) : Promise.resolve(undefined),
+    user ? getStudioMembershipStatus(studio.id, user.id) : Promise.resolve(null),
   ]);
 
-  return <ArtistProfile artist={studio} artistFilms={studioFilms} favoriteIds={favoriteIds} watchedIds={watchedIds} />;
+  return (
+    <ArtistProfile
+      artist={studio}
+      artistFilms={studioFilms}
+      favoriteIds={favoriteIds}
+      watchedIds={watchedIds}
+      joinButton={
+        <RequestToJoinButton
+          studioId={studio.id}
+          isLoggedIn={!!user}
+          hasArtistProfile={!!personalArtist}
+          membershipStatus={membershipStatus}
+        />
+      }
+    />
+  );
 }

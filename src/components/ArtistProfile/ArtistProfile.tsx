@@ -18,12 +18,14 @@ export default async function ArtistProfile({
   favoriteIds,
   watchedIds,
   studios = [],
+  joinButton,
 }: {
   artist: Artist;
   artistFilms: Film[];
   favoriteIds: Set<string>;
   watchedIds: Set<string>;
   studios?: { id: string; name: string; isOwner: boolean }[];
+  joinButton?: React.ReactNode;
 }) {
   const team = artist.isStudio ? await getStudioTeamDisplay(artist.id) : [];
   const { released, comingSoon } = splitComingSoon(artistFilms);
@@ -67,6 +69,7 @@ export default async function ArtistProfile({
               ))}
             </div>
           )}
+          {joinButton && <div className={styles.joinButtonWrap}>{joinButton}</div>}
           {!artist.isStudio && studios.length > 0 && (
             <div className={styles.members}>
               <span className={styles.membersLabel}>Studio{studios.length > 1 ? "s" : ""} :</span>{" "}

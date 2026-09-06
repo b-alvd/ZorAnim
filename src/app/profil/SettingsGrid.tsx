@@ -14,6 +14,7 @@ import type {
   StudioMemberInfo,
   StudioMembership,
 } from "@/db/queries";
+type JoinRequest = StudioMember & { studioName: string; requesterName: string };
 import type { Artist } from "@/data/types";
 import styles from "./profil.module.css";
 
@@ -74,6 +75,7 @@ export default function SettingsGrid({
   ownedStudios,
   memberStudios,
   pendingInvites,
+  joinRequests,
   invitableArtists,
 }: {
   name: string;
@@ -86,6 +88,7 @@ export default function SettingsGrid({
   ownedStudios: (Artist & { members: StudioMemberInfo[] })[];
   memberStudios: StudioMembership[];
   pendingInvites: (StudioMember & { studioName: string })[];
+  joinRequests: JoinRequest[];
   invitableArtists: Artist[];
 }) {
   return (
@@ -113,6 +116,7 @@ export default function SettingsGrid({
           ownedStudios={ownedStudios}
           memberStudios={memberStudios}
           pendingInvites={pendingInvites}
+          joinRequests={joinRequests}
           invitableArtists={invitableArtists}
         />
       </SettingsCard>
