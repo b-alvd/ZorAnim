@@ -12,6 +12,14 @@ import styles from "./films.module.css";
 
 const SEASON_TYPE_OPTIONS = ["Teaser", "Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
 
+function toDatetimeLocal(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function seasonTypeLabel(episodeKind: "episode" | "teaser", seasonNumber: number): string {
   return episodeKind === "teaser" ? "Teaser" : `Saison ${seasonNumber}`;
 }
@@ -26,6 +34,8 @@ const emptyEpisode = (previous?: SeriesEpisodeInput): SeriesEpisodeInput => ({
   episodeNumber: previous ? previous.episodeNumber + 1 : 1,
   poster: "",
   videoUrl: "",
+  premiereAt: null,
+  releaseAt: null,
 });
 
 export default function AdminFilmSeriesForm({
@@ -88,7 +98,14 @@ export default function AdminFilmSeriesForm({
         rating,
         category,
         isNew,
-        episodes,
+        // `releaseAt` inputs are raw datetime-local strings (no timezone) --
+        // convert to ISO here, in the browser, so it resolves against the
+        // admin's own local time rather than the server's.
+        episodes: episodes.map((ep) => ({
+          ...ep,
+          premiereAt: ep.premiereAt ? new Date(ep.premiereAt).toISOString() : null,
+          releaseAt: ep.releaseAt ? new Date(ep.releaseAt).toISOString() : null,
+        })),
       });
       onDone();
     });
@@ -241,6 +258,24 @@ export default function AdminFilmSeriesForm({
                     onChange={(url) => updateEpisode(index, { videoUrl: url })}
                     maxSizeMB={100}
                   />
+                </div>
+                <div className={adminStyles.row2}>
+                  <div className={adminStyles.field}>
+                    <label>Avant-première (optionnel)</label>
+                    <input
+                      type="datetime-local"
+                      value={toDatetimeLocal(episode.premiereAt)}
+                      onChange={(e) => updateEpisode(index, { premiereAt: e.target.value || null })}
+                    />
+                  </div>
+                  <div className={adminStyles.field}>
+                    <label>Sortie {episode.premiereAt ? "officielle" : "programmée"} (optionnel)</label>
+                    <input
+                      type="datetime-local"
+                      value={toDatetimeLocal(episode.releaseAt)}
+                      onChange={(e) => updateEpisode(index, { releaseAt: e.target.value || null })}
+                    />
+                  </div>
                 </div>
               </div>
             ))}

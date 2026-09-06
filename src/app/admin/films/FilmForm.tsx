@@ -51,6 +51,7 @@ export default function FilmForm({
   pending,
   lockedSeriesTitle,
   allowSeries = true,
+  seasonOptions,
 }: {
   onSubmit: (formData: FormData) => void;
   artists: Artist[];
@@ -59,6 +60,7 @@ export default function FilmForm({
   pending?: boolean;
   lockedSeriesTitle?: string;
   allowSeries?: boolean;
+  seasonOptions?: string[];
 }) {
   const [rating, setRating] = useState(initial?.rating ?? RATING_OPTIONS[0]);
   const [category, setCategory] = useState(initial?.category ?? categories[0]);
@@ -133,7 +135,7 @@ export default function FilmForm({
           <div className={styles.row2}>
             <div className={styles.field}>
               <label>Type</label>
-              <Dropdown options={SEASON_TYPE_OPTIONS} value={seasonType} onChange={setSeasonType} />
+              <Dropdown options={seasonOptions ?? SEASON_TYPE_OPTIONS} value={seasonType} onChange={setSeasonType} />
             </div>
             <div className={styles.field}>
               <label htmlFor="episodeNumber">Numéro</label>

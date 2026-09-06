@@ -104,3 +104,20 @@
 .addEpisodeBtn:hover {
   background: rgba(255, 255, 255, 0.16);
 }
+
+.addEpisodeInlineBtn {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  padding: 4px 10px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.addEpisodeInlineBtn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import FilmRowActions from "./FilmRowActions";
+import AddEpisodeButton from "./AddEpisodeButton";
 import type { Artist, Film } from "@/data/types";
 import { formatEpisodeTag } from "@/lib/series";
 import styles from "../shared.module.css";
@@ -36,6 +37,7 @@ function SeriesRow({ title, episodes, artists, categories }: { title: string; ep
             <span className={listStyles.seriesCount}>
               {episodes.length} épisode{episodes.length > 1 ? "s" : ""}
             </span>
+            <AddEpisodeButton seriesTitle={title} episodes={episodes} artists={artists} categories={categories} />
           </div>
         </td>
       </tr>

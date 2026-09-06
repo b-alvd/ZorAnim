@@ -25,20 +25,30 @@ function premiereEndsAt(film: PremiereFilm): number | null {
 // premiereAt to premiereAt+duration: playable ("preview"). After that, it
 // locks again until releaseAt (the official release), same as before the
 // premiere ever happened.
+//
+// A film/episode can also have `releaseAt` with NO `premiereAt` at all --
+// that's a plain scheduled publish date (e.g. "programmer un épisode à
+// l'avance"), no live event involved: just hidden until that date, then a
+// normal on-demand release.
 export function getPremiereStatus(film: PremiereFilm): PremiereStatus {
-  if (!film.premiereAt) return "released";
   const now = Date.now();
-  const start = new Date(film.premiereAt).getTime();
-  if (now < start) return "locked";
-  const end = premiereEndsAt(film)!;
-  if (now < end) return "preview";
+
+  if (film.premiereAt) {
+    const start = new Date(film.premiereAt).getTime();
+    if (now < start) return "locked";
+    const end = premiereEndsAt(film)!;
+    if (now < end) return "preview";
+    if (film.releaseAt && new Date(film.releaseAt).getTime() > now) return "locked";
+    return "released";
+  }
+
   if (film.releaseAt && new Date(film.releaseAt).getTime() > now) return "locked";
   return "released";
 }
 
 // When a locked film unlocks next: premiereAt if it hasn't aired yet,
-// releaseAt if the live airing already happened. Null if not locked, or
-// locked with no releaseAt set (shouldn't normally be shown as a countdown).
+// releaseAt otherwise (whether that's a post-premiere wait or a plain
+// scheduled release with no premiere at all).
 export function getPremiereUnlockAt(film: PremiereFilm): string | null {
   if (getPremiereStatus(film) !== "locked") return null;
   const now = Date.now();
@@ -50,7 +60,8 @@ export function getPremiereBadge(film: PremiereFilm): string | null {
   const status = getPremiereStatus(film);
   if (status === "preview") return "Avant-première en direct";
   if (status === "locked") {
-    const hasAired = film.premiereAt && new Date(film.premiereAt).getTime() <= Date.now();
+    if (!film.premiereAt) return "Bientôt disponible";
+    const hasAired = new Date(film.premiereAt).getTime() <= Date.now();
     return hasAired ? "Bientôt disponible" : "Avant-première à venir";
   }
   return null;
@@ -66,6 +77,9 @@ export function getPremiereLiveClock(film: PremiereFilm): { elapsedSeconds: numb
 
 export type FeaturedPremierePhase = "upcoming" | "live" | "waiting";
 
+// Only actual premiere events (premiereAt set) are eligible for the
+// homepage banner -- a plain scheduled release (no premiereAt) is just a
+// quiet publish date, not something to advertise as an "avant-première".
 export function pickFeaturedPremiere<T extends PremiereFilm>(
   films: T[]
 ): { film: T; phase: FeaturedPremierePhase } | null {
@@ -74,7 +88,7 @@ export function pickFeaturedPremiere<T extends PremiereFilm>(
     live.sort((a, b) => new Date(a.premiereAt!).getTime() - new Date(b.premiereAt!).getTime());
     return { film: live[0], phase: "live" };
   }
-  const locked = films.filter((f) => getPremiereStatus(f) === "locked" && getPremiereUnlockAt(f));
+  const locked = films.filter((f) => f.premiereAt && getPremiereStatus(f) === "locked" && getPremiereUnlockAt(f));
   if (locked.length > 0) {
     locked.sort((a, b) => new Date(getPremiereUnlockAt(a)!).getTime() - new Date(getPremiereUnlockAt(b)!).getTime());
     const film = locked[0];

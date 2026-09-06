@@ -19,6 +19,10 @@ export default function PremiereLock({
   unlockAt: string | null;
   hasAired: boolean;
 }) {
+  // No premiereAt at all means this is just a plain scheduled release date
+  // (e.g. a series episode programmed in advance) -- not a live event, so
+  // none of the "avant-première" language applies.
+  const isPremiereEvent = !!film.premiereAt;
   const router = useRouter();
   const target = unlockAt ? new Date(unlockAt).getTime() : null;
   // Start from Date.now(), never from `target` -- seeding `now` with `target`
@@ -36,9 +40,13 @@ export default function PremiereLock({
   useEffect(() => {
     if (target && now >= target && !triggeredRef.current) {
       triggeredRef.current = true;
-      window.location.href = hasAired ? window.location.pathname : `${window.location.pathname}?autoplay=1`;
+      // Only force autoplay for an actual premiere going live -- a plain
+      // scheduled release (or the post-premiere official release) just
+      // becomes a normal on-demand watch, no forced autoplay.
+      const shouldAutoplay = isPremiereEvent && !hasAired;
+      window.location.href = shouldAutoplay ? `${window.location.pathname}?autoplay=1` : window.location.pathname;
     }
-  }, [now, target, hasAired]);
+  }, [now, target, hasAired, isPremiereEvent]);
 
   const remaining = target !== null ? Math.max(0, target - now) : 0;
   const days = Math.floor(remaining / 86400000);
@@ -57,14 +65,18 @@ export default function PremiereLock({
       </button>
       <div className={styles.shadow} />
       <div className={styles.content}>
-        <span className={styles.tag}>{hasAired ? "Avant-première terminée" : "Avant-première"}</span>
+        <span className={styles.tag}>
+          {!isPremiereEvent ? "Bientôt disponible" : hasAired ? "Avant-première terminée" : "Avant-première"}
+        </span>
         <h1 className={styles.title}>{film.seriesTitle ?? film.title}</h1>
         <p className={styles.sub}>
-          {hasAired
-            ? target
-              ? "L'avant-première en direct est terminée. Rendez-vous à la sortie officielle :"
-              : "L'avant-première en direct est terminée. Reviens à la sortie officielle."
-            : "Ce contenu sera disponible à partir de :"}
+          {!isPremiereEvent
+            ? "Ce contenu sera disponible à partir de :"
+            : hasAired
+              ? target
+                ? "L'avant-première en direct est terminée. Rendez-vous à la sortie officielle :"
+                : "L'avant-première en direct est terminée. Reviens à la sortie officielle."
+              : "Ce contenu sera disponible à partir de :"}
         </p>
         {target !== null && (
           <div className={styles.timer} aria-live="polite">

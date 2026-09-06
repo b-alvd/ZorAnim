@@ -72,6 +72,8 @@ export type SeriesEpisodeInput = {
   episodeNumber: number;
   poster: string;
   videoUrl: string;
+  premiereAt?: string | null;
+  releaseAt?: string | null;
 };
 
 export async function createSeriesAction(input: {
@@ -104,6 +106,8 @@ export async function createSeriesAction(input: {
       seasonNumber: episode.episodeKind === "teaser" ? null : episode.seasonNumber,
       episodeNumber: episode.episodeNumber,
       episodeKind: episode.episodeKind,
+      premiereAt: episode.premiereAt ?? null,
+      releaseAt: episode.releaseAt ?? null,
     });
   }
   revalidatePath("/admin/films");
