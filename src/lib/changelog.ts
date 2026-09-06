@@ -7,6 +7,15 @@ export type ChangelogEntry = {
 // Newest first. Keep entries short and user-facing, not commit-by-commit.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.8.0",
+    date: "6 septembre 2026",
+    changes: [
+      "Ajout des avant-premières pour les épisodes de série : un épisode peut désormais être diffusé en direct, une seule fois, avant sa sortie officielle (compteur de spectateurs en direct, pause désactivée le temps du direct), avec ou sans sortie programmée à l'avance.",
+      "Rejoindre un studio : envoie une demande depuis la page d'un studio existant, le propriétaire n'a plus qu'à accepter ou refuser.",
+      "Depuis l'admin, possibilité d'ajouter un épisode à une série déjà publiée sans devoir tout recréer.",
+    ],
+  },
+  {
     version: "0.7.0",
     date: "16 août 2026",
     changes: [
