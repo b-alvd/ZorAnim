@@ -24,6 +24,7 @@ type FilmFormValues = {
   episodeKind?: "episode" | "teaser";
   teaserVideoUrl?: string | null;
   premiereAt?: string | null;
+  premiereBanner?: string | null;
   releaseAt?: string | null;
   videoDurationSeconds?: number | null;
 };
@@ -69,6 +70,7 @@ export default function FilmForm({
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
   const [videoDurationSeconds, setVideoDurationSeconds] = useState(initial?.videoDurationSeconds ?? null);
   const [teaserVideoUrl, setTeaserVideoUrl] = useState(initial?.teaserVideoUrl ?? "");
+  const [premiereBanner, setPremiereBanner] = useState(initial?.premiereBanner ?? "");
   const [seriesTitleValue, setSeriesTitleValue] = useState(lockedSeriesTitle ?? initial?.seriesTitle ?? "");
   const [seasonType, setSeasonType] = useState(
     initial ? seasonTypeLabel(initial.episodeKind, initial.seasonNumber) : "Teaser"
@@ -290,6 +292,17 @@ export default function FilmForm({
             defaultValue={toDatetimeLocal(initial?.releaseAt)}
           />
         </div>
+      </div>
+      <div className={styles.field}>
+        <label>Image de bannière d&apos;avant-première (optionnel)</label>
+        <FileUpload
+          name="premiereBanner"
+          label="Choisir une image"
+          accept="image/*"
+          value={premiereBanner}
+          onChange={setPremiereBanner}
+          preview
+        />
       </div>
       <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !poster || !videoUrl}>
         {pending ? "Enregistrement…" : "Enregistrer"}

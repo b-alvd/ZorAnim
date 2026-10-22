@@ -34,6 +34,7 @@ function readFilmInput(formData: FormData): FilmInput {
     episodeKind: formData.get("episodeKind") === "teaser" ? "teaser" : "episode",
     teaserVideoUrl: String(formData.get("teaserVideoUrl") ?? "") || null,
     premiereAt: readDateTimeLocal(formData, "premiereAt"),
+    premiereBanner: String(formData.get("premiereBanner") ?? "") || null,
     releaseAt: readDateTimeLocal(formData, "releaseAt"),
     videoDurationSeconds: (() => {
       const raw = String(formData.get("videoDurationSeconds") ?? "").trim();
@@ -73,6 +74,7 @@ export type SeriesEpisodeInput = {
   poster: string;
   videoUrl: string;
   premiereAt?: string | null;
+  premiereBanner?: string | null;
   releaseAt?: string | null;
 };
 
@@ -107,6 +109,7 @@ export async function createSeriesAction(input: {
       episodeNumber: episode.episodeNumber,
       episodeKind: episode.episodeKind,
       premiereAt: episode.premiereAt ?? null,
+      premiereBanner: episode.premiereBanner ?? null,
       releaseAt: episode.releaseAt ?? null,
     });
   }

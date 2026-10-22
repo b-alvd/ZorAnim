@@ -29,6 +29,7 @@ export type Film = {
   episodeKind: "episode" | "teaser";
   teaserVideoUrl: string | null;
   premiereAt: string | null;
+  premiereBanner: string | null;
   releaseAt: string | null;
   videoDurationSeconds: number | null;
 };

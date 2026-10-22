@@ -35,6 +35,7 @@ const emptyEpisode = (previous?: SeriesEpisodeInput): SeriesEpisodeInput => ({
   poster: "",
   videoUrl: "",
   premiereAt: null,
+  premiereBanner: null,
   releaseAt: null,
 });
 
@@ -276,6 +277,17 @@ export default function AdminFilmSeriesForm({
                       onChange={(e) => updateEpisode(index, { releaseAt: e.target.value || null })}
                     />
                   </div>
+                </div>
+                <div className={adminStyles.field}>
+                  <label>Image de bannière d&apos;avant-première (optionnel)</label>
+                  <FileUpload
+                    name={`episode-${index}-premiere-banner`}
+                    label="Choisir une image"
+                    accept="image/*"
+                    value={episode.premiereBanner ?? ""}
+                    onChange={(url) => updateEpisode(index, { premiereBanner: url || null })}
+                    preview
+                  />
                 </div>
               </div>
             ))}

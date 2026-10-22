@@ -46,6 +46,7 @@ const filmSelection = {
   episodeKind: films.episodeKind,
   teaserVideoUrl: films.teaserVideoUrl,
   premiereAt: films.premiereAt,
+  premiereBanner: films.premiereBanner,
   releaseAt: films.releaseAt,
   videoDurationSeconds: films.videoDurationSeconds,
 };
@@ -85,6 +86,7 @@ function mapFilm(row: FilmRow): Film {
     episodeKind: (row.episodeKind as "episode" | "teaser") ?? "episode",
     teaserVideoUrl: row.teaserVideoUrl,
     premiereAt: row.premiereAt,
+    premiereBanner: row.premiereBanner,
     releaseAt: row.releaseAt,
     videoDurationSeconds: row.videoDurationSeconds,
   };
@@ -300,6 +302,7 @@ export type FilmInput = {
   episodeKind?: "episode" | "teaser";
   teaserVideoUrl?: string | null;
   premiereAt?: string | null;
+  premiereBanner?: string | null;
   releaseAt?: string | null;
   videoDurationSeconds?: number | null;
 };
