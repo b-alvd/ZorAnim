@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createFilm, deleteFilm, launchPremiere, updateFilm, type FilmInput } from "@/db/queries";
+import { createFilm, deleteFilm, launchPremiere, stopPremiere, updateFilm, type FilmInput } from "@/db/queries";
 
 function readDateTimeLocal(formData: FormData, name: string): string | null {
   const raw = String(formData.get(name) ?? "").trim();
@@ -61,6 +61,12 @@ export async function deleteFilmAction(id: string) {
 export async function launchPremiereAction(id: string) {
   await launchPremiere(id);
   revalidatePath("/admin/films");
+}
+
+export async function stopPremiereAction(id: string) {
+  await stopPremiere(id);
+  revalidatePath("/admin/films");
+  revalidatePath("/");
 }
 
 export type SeriesEpisodeInput = {

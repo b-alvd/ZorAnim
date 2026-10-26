@@ -11,7 +11,7 @@ type PremiereFilm = {
 // be wrong or a placeholder; the real video file length (captured from
 // Cloudinary at upload time) is what actually determines how long the live
 // window lasts, when we have it.
-function liveSeconds(film: PremiereFilm): number {
+export function liveSeconds(film: PremiereFilm): number {
   return film.videoDurationSeconds ?? film.durationMinutes * 60;
 }
 

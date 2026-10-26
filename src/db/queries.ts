@@ -24,6 +24,7 @@ import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
 import { formatEpisodeTag, splitComingSoon } from "@/lib/series";
 import { placeholderAvatar } from "@/lib/placeholder";
+import { getPremiereStatus, liveSeconds } from "@/lib/premiere";
 
 const filmSelection = {
   id: films.id,
@@ -309,6 +310,22 @@ export type FilmInput = {
 
 export async function launchPremiere(id: string): Promise<void> {
   await db.update(films).set({ premiereAt: new Date().toISOString() }).where(eq(films.id, id));
+}
+
+// Ends a live premiere right now by moving premiereAt back so the live window
+// (premiereAt + video length) closes this instant. Everything downstream --
+// the post-premiere lock until releaseAt, or a normal release without one --
+// then follows exactly as if the premiere had run to its natural end.
+export async function stopPremiere(id: string): Promise<void> {
+  const film = await getFilm(id);
+  if (!film || getPremiereStatus(film) !== "preview") return;
+  const premiereAt = new Date(Date.now() - liveSeconds(film) * 1000 - 1000).toISOString();
+  await db.update(films).set({ premiereAt }).where(eq(films.id, id));
+}
+
+export async function isPremiereLive(id: string): Promise<boolean> {
+  const film = await getFilm(id);
+  return !!film && getPremiereStatus(film) === "preview";
 }
 
 const PREMIERE_VIEWER_TIMEOUT_MS = 30_000;

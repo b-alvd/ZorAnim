@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import Modal from "@/components/Modal/Modal";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
 import FilmForm from "./FilmForm";
-import { deleteFilmAction, launchPremiereAction, updateFilmAction } from "./actions";
+import { deleteFilmAction, launchPremiereAction, stopPremiereAction, updateFilmAction } from "./actions";
+import { getPremiereStatus } from "@/lib/premiere";
 import type { Artist, Film } from "@/data/types";
 import styles from "../shared.module.css";
 
@@ -18,8 +19,10 @@ export default function FilmRowActions({
   categories: string[];
 }) {
   const [open, setOpen] = useState(false);
+  const [confirmStop, setConfirmStop] = useState(false);
   const [isPending, startTransition] = useTransition();
   const premiereNotStarted = !!film.premiereAt && new Date(film.premiereAt).getTime() > Date.now();
+  const premiereLive = getPremiereStatus(film) === "preview";
 
   return (
     <div className={styles.rowActions}>
@@ -36,6 +39,38 @@ export default function FilmRowActions({
           Lancer l&apos;avant-première
         </button>
       )}
+      {premiereLive && (
+        <button type="button" className={styles.editLink} onClick={() => setConfirmStop(true)}>
+          Arrêter l&apos;avant-première
+        </button>
+      )}
+      <Modal open={confirmStop} onClose={() => setConfirmStop(false)} title="Arrêter l'avant-première">
+        <p className={styles.confirmText}>
+          Arrêter le direct de <strong>{film.title}</strong> maintenant ? Les spectateurs seront renvoyés à
+          l&apos;accueil.{" "}
+          {film.releaseAt
+            ? "L'épisode restera verrouillé jusqu'à sa sortie officielle."
+            : "Sans sortie officielle programmée, il deviendra disponible librement."}
+        </p>
+        <div className={styles.confirmActions}>
+          <button type="button" className={styles.cancelBtn} onClick={() => setConfirmStop(false)} disabled={isPending}>
+            Annuler
+          </button>
+          <button
+            type="button"
+            className={styles.confirmDeleteBtn}
+            disabled={isPending}
+            onClick={() =>
+              startTransition(async () => {
+                await stopPremiereAction(film.id);
+                setConfirmStop(false);
+              })
+            }
+          >
+            Arrêter le direct
+          </button>
+        </div>
+      </Modal>
       <Modal open={open} onClose={() => setOpen(false)} title={`Modifier ${film.title}`}>
         <FilmForm
           artists={artists}

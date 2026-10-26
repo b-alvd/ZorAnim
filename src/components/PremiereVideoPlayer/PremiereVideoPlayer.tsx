@@ -83,7 +83,15 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
           cache: "no-store",
         });
         const data = await res.json();
-        if (!cancelled && typeof data?.count === "number") setViewerCount(data.count);
+        if (cancelled) return;
+        if (typeof data?.count === "number") setViewerCount(data.count);
+        // Staff stopped the premiere early: the server says it is no longer
+        // live, even though this tab's own clock still thinks it is.
+        if (data?.live === false) {
+          videoRef.current?.pause();
+          router.push("/");
+          router.refresh();
+        }
       } catch {
         // Network hiccup — try again next tick.
       }
@@ -94,7 +102,7 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [film.id]);
+  }, [film.id, router]);
 
   // Hard wall-clock cutoff: even if the file hasn't fired its own `ended`
   // event yet, cut playback the instant the scheduled live window closes.

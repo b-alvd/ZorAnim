@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Film } from "@/data/types";
 import { getPremiereLiveClock, pickFeaturedPremiere } from "@/lib/premiere";
 import styles from "./PremiereBanner.module.css";
@@ -29,6 +30,7 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
   // dates, the phase (upcoming/live/waiting) is derived fresh every tick.
   const [, forceTick] = useState(0);
   const [viewerCount, setViewerCount] = useState<number | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const id = setInterval(() => forceTick((n) => n + 1), 1000);
@@ -48,7 +50,11 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
       try {
         const res = await fetch(`/api/watch/${filmId}/premiere-heartbeat`, { cache: "no-store" });
         const data = await res.json();
-        if (!cancelled && typeof data?.count === "number") setViewerCount(data.count);
+        if (cancelled) return;
+        if (typeof data?.count === "number") setViewerCount(data.count);
+        // Stopped early by staff: reload the server data so the banner moves
+        // on to its post-premiere phase (or disappears).
+        if (data?.live === false) router.refresh();
       } catch {
         // Network hiccup — try again next tick.
       }
@@ -59,7 +65,7 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [filmId]);
+  }, [filmId, router]);
 
   if (!featured) return null;
   const { film, phase } = featured;
