@@ -13,3 +13,9 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* Same bar as the normal player, but it's a live broadcast: no seeking, so
+   no pointer cursor suggesting you can grab it. */
+.progressLocked {
+  cursor: default;
+}

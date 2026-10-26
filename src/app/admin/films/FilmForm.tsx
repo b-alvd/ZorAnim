@@ -171,6 +171,7 @@ export default function FilmForm({
         <div className={styles.field}>
           <label>Bande-annonce (optionnel)</label>
           <FileUpload
+            allowUrl
             name="teaserVideoUrl"
             label="Choisir une vidéo"
             accept="video/*"
@@ -244,6 +245,7 @@ export default function FilmForm({
       <div className={styles.field}>
         <label>Poster</label>
         <FileUpload
+          allowUrl
           name="poster"
           label="Choisir une image"
           accept="image/*"
@@ -256,6 +258,7 @@ export default function FilmForm({
         <label>{!isSeries && standaloneTeaser ? "Vidéo (teaser)" : "Vidéo"}</label>
         <input type="hidden" name="videoDurationSeconds" value={videoDurationSeconds ?? ""} />
         <FileUpload
+          allowUrl
           name="videoUrl"
           label="Choisir une vidéo"
           accept="video/*"
@@ -296,6 +299,7 @@ export default function FilmForm({
       <div className={styles.field}>
         <label>Image de bannière d&apos;avant-première (optionnel)</label>
         <FileUpload
+          allowUrl
           name="premiereBanner"
           label="Choisir une image"
           accept="image/*"

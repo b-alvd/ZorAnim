@@ -28,6 +28,50 @@ function uploadWithProgress(
   });
 }
 
+// Checks a pasted link actually loads as the expected media before accepting
+// it, and reads a video's real length from its metadata -- the same value an
+// upload gets from Cloudinary, which premieres rely on for the live window.
+function probeMedia(url: string, kind: "video" | "image"): Promise<{ duration?: number }> {
+  return new Promise((resolve, reject) => {
+    if (kind === "image") {
+      const img = new Image();
+      img.onload = () => resolve({});
+      img.onerror = () => reject(new Error("image"));
+      img.src = url;
+      return;
+    }
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      resolve({ duration: Number.isFinite(video.duration) ? video.duration : undefined });
+      video.removeAttribute("src");
+      video.load();
+    };
+    video.onerror = () => reject(new Error("video"));
+    video.src = url;
+  });
+}
+
+// Cloudinary answers HEAD requests with the file size (and allows it
+// cross-origin); anything that doesn't is just shown without a size.
+async function fetchSize(url: string): Promise<number | null> {
+  try {
+    const res = await fetch(url, { method: "HEAD" });
+    const length = Number(res.headers.get("content-length"));
+    return res.ok && length > 0 ? length : null;
+  } catch {
+    return null;
+  }
+}
+
+function formatDuration(seconds: number): string {
+  const total = Math.round(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = (total % 60).toString().padStart(2, "0");
+  return h > 0 ? `${h}:${m.toString().padStart(2, "0")}:${s}` : `${m}:${s}`;
+}
+
 function formatBytes(bytes: number): string {
   if (bytes < 1_000_000) return `${Math.round(bytes / 1000)} Ko`;
   return `${(bytes / 1_000_000).toFixed(1)} Mo`;
@@ -42,6 +86,7 @@ export default function FileUpload({
   onDurationChange,
   maxSizeMB = 10,
   preview = false,
+  allowUrl = false,
 }: {
   name: string;
   label: string;
@@ -51,13 +96,48 @@ export default function FileUpload({
   onDurationChange?: (seconds: number) => void;
   maxSizeMB?: number;
   preview?: boolean;
+  // Staff-only: also accept a direct link to a file already hosted on a CDN.
+  allowUrl?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "error">("idle");
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [fileMeta, setFileMeta] = useState<{ name: string; size: number } | null>(null);
+  const [fileMeta, setFileMeta] = useState<{ name: string; size: number | null } | null>(null);
+  // Shown next to the preview; also filled from the preview video itself when
+  // editing an existing entry, so it never needs a fresh upload to appear.
+  const [duration, setDuration] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [checkingUrl, setCheckingUrl] = useState(false);
+  const kind = accept.startsWith("video") ? "video" : "image";
+
+  const handleUrl = async () => {
+    const url = urlInput.trim();
+    setError(null);
+    if (!/^https:\/\/\S+$/i.test(url)) {
+      setError("Le lien doit commencer par https://");
+      return;
+    }
+    setCheckingUrl(true);
+    try {
+      const { duration: probed } = await probeMedia(url, kind);
+      setFileMeta({ name: decodeURIComponent(url.split("/").pop() ?? ""), size: await fetchSize(url) });
+      setDuration(probed ?? null);
+      onChange(url);
+      if (typeof probed === "number") onDurationChange?.(probed);
+      setUrlInput("");
+      setStatus("idle");
+    } catch {
+      setError(
+        kind === "video"
+          ? "Impossible de lire cette vidéo : vérifie que le lien pointe directement vers le fichier (.mp4, .webm…)."
+          : "Impossible de charger cette image : vérifie que le lien pointe directement vers le fichier."
+      );
+    } finally {
+      setCheckingUrl(false);
+    }
+  };
 
   const handleFile = async (file: File) => {
     setError(null);
@@ -96,7 +176,10 @@ export default function FileUpload({
       }
 
       onChange(uploadData.secure_url);
-      if (typeof uploadData.duration === "number") onDurationChange?.(uploadData.duration);
+      if (typeof uploadData.duration === "number") {
+        setDuration(uploadData.duration);
+        onDurationChange?.(uploadData.duration);
+      }
       setStatus("idle");
     } catch {
       setStatus("error");
@@ -107,6 +190,7 @@ export default function FileUpload({
   const handleRemove = () => {
     onChange("");
     setFileMeta(null);
+    setDuration(null);
     setStatus("idle");
     setError(null);
     if (inputRef.current) inputRef.current.value = "";
@@ -140,15 +224,42 @@ export default function FileUpload({
         </div>
       ) : value ? (
         <div className={styles.doneBox}>
-          {preview && (
-            <div className={styles.preview}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={value} alt="" className={styles.previewImg} />
+          {kind === "video" ? (
+            // First frame as a thumbnail; plays muted while hovered so you can
+            // check it's the right file without leaving the form.
+            <div className={`${styles.preview} ${styles.previewVideo}`}>
+              <video
+                src={`${value}#t=0.5`}
+                className={styles.previewImg}
+                preload="metadata"
+                muted
+                playsInline
+                loop
+                onLoadedMetadata={(e) => {
+                  const d = e.currentTarget.duration;
+                  if (Number.isFinite(d)) setDuration((prev) => prev ?? d);
+                }}
+                onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
+                onMouseLeave={(e) => e.currentTarget.pause()}
+              />
             </div>
+          ) : (
+            preview && (
+              <div className={styles.preview}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={value} alt="" className={styles.previewImg} />
+              </div>
+            )
           )}
           <div className={styles.doneInfo}>
             <span className={styles.filename}>{displayName}</span>
-            {fileMeta && <span className={styles.filesize}>{formatBytes(fileMeta.size)}</span>}
+            {(fileMeta?.size || duration !== null) && (
+              <span className={styles.filesize}>
+                {[fileMeta?.size ? formatBytes(fileMeta.size) : null, duration !== null ? formatDuration(duration) : null]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            )}
           </div>
           <button type="button" className={styles.replaceBtn} onClick={() => inputRef.current?.click()}>
             Remplacer
@@ -188,6 +299,33 @@ export default function FileUpload({
         </button>
       )}
 
+
+      {allowUrl && !value && status !== "uploading" && (
+        <div className={styles.urlRow}>
+          <input
+            type="url"
+            className={styles.urlInput}
+            placeholder="ou colle un lien direct (https://…)"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter would submit the whole film form instead.
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleUrl();
+              }
+            }}
+          />
+          <button
+            type="button"
+            className={styles.replaceBtn}
+            onClick={handleUrl}
+            disabled={checkingUrl || !urlInput.trim()}
+          >
+            {checkingUrl ? "Vérification…" : "Utiliser ce lien"}
+          </button>
+        </div>
+      )}
       {error && <span className={styles.error}>{error}</span>}
     </div>
   );

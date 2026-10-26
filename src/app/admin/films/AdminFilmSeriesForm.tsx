@@ -241,6 +241,7 @@ export default function AdminFilmSeriesForm({
                 <div className={adminStyles.field}>
                   <label>Poster</label>
                   <FileUpload
+                    allowUrl
                     name={`episode-${index}-poster`}
                     label="Choisir une image"
                     accept="image/*"
@@ -252,6 +253,7 @@ export default function AdminFilmSeriesForm({
                 <div className={adminStyles.field}>
                   <label>Vidéo</label>
                   <FileUpload
+                    allowUrl
                     name={`episode-${index}-video`}
                     label="Choisir une vidéo"
                     accept="video/*"
@@ -281,6 +283,7 @@ export default function AdminFilmSeriesForm({
                 <div className={adminStyles.field}>
                   <label>Image de bannière d&apos;avant-première (optionnel)</label>
                   <FileUpload
+                    allowUrl
                     name={`episode-${index}-premiere-banner`}
                     label="Choisir une image"
                     accept="image/*"

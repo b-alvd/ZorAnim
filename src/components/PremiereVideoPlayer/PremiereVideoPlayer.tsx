@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Film } from "@/data/types";
-import { getPremiereStatus } from "@/lib/premiere";
+import { getPremiereLiveClock, getPremiereStatus } from "@/lib/premiere";
 import ViewerCounter from "@/components/ViewerCounter/ViewerCounter";
 import playerStyles from "@/components/VideoPlayer/VideoPlayer.module.css";
 import styles from "./PremiereVideoPlayer.module.css";
@@ -39,20 +39,30 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
     const video = videoRef.current;
     if (!video) return;
     const onTime = () => setCurrent(video.currentTime);
-    const onLoaded = () => setDuration(video.duration);
+    const onLoaded = () => {
+      setDuration(video.duration);
+      // Join the broadcast where it currently is, not from the start.
+      const clock = getPremiereLiveClock(film);
+      if (clock) video.currentTime = Math.min(clock.elapsedSeconds, video.duration);
+    };
     const onEnded = () => {
       router.push("/");
       router.refresh();
     };
     video.addEventListener("timeupdate", onTime);
     video.addEventListener("loadedmetadata", onLoaded);
+    video.addEventListener("durationchange", onLoaded);
     video.addEventListener("ended", onEnded);
+    // The server-rendered <video> starts loading before hydration, so its
+    // metadata can already be in by the time this listener is attached.
+    if (video.readyState >= 1) onLoaded();
     return () => {
       video.removeEventListener("timeupdate", onTime);
       video.removeEventListener("loadedmetadata", onLoaded);
+      video.removeEventListener("durationchange", onLoaded);
       video.removeEventListener("ended", onEnded);
     };
-  }, [router]);
+  }, [film, router]);
 
   useEffect(() => {
     videoRef.current?.play().catch(() => {});
@@ -108,6 +118,13 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
   // event yet, cut playback the instant the scheduled live window closes.
   useEffect(() => {
     const id = setInterval(() => {
+      const video = videoRef.current;
+      const clock = getPremiereLiveClock(film);
+      // Stay on the live position: buffering, a backgrounded tab or a stall
+      // makes the file drift behind the broadcast -- snap back past 3s.
+      if (video && clock && video.readyState >= 1 && Math.abs(video.currentTime - clock.elapsedSeconds) > 3) {
+        video.currentTime = Math.min(clock.elapsedSeconds, video.duration);
+      }
       if (getPremiereStatus(film) !== "preview") {
         videoRef.current?.pause();
         router.push("/");
@@ -177,7 +194,16 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
 
       <div className={`${playerStyles.controls} ${!controlsVisible ? playerStyles.controlsHidden : ""}`}>
         <div className={playerStyles.progressWrap}>
-          <input type="range" min={0} max={duration || 0} value={current} disabled className={playerStyles.progress} readOnly />
+          <input
+            type="range"
+            min={0}
+            max={duration || 0}
+            value={current}
+            disabled
+            readOnly
+            className={`${playerStyles.progress} ${styles.progressLocked}`}
+            style={{ ["--pct" as string]: `${duration ? (current / duration) * 100 : 0}%` }}
+          />
           <span className={playerStyles.time}>
             {formatTimeFull(current)} sur {formatTimeFull(duration)}
           </span>

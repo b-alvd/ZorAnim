@@ -88,12 +88,17 @@
 
 .preview {
   position: relative;
-  width: 56px;
-  height: 32px;
+  width: 80px;
+  height: 45px;
   flex-shrink: 0;
   border-radius: 4px;
   overflow: hidden;
   background: #000;
+}
+
+.previewVideo {
+  width: 112px;
+  height: 63px;
 }
 
 .previewImg {
@@ -163,4 +168,31 @@
 .error {
   font-size: 0.78rem;
   color: #ff6b6b;
+}
+
+.urlRow {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.urlInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 4px;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.urlInput:focus {
+  outline: none;
+  border-color: var(--accent, #e50914);
+}
+
+.replaceBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
