@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Film } from "@/data/types";
-import { getPremiereLiveClock, getPremiereStatus } from "@/lib/premiere";
+import { getPremiereSegment, getPremiereStatus, premiereAdSeconds } from "@/lib/premiere";
 import ViewerCounter from "@/components/ViewerCounter/ViewerCounter";
 import playerStyles from "@/components/VideoPlayer/VideoPlayer.module.css";
 import styles from "./PremiereVideoPlayer.module.css";
@@ -20,6 +20,8 @@ function formatTimeFull(seconds: number) {
 // A stripped-down player used only for the live premiere window: no pause,
 // no seek, no episode/suggestions side panel -- it's a live broadcast, not
 // a normal on-demand watch, so none of that UI belongs here.
+const DEFAULT_VOLUME = 0.5;
+
 export default function PremiereVideoPlayer({ film }: { film: Film }) {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -29,11 +31,27 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(true);
-  const [volume, setVolume] = useState(1);
+  const [volume, setVolume] = useState(DEFAULT_VOLUME);
+  // Set when the browser refused to start with sound (no click on the page
+  // yet, e.g. arriving straight from the waiting room): playback falls back
+  // to muted and the first click or key press anywhere turns sound on.
+  const [needsSound, setNeedsSound] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [viewerCount, setViewerCount] = useState<number | null>(null);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The broadcast is the optional ad followed by the episode, both on the same
+  // clock: this says which file the <video> is currently playing.
+  const [segment, setSegment] = useState<"ad" | "main">(() => getPremiereSegment(film)?.segment ?? "main");
+  const segmentRef = useRef(segment);
+  // Bumped on each ad -> episode hand-off to replay the transition overlay.
+  const [handOffCount, setHandOffCount] = useState(0);
+  const adSeconds = premiereAdSeconds(film);
+  const src = segment === "ad" && film.premiereAdUrl ? film.premiereAdUrl : film.videoUrl;
+
+  useEffect(() => {
+    segmentRef.current = segment;
+  }, [segment]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -42,10 +60,20 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
     const onLoaded = () => {
       setDuration(video.duration);
       // Join the broadcast where it currently is, not from the start.
-      const clock = getPremiereLiveClock(film);
-      if (clock) video.currentTime = Math.min(clock.elapsedSeconds, video.duration);
+      const seg = getPremiereSegment(film);
+      if (seg && seg.segment === segmentRef.current) {
+        video.currentTime = Math.min(seg.offsetSeconds, video.duration);
+      }
+      video.play().catch(() => {});
     };
     const onEnded = () => {
+      // End of the ad: hand over to the episode rather than leaving.
+      if (segmentRef.current === "ad") {
+        segmentRef.current = "main"; // so the clock check below doesn't hand off twice
+        setSegment("main");
+        setHandOffCount((c) => c + 1);
+        return;
+      }
       router.push("/");
       router.refresh();
     };
@@ -64,9 +92,45 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
     };
   }, [film, router]);
 
+  // Start with sound at 50%, whether the premiere is just starting or being
+  // joined mid-way. Browsers only allow sound after a user gesture: coming
+  // from a click ("Rejoindre le direct") that works, otherwise fall back to
+  // muted playback until the first interaction.
   useEffect(() => {
-    videoRef.current?.play().catch(() => {});
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = DEFAULT_VOLUME;
+    video.muted = false;
+    video
+      .play()
+      .then(() => setMuted(false))
+      .catch(() => {
+        video.muted = true;
+        setMuted(true);
+        setNeedsSound(true);
+        video.play().catch(() => {});
+      });
   }, []);
+
+  useEffect(() => {
+    if (!needsSound) return;
+    const enableSound = () => {
+      const video = videoRef.current;
+      if (!video) return;
+      video.volume = DEFAULT_VOLUME;
+      video.muted = false;
+      video.play().catch(() => {});
+      setVolume(DEFAULT_VOLUME);
+      setMuted(false);
+      setNeedsSound(false);
+    };
+    document.addEventListener("pointerdown", enableSound, { once: true });
+    document.addEventListener("keydown", enableSound, { once: true });
+    return () => {
+      document.removeEventListener("pointerdown", enableSound);
+      document.removeEventListener("keydown", enableSound);
+    };
+  }, [needsSound]);
 
   useEffect(() => {
     const onFsChange = () => setFullscreen(!!document.fullscreenElement);
@@ -119,11 +183,24 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
   useEffect(() => {
     const id = setInterval(() => {
       const video = videoRef.current;
-      const clock = getPremiereLiveClock(film);
-      // Stay on the live position: buffering, a backgrounded tab or a stall
-      // makes the file drift behind the broadcast -- snap back past 3s.
-      if (video && clock && video.readyState >= 1 && Math.abs(video.currentTime - clock.elapsedSeconds) > 3) {
-        video.currentTime = Math.min(clock.elapsedSeconds, video.duration);
+      const seg = getPremiereSegment(film);
+      if (seg?.segment === "main" && segmentRef.current === "ad") {
+        // The broadcast moved on to the episode while this tab was behind.
+        // Only ever forward: the ad file can end a hair before the clock
+        // says so, and must not bounce back to it.
+        segmentRef.current = "main";
+        setSegment(seg.segment);
+        setHandOffCount((c) => c + 1);
+      } else if (
+        video &&
+        seg &&
+        seg.segment === segmentRef.current &&
+        video.readyState >= 1 &&
+        Math.abs(video.currentTime - seg.offsetSeconds) > 3
+      ) {
+        // Stay on the live position: buffering, a backgrounded tab or a stall
+        // makes the file drift behind the broadcast -- snap back past 3s.
+        video.currentTime = Math.min(seg.offsetSeconds, video.duration);
       }
       if (getPremiereStatus(film) !== "preview") {
         videoRef.current?.pause();
@@ -177,20 +254,52 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
     else container.requestFullscreen();
   };
 
+  // The back arrow hides together with the time bar.
+  const chromeHidden = !controlsVisible ? styles.chromeHidden : "";
+
   return (
     <div className={playerStyles.player} ref={containerRef} onMouseMove={wakeControls}>
-      <video ref={videoRef} src={film.videoUrl} poster={film.poster} className={playerStyles.video} autoPlay muted={muted} playsInline />
+      <video ref={videoRef} src={src} poster={film.poster} className={playerStyles.video} autoPlay muted={muted} playsInline />
+
+      {/* Fades in from black on arrival (continuing the waiting room's
+          fade-out), and again on the ad -> episode hand-off with a title card. */}
+      <div key={handOffCount} className={handOffCount > 0 ? styles.handOff : styles.curtain} aria-hidden>
+        {handOffCount > 0 && (
+          <div className={styles.handOffCard}>
+            <span className={styles.handOffTag}>L&apos;avant-première commence</span>
+            <span className={styles.handOffTitle}>{film.seriesTitle ?? film.title}</span>
+          </div>
+        )}
+      </div>
 
       {viewerCount !== null && <ViewerCounter count={viewerCount} />}
 
-      <button className={playerStyles.backBtn} onClick={() => router.push("/")} aria-label="Retour">
+      {needsSound && (
+        <button type="button" className={styles.soundPrompt}>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden>
+            <path d="M3 9v6h4l5 5V4L7 9H3z" />
+            <path d="M16.5 12A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z" />
+          </svg>
+          Cliquer pour activer le son
+        </button>
+      )}
+
+      <button
+        className={`${playerStyles.backBtn} ${styles.chrome} ${chromeHidden}`}
+        onClick={() => router.push("/")}
+        aria-label="Retour"
+      >
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M19 12H5" />
           <path d="M12 19l-7-7 7-7" />
         </svg>
       </button>
 
-      <div className={styles.liveTag}>Avant-première en direct</div>
+      <div className={styles.liveTag}>
+        {segment === "ad"
+          ? `Publicité · l'avant-première commence dans ${formatTimeFull(Math.max(0, adSeconds - current))}`
+          : "Avant-première en direct"}
+      </div>
 
       <div className={`${playerStyles.controls} ${!controlsVisible ? playerStyles.controlsHidden : ""}`}>
         <div className={playerStyles.progressWrap}>

@@ -5,14 +5,23 @@ type PremiereFilm = {
   releaseAt: string | null;
   durationMinutes: number;
   videoDurationSeconds: number | null;
+  premiereAdUrl?: string | null;
+  premiereAdDurationSeconds?: number | null;
 };
+
+// Length of the optional ad aired right before the episode. Ignored without a
+// known duration: we can't schedule the hand-off to the episode otherwise.
+export function premiereAdSeconds(film: PremiereFilm): number {
+  return film.premiereAdUrl && film.premiereAdDurationSeconds ? film.premiereAdDurationSeconds : 0;
+}
 
 // The admin-entered `durationMinutes` field is just display metadata and can
 // be wrong or a placeholder; the real video file length (captured from
 // Cloudinary at upload time) is what actually determines how long the live
-// window lasts, when we have it.
+// window lasts, when we have it. The ad, if any, airs first and is part of
+// the same broadcast.
 export function liveSeconds(film: PremiereFilm): number {
-  return film.videoDurationSeconds ?? film.durationMinutes * 60;
+  return premiereAdSeconds(film) + (film.videoDurationSeconds ?? film.durationMinutes * 60);
 }
 
 function premiereEndsAt(film: PremiereFilm): number | null {
@@ -96,4 +105,18 @@ export function pickFeaturedPremiere<T extends PremiereFilm>(
     return { film, phase: hasAired ? "waiting" : "upcoming" };
   }
   return null;
+}
+
+// Where the broadcast is right now: in the ad (first `premiereAdSeconds`) or
+// in the episode, with the playback position inside that file. Everyone
+// computes the same answer from the same clock, which keeps viewers in sync.
+export function getPremiereSegment(
+  film: PremiereFilm
+): { segment: "ad" | "main"; offsetSeconds: number } | null {
+  const clock = getPremiereLiveClock(film);
+  if (!clock) return null;
+  const ad = premiereAdSeconds(film);
+  return clock.elapsedSeconds < ad
+    ? { segment: "ad", offsetSeconds: clock.elapsedSeconds }
+    : { segment: "main", offsetSeconds: clock.elapsedSeconds - ad };
 }

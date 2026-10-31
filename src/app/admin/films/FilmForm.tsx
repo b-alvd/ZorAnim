@@ -25,6 +25,9 @@ type FilmFormValues = {
   teaserVideoUrl?: string | null;
   premiereAt?: string | null;
   premiereBanner?: string | null;
+  releaseBanner?: string | null;
+  premiereAdUrl?: string | null;
+  premiereAdDurationSeconds?: number | null;
   releaseAt?: string | null;
   videoDurationSeconds?: number | null;
 };
@@ -71,6 +74,9 @@ export default function FilmForm({
   const [videoDurationSeconds, setVideoDurationSeconds] = useState(initial?.videoDurationSeconds ?? null);
   const [teaserVideoUrl, setTeaserVideoUrl] = useState(initial?.teaserVideoUrl ?? "");
   const [premiereBanner, setPremiereBanner] = useState(initial?.premiereBanner ?? "");
+  const [releaseBanner, setReleaseBanner] = useState(initial?.releaseBanner ?? "");
+  const [premiereAdUrl, setPremiereAdUrl] = useState(initial?.premiereAdUrl ?? "");
+  const [premiereAdDuration, setPremiereAdDuration] = useState(initial?.premiereAdDurationSeconds ?? null);
   const [seriesTitleValue, setSeriesTitleValue] = useState(lockedSeriesTitle ?? initial?.seriesTitle ?? "");
   const [seasonType, setSeasonType] = useState(
     initial ? seasonTypeLabel(initial.episodeKind, initial.seasonNumber) : "Teaser"
@@ -297,7 +303,7 @@ export default function FilmForm({
         </div>
       </div>
       <div className={styles.field}>
-        <label>Image de bannière d&apos;avant-première (optionnel)</label>
+        <label>Bannière d&apos;accueil — avant-première (optionnel)</label>
         <FileUpload
           allowUrl
           name="premiereBanner"
@@ -306,6 +312,35 @@ export default function FilmForm({
           value={premiereBanner}
           onChange={setPremiereBanner}
           preview
+        />
+      </div>
+      <div className={styles.field}>
+        <label>Bannière d&apos;accueil — sortie officielle, après l&apos;avant-première (optionnel)</label>
+        <FileUpload
+          allowUrl
+          name="releaseBanner"
+          label="Choisir une image"
+          accept="image/*"
+          value={releaseBanner}
+          onChange={setReleaseBanner}
+          preview
+        />
+      </div>
+      <div className={styles.field}>
+        <label>Publicité avant l&apos;avant-première (optionnel)</label>
+        <input type="hidden" name="premiereAdDurationSeconds" value={premiereAdDuration ?? ""} />
+        <FileUpload
+          allowUrl
+          name="premiereAdUrl"
+          label="Choisir une vidéo"
+          accept="video/*"
+          value={premiereAdUrl}
+          onChange={(url) => {
+            setPremiereAdUrl(url);
+            setPremiereAdDuration(null);
+          }}
+          onDurationChange={(seconds) => setPremiereAdDuration(Math.round(seconds))}
+          maxSizeMB={100}
         />
       </div>
       <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !poster || !videoUrl}>

@@ -35,6 +35,12 @@ function readFilmInput(formData: FormData): FilmInput {
     teaserVideoUrl: String(formData.get("teaserVideoUrl") ?? "") || null,
     premiereAt: readDateTimeLocal(formData, "premiereAt"),
     premiereBanner: String(formData.get("premiereBanner") ?? "") || null,
+    releaseBanner: String(formData.get("releaseBanner") ?? "") || null,
+    premiereAdUrl: String(formData.get("premiereAdUrl") ?? "") || null,
+    premiereAdDurationSeconds: (() => {
+      const raw = String(formData.get("premiereAdDurationSeconds") ?? "").trim();
+      return raw ? Math.round(Number(raw)) : null;
+    })(),
     releaseAt: readDateTimeLocal(formData, "releaseAt"),
     videoDurationSeconds: (() => {
       const raw = String(formData.get("videoDurationSeconds") ?? "").trim();
@@ -81,6 +87,9 @@ export type SeriesEpisodeInput = {
   videoUrl: string;
   premiereAt?: string | null;
   premiereBanner?: string | null;
+  releaseBanner?: string | null;
+  premiereAdUrl?: string | null;
+  premiereAdDurationSeconds?: number | null;
   releaseAt?: string | null;
 };
 
@@ -116,6 +125,9 @@ export async function createSeriesAction(input: {
       episodeKind: episode.episodeKind,
       premiereAt: episode.premiereAt ?? null,
       premiereBanner: episode.premiereBanner ?? null,
+      releaseBanner: episode.releaseBanner ?? null,
+      premiereAdUrl: episode.premiereAdUrl ?? null,
+      premiereAdDurationSeconds: episode.premiereAdDurationSeconds ?? null,
       releaseAt: episode.releaseAt ?? null,
     });
   }

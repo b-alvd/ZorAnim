@@ -30,6 +30,9 @@ export type Film = {
   teaserVideoUrl: string | null;
   premiereAt: string | null;
   premiereBanner: string | null;
+  releaseBanner: string | null;
+  premiereAdUrl: string | null;
+  premiereAdDurationSeconds: number | null;
   releaseAt: string | null;
   videoDurationSeconds: number | null;
 };

@@ -48,6 +48,9 @@ const filmSelection = {
   teaserVideoUrl: films.teaserVideoUrl,
   premiereAt: films.premiereAt,
   premiereBanner: films.premiereBanner,
+  releaseBanner: films.releaseBanner,
+  premiereAdUrl: films.premiereAdUrl,
+  premiereAdDurationSeconds: films.premiereAdDurationSeconds,
   releaseAt: films.releaseAt,
   videoDurationSeconds: films.videoDurationSeconds,
 };
@@ -88,6 +91,9 @@ function mapFilm(row: FilmRow): Film {
     teaserVideoUrl: row.teaserVideoUrl,
     premiereAt: row.premiereAt,
     premiereBanner: row.premiereBanner,
+    releaseBanner: row.releaseBanner,
+    premiereAdUrl: row.premiereAdUrl,
+    premiereAdDurationSeconds: row.premiereAdDurationSeconds,
     releaseAt: row.releaseAt,
     videoDurationSeconds: row.videoDurationSeconds,
   };
@@ -304,6 +310,9 @@ export type FilmInput = {
   teaserVideoUrl?: string | null;
   premiereAt?: string | null;
   premiereBanner?: string | null;
+  releaseBanner?: string | null;
+  premiereAdUrl?: string | null;
+  premiereAdDurationSeconds?: number | null;
   releaseAt?: string | null;
   videoDurationSeconds?: number | null;
 };

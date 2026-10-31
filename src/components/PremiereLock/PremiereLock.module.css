@@ -108,3 +108,176 @@
   align-self: flex-start;
   margin-top: 6px;
 }
+
+/* ---- Final countdown & launch ---------------------------------------- */
+
+.content {
+  transition: opacity 0.6s ease, transform 0.6s ease, filter 0.6s ease;
+}
+
+/* The regular countdown fades out entirely, leaving the big numbers alone. */
+.contentAway {
+  opacity: 0;
+  transform: scale(0.94);
+  filter: blur(4px);
+}
+
+.final {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.finalTick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finalNumber {
+  color: #fff;
+  font-size: clamp(6rem, 22vw, 14rem);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 40px rgba(229, 9, 20, 0.65);
+  animation: tickPop 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes tickPop {
+  0% {
+    opacity: 0;
+    transform: scale(1.6);
+    filter: blur(8px);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+.finalRing {
+  position: absolute;
+  width: clamp(9rem, 30vw, 20rem);
+  aspect-ratio: 1;
+  border: 3px solid var(--accent, #e50914);
+  border-radius: 50%;
+  animation: ringOut 1s ease-out forwards;
+}
+
+@keyframes ringOut {
+  from {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+.finalLaunch {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.finalTitle {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+  font-size: clamp(2.5rem, 8vw, 5.5rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-shadow: 0 0 50px rgba(229, 9, 20, 0.8);
+  animation: launchTitle 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes launchTitle {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+/* Red light bursting out from the centre. */
+.finalBurst {
+  position: absolute;
+  width: 40vmax;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(229, 9, 20, 0.55) 0%, rgba(229, 9, 20, 0) 65%);
+  animation: burst 1.4s ease-out forwards;
+}
+
+@keyframes burst {
+  from {
+    opacity: 1;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3);
+  }
+}
+
+/* Fades to black at the very end, so the switch to the player (which fades
+   in from black) reads as one continuous move. */
+.finalCurtain {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #000;
+  opacity: 0;
+  animation: curtainIn 0.5s ease-in 0.9s forwards;
+}
+
+@keyframes curtainIn {
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .content,
+  .finalNumber,
+  .finalRing,
+  .finalTitle,
+  .finalBurst {
+    animation: none;
+    transition: none;
+  }
+
+  .finalRing,
+  .finalBurst {
+    display: none;
+  }
+}

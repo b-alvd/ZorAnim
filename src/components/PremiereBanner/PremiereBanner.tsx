@@ -70,6 +70,9 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
   if (!featured) return null;
   const { film, phase } = featured;
   const title = film.seriesTitle ?? film.title;
+  // After the live premiere, while waiting for the official release, the
+  // release banner takes over -- falling back to the premiere one if unset.
+  const bannerImage = phase === "waiting" ? (film.releaseBanner ?? film.premiereBanner) : film.premiereBanner;
 
   if (phase === "live") {
     const clock = isClient ? getPremiereLiveClock(film) : null;
@@ -77,7 +80,7 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
     const viewers =
       viewerCount !== null ? `${viewerCount} spectateur${viewerCount > 1 ? "s" : ""}` : null;
 
-    if (!film.premiereBanner) {
+    if (!bannerImage) {
       return (
         <Link href={href} className={styles.wrap}>
           <span className={styles.tag}>
@@ -97,7 +100,7 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
 
     const progress = clock ? Math.min(100, (clock.elapsedSeconds / clock.totalSeconds) * 100) : 0;
     return (
-      <ImageBanner film={film} href={href}>
+      <ImageBanner image={bannerImage} href={href} phase={phase}>
         <div className={styles.content}>
           <span className={`${styles.tag} ${styles.tagLive}`}>
             <span className={styles.liveDot} />
@@ -132,14 +135,16 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
   const targetIso = phase === "upcoming" ? film.premiereAt : film.releaseAt;
   const target = targetIso ? new Date(targetIso).getTime() : null;
   const remaining = target !== null && isClient ? Math.max(0, target - Date.now()) : 0;
-  const days = Math.floor(remaining / 86400000);
-  const hours = Math.floor((remaining % 86400000) / 3600000);
-  const minutes = Math.floor((remaining % 3600000) / 60000);
-  const seconds = Math.floor((remaining % 60000) / 1000);
+  // Rounded up, same as the waiting room, so both show the same second.
+  const totalSeconds = Math.ceil(remaining / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
   const href = `/watch/${film.id}`;
   const label = phase === "upcoming" ? "Avant-première à venir" : "SORTIE";
 
-  if (!film.premiereBanner) {
+  if (!bannerImage) {
     return (
       <Link href={href} className={styles.wrap}>
         <span className={styles.tag}>{label}</span>
@@ -165,7 +170,7 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
   ];
 
   return (
-    <ImageBanner film={film} href={href}>
+    <ImageBanner image={bannerImage} href={href} phase={phase}>
       <div className={styles.content}>
         <span className={styles.tag}>{phase === "upcoming" ? "Avant-première" : "Sortie officielle"}</span>
         <h2 className={styles.heroTitle}>{title}</h2>
@@ -219,13 +224,29 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
 // picture's own proportions -- never squeezed into a fixed strip. Only an
 // image taller than the height cap gets trimmed, top and bottom, so it always
 // spans the full width.
-function ImageBanner({ film, href, children }: { film: Film; href: string; children: React.ReactNode }) {
+function ImageBanner({
+  image,
+  href,
+  phase,
+  children,
+}: {
+  image: string;
+  href: string;
+  phase: string;
+  children: React.ReactNode;
+}) {
   return (
     <Link href={href} className={styles.imageWrap}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={film.premiereBanner!} alt="" className={styles.image} />
+      <img src={image} alt="" className={styles.image} />
       <span className={styles.shade} aria-hidden />
-      <div className={styles.overlay}>{children}</div>
+      {/* Keyed on the phase: when the countdown hits zero and the banner
+          goes live (or the live ends), the content replays its entrance
+          instead of swapping abruptly. The picture stays put, unless the
+          release banner takes over once the live is done. */}
+      <div key={phase} className={styles.overlay}>
+        {children}
+      </div>
     </Link>
   );
 }

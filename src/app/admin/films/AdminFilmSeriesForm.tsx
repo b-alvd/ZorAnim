@@ -36,6 +36,9 @@ const emptyEpisode = (previous?: SeriesEpisodeInput): SeriesEpisodeInput => ({
   videoUrl: "",
   premiereAt: null,
   premiereBanner: null,
+  releaseBanner: null,
+  premiereAdUrl: null,
+  premiereAdDurationSeconds: null,
   releaseAt: null,
 });
 
@@ -281,7 +284,7 @@ export default function AdminFilmSeriesForm({
                   </div>
                 </div>
                 <div className={adminStyles.field}>
-                  <label>Image de bannière d&apos;avant-première (optionnel)</label>
+                  <label>Bannière d&apos;accueil — avant-première (optionnel)</label>
                   <FileUpload
                     allowUrl
                     name={`episode-${index}-premiere-banner`}
@@ -290,6 +293,31 @@ export default function AdminFilmSeriesForm({
                     value={episode.premiereBanner ?? ""}
                     onChange={(url) => updateEpisode(index, { premiereBanner: url || null })}
                     preview
+                  />
+                </div>
+                <div className={adminStyles.field}>
+                  <label>Bannière d&apos;accueil — sortie officielle, après l&apos;avant-première (optionnel)</label>
+                  <FileUpload
+                    allowUrl
+                    name={`episode-${index}-release-banner`}
+                    label="Choisir une image"
+                    accept="image/*"
+                    value={episode.releaseBanner ?? ""}
+                    onChange={(url) => updateEpisode(index, { releaseBanner: url || null })}
+                    preview
+                  />
+                </div>
+                <div className={adminStyles.field}>
+                  <label>Publicité avant l&apos;avant-première (optionnel)</label>
+                  <FileUpload
+                    allowUrl
+                    name={`episode-${index}-premiere-ad`}
+                    label="Choisir une vidéo"
+                    accept="video/*"
+                    value={episode.premiereAdUrl ?? ""}
+                    onChange={(url) => updateEpisode(index, { premiereAdUrl: url || null, premiereAdDurationSeconds: null })}
+                    onDurationChange={(seconds) => updateEpisode(index, { premiereAdDurationSeconds: Math.round(seconds) })}
+                    maxSizeMB={100}
                   />
                 </div>
               </div>

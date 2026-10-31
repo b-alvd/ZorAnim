@@ -117,14 +117,17 @@
   filter: brightness(1.08);
 }
 
-/* Two gradients: from the bottom for the text block and countdown, from the
-   left so the title stays readable over a bright picture. */
+/* Shade only where text sits -- the bottom-left corner (title block) and the
+   bottom-right corner (countdown) -- plus a thin strip along the bottom edge.
+   The rest of the picture is left untouched: a full-width dark veil made
+   every banner look dull and washed out. */
 .shade {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(0deg, rgba(10, 10, 10, 0.95) 0%, rgba(10, 10, 10, 0.55) 35%, rgba(10, 10, 10, 0) 65%),
-    linear-gradient(90deg, rgba(10, 10, 10, 0.75) 0%, rgba(10, 10, 10, 0.2) 45%, rgba(10, 10, 10, 0) 70%);
+    radial-gradient(ellipse 55% 75% at 0% 100%, rgba(10, 10, 10, 0.8) 0%, rgba(10, 10, 10, 0) 100%),
+    radial-gradient(ellipse 30% 50% at 100% 100%, rgba(10, 10, 10, 0.65) 0%, rgba(10, 10, 10, 0) 100%),
+    linear-gradient(0deg, rgba(10, 10, 10, 0.6) 0%, rgba(10, 10, 10, 0) 18%);
   pointer-events: none;
 }
 
@@ -410,4 +413,12 @@
     opacity: 1;
     animation: none;
   }
+}
+
+/* With the lighter shade, the small text needs its own shadow to stay
+   readable over bright parts of the picture. */
+.date,
+.synopsis,
+.countdownLabel {
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
 }

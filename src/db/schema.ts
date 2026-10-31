@@ -84,6 +84,9 @@ export const films = sqliteTable("films", {
   guestViewCount: integer("guest_view_count").notNull().default(0),
   premiereAt: text("premiere_at"),
   premiereBanner: text("premiere_banner"),
+  releaseBanner: text("release_banner"),
+  premiereAdUrl: text("premiere_ad_url"),
+  premiereAdDurationSeconds: integer("premiere_ad_duration_seconds"),
   releaseAt: text("release_at"),
   videoDurationSeconds: integer("video_duration_seconds"),
 });
