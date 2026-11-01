@@ -1,7 +1,8 @@
 import { getUsers, PROTECTED_EMAIL } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import Pagination from "@/components/Pagination/Pagination";
-import { banUserAction, deleteUserAction, toggleRoleAction, unbanUserAction } from "./actions";
+import { banUserAction, deleteUserAction, resetPasswordAction, toggleRoleAction, unbanUserAction } from "./actions";
+import ResetPasswordButton from "./ResetPasswordButton";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
 import BanUserButton from "./BanUserButton";
 import styles from "../shared.module.css";
@@ -48,6 +49,11 @@ export default async function AdminUsersPage({
                   <span className={`${styles.badge} ${u.role === "admin" ? styles.badgeAdmin : ""}`}>
                     {u.role === "admin" ? "Admin" : "Utilisateur"}
                   </span>
+                  {u.mustChangePassword && (
+                    <span className={styles.badge} style={{ marginLeft: 6 }}>
+                      Mdp temporaire
+                    </span>
+                  )}
                   {u.banned && (
                     <span className={styles.badge} title={u.banReason ?? undefined} style={{ marginLeft: 6 }}>
                       Banni
@@ -72,6 +78,7 @@ export default async function AdminUsersPage({
                       ) : (
                         <BanUserButton userId={u.id} userName={u.name} banAction={banUserAction} />
                       )}
+                      <ResetPasswordButton userId={u.id} userName={u.name} resetAction={resetPasswordAction} />
                       <ConfirmDeleteButton action={deleteUserAction.bind(null, u.id)} itemName={u.name} />
                     </div>
                   )}

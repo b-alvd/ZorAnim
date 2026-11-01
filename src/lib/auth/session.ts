@@ -15,6 +15,7 @@ export type SessionUser = {
   createdAt: string;
   banned: boolean;
   banReason: string | null;
+  mustChangePassword: boolean;
 };
 
 export async function createSession(userId: string): Promise<{ id: string; expiresAt: Date }> {
@@ -37,6 +38,7 @@ export async function validateSession(sessionId: string): Promise<SessionUser | 
       createdAt: users.createdAt,
       banned: users.banned,
       banReason: users.banReason,
+      mustChangePassword: users.mustChangePassword,
     })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
@@ -58,6 +60,7 @@ export async function validateSession(sessionId: string): Promise<SessionUser | 
     createdAt: row.createdAt,
     banned: row.banned,
     banReason: row.banReason,
+    mustChangePassword: row.mustChangePassword,
   };
 }
 

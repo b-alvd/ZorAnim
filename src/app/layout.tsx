@@ -7,6 +7,7 @@ import RevealOverlay from "@/components/RevealGate/RevealOverlay";
 import MaintenanceOverlay from "@/components/RevealGate/MaintenanceOverlay";
 import BanGate from "@/components/BanGate/BanGate";
 import BanWatcher from "@/components/BanWatcher/BanWatcher";
+import PasswordChangeGate from "@/components/PasswordChangeGate/PasswordChangeGate";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getLatestBanAppeal, getNotifications, getSiteSettings, getUnreadNotificationCount } from "@/db/queries";
 import "./globals.css";
@@ -41,6 +42,16 @@ export default async function RootLayout({
             appealStatus={latestAppeal?.status ?? null}
             appealMessage={latestAppeal?.message ?? null}
           />
+        </body>
+      </html>
+    );
+  }
+
+  if (user?.mustChangePassword) {
+    return (
+      <html lang="fr" className={montserrat.variable}>
+        <body>
+          <PasswordChangeGate userName={user.name} />
         </body>
       </html>
     );

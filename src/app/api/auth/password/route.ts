@@ -24,13 +24,26 @@ export async function PATCH(request: Request) {
   }
 
   const [fullUser] = await db.select().from(users).where(eq(users.id, user.id));
-  const validPassword = await verifyPassword(currentPassword, fullUser.passwordHash);
-  if (!validPassword) {
-    return NextResponse.json({ error: "Mot de passe actuel incorrect." }, { status: 401 });
+
+  if (fullUser.mustChangePassword) {
+    // Forced change after a staff reset: this session can only have been
+    // opened with the temporary password (the reset signed everyone out),
+    // so it isn't asked again -- but it can't be kept as the new one.
+    if (await verifyPassword(newPassword, fullUser.passwordHash)) {
+      return NextResponse.json(
+        { error: "Choisis un mot de passe différent du mot de passe temporaire." },
+        { status: 400 }
+      );
+    }
+  } else {
+    const validPassword = await verifyPassword(currentPassword, fullUser.passwordHash);
+    if (!validPassword) {
+      return NextResponse.json({ error: "Mot de passe actuel incorrect." }, { status: 401 });
+    }
   }
 
   const passwordHash = await hashPassword(newPassword);
-  await db.update(users).set({ passwordHash }).where(eq(users.id, user.id));
+  await db.update(users).set({ passwordHash, mustChangePassword: false }).where(eq(users.id, user.id));
 
   return NextResponse.json({ ok: true });
 }

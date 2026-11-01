@@ -19,6 +19,7 @@ import {
   siteSettings,
   banAppeals,
   premiereViewers,
+  sessions,
 } from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
@@ -441,6 +442,7 @@ export type AdminUser = {
   createdAt: string;
   banned: boolean;
   banReason: string | null;
+  mustChangePassword: boolean;
 };
 
 export async function getUsers(): Promise<AdminUser[]> {
@@ -453,6 +455,7 @@ export async function getUsers(): Promise<AdminUser[]> {
       createdAt: users.createdAt,
       banned: users.banned,
       banReason: users.banReason,
+      mustChangePassword: users.mustChangePassword,
     })
     .from(users);
 }
@@ -466,6 +469,15 @@ async function assertNotProtectedUser(id: string): Promise<void> {
   if (row?.email === PROTECTED_EMAIL) {
     throw new Error("Ce compte est protégé et ne peut pas être modifié depuis l'admin.");
   }
+}
+
+// Staff reset: replaces the password with a temporary one, forces a change at
+// next sign-in, and signs the user out everywhere so the old password (and
+// any session opened with it) stops working immediately.
+export async function resetUserPassword(id: string, temporaryPasswordHash: string): Promise<void> {
+  await assertNotProtectedUser(id);
+  await db.update(users).set({ passwordHash: temporaryPasswordHash, mustChangePassword: true }).where(eq(users.id, id));
+  await db.delete(sessions).where(eq(sessions.userId, id));
 }
 
 export async function updateUserRole(id: string, role: "user" | "admin"): Promise<void> {
@@ -906,7 +918,11 @@ export async function getInvitableArtists(excludeUserId: string): Promise<Artist
 
 export type StudioMember = typeof studioMembers.$inferSelect;
 
-export async function inviteToStudio(studioId: string, artistId: string): Promise<void> {
+export async function inviteToStudio(studioId: string, artistId: string, requesterUserId: string): Promise<void> {
+  const [owned] = await db.select({ ownerId: studios.ownerId }).from(studios).where(eq(studios.id, studioId));
+  if (!owned) throw new Error("Studio introuvable.");
+  if (owned.ownerId !== requesterUserId) throw new Error("Non autorisé.");
+
   const [artist] = await db.select({ userId: artists.userId }).from(artists).where(eq(artists.id, artistId));
   if (!artist?.userId) throw new Error("Cet artiste n'est lié à aucun compte.");
 

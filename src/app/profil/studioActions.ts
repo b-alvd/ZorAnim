@@ -11,7 +11,10 @@ import {
 } from "@/db/queries";
 
 export async function inviteToStudioAction(studioId: string, artistId: string) {
-  await inviteToStudio(studioId, artistId);
+  const user = await getCurrentUser();
+  if (!user) throw new Error("Non authentifié.");
+
+  await inviteToStudio(studioId, artistId, user.id);
   revalidatePath("/profil");
 }
 

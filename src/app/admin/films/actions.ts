@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import { createFilm, deleteFilm, launchPremiere, stopPremiere, updateFilm, type FilmInput } from "@/db/queries";
 
 function readDateTimeLocal(formData: FormData, name: string): string | null {
@@ -50,26 +51,31 @@ function readFilmInput(formData: FormData): FilmInput {
 }
 
 export async function createFilmAction(formData: FormData) {
+  await requireAdmin();
   await createFilm(readFilmInput(formData));
   revalidatePath("/admin/films");
 }
 
 export async function updateFilmAction(id: string, formData: FormData) {
+  await requireAdmin();
   await updateFilm(id, readFilmInput(formData));
   revalidatePath("/admin/films");
 }
 
 export async function deleteFilmAction(id: string) {
+  await requireAdmin();
   await deleteFilm(id);
   revalidatePath("/admin/films");
 }
 
 export async function launchPremiereAction(id: string) {
+  await requireAdmin();
   await launchPremiere(id);
   revalidatePath("/admin/films");
 }
 
 export async function stopPremiereAction(id: string) {
+  await requireAdmin();
   await stopPremiere(id);
   revalidatePath("/admin/films");
   revalidatePath("/");
@@ -102,6 +108,7 @@ export async function createSeriesAction(input: {
   isNew: boolean;
   episodes: SeriesEpisodeInput[];
 }) {
+  await requireAdmin();
   const seriesTitle = input.seriesTitle.trim();
   if (!seriesTitle) throw new Error("Le titre de la série est requis.");
   if (input.episodes.length === 0) throw new Error("Ajoute au moins un épisode.");

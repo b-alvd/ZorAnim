@@ -15,6 +15,9 @@ export const users = sqliteTable("users", {
   banned: integer("banned", { mode: "boolean" }).notNull().default(false),
   banReason: text("ban_reason"),
   bannedAt: text("banned_at"),
+  // Set when staff resets the password to a temporary one: the user must
+  // pick a new password before using the site again.
+  mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
 });
 
 export const sessions = sqliteTable("sessions", {

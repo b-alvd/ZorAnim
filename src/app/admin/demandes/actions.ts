@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   acceptArtistSubmission,
   acceptFilmSubmission,
@@ -29,17 +30,20 @@ function readFilmSubmissionInput(formData: FormData): FilmSubmissionInput {
 }
 
 export async function updateFilmSubmissionAction(id: string, formData: FormData) {
+  await requireAdmin();
   await updateFilmSubmission(id, readFilmSubmissionInput(formData));
   revalidatePath("/admin/demandes");
 }
 
 export async function acceptFilmSubmissionAction(id: string, identityId: string, isStudio: boolean) {
+  await requireAdmin();
   await acceptFilmSubmission(id, { id: identityId, isStudio });
   revalidatePath("/admin/demandes");
   revalidatePath("/admin/films");
 }
 
 export async function refuseFilmSubmissionAction(id: string) {
+  await requireAdmin();
   await refuseFilmSubmission(id);
   revalidatePath("/admin/demandes");
 }
@@ -58,28 +62,33 @@ function readArtistSubmissionInput(formData: FormData): ArtistSubmissionInput {
 }
 
 export async function updateArtistSubmissionAction(id: string, formData: FormData) {
+  await requireAdmin();
   await updateArtistSubmission(id, readArtistSubmissionInput(formData));
   revalidatePath("/admin/demandes");
 }
 
 export async function acceptArtistSubmissionAction(id: string) {
+  await requireAdmin();
   await acceptArtistSubmission(id);
   revalidatePath("/admin/demandes");
   revalidatePath("/admin/artistes");
 }
 
 export async function refuseArtistSubmissionAction(id: string) {
+  await requireAdmin();
   await refuseArtistSubmission(id);
   revalidatePath("/admin/demandes");
 }
 
 export async function acceptBanAppealAction(appealId: string) {
+  await requireAdmin();
   await resolveBanAppeal(appealId, true);
   revalidatePath("/admin/demandes");
   revalidatePath("/admin/utilisateurs");
 }
 
 export async function rejectBanAppealAction(appealId: string) {
+  await requireAdmin();
   await resolveBanAppeal(appealId, false);
   revalidatePath("/admin/demandes");
 }
