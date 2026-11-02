@@ -1,0 +1,105 @@
+.avatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(229, 9, 20, 0.18);
+  color: #fff;
+  font-weight: 700;
+}
+
+.avatar img {
+  object-fit: cover;
+}
+
+.noAccount {
+  background: rgba(245, 197, 24, 0.12);
+  color: #f5d76e;
+}
+
+.studios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.studioChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #d2d2d2;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.owner {
+  color: #f5c518;
+  font-size: 0.7rem;
+}
+
+.counts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: #d2d2d2;
+}
+
+.counts > span + span {
+  font-size: 0.75rem;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 6px 0 6px 42px;
+}
+
+.bio {
+  max-width: 760px;
+  color: #b3b3b3;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.contentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.contentItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.contentItem > div {
+  flex: 1;
+}
+
+.via {
+  color: #9a9a9a;
+  font-style: italic;
+}
+
+.contentStats {
+  display: flex;
+  gap: 16px;
+  color: #9a9a9a;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

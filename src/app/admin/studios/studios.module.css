@@ -1,0 +1,148 @@
+.logo {
+  border-radius: 10px;
+}
+
+.owner {
+  color: #e5e5e5;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.membersCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.85rem;
+  color: #d2d2d2;
+}
+
+.pendingNote {
+  color: #f5d76e;
+  font-size: 0.75rem;
+}
+
+.subTitle {
+  margin-bottom: 8px;
+  color: #808080;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.memberList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  list-style: none;
+}
+
+.member {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 1.2fr) auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.memberName {
+  color: #e5e5e5;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.memberEmail {
+  color: #7a7a7a;
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #b3b3b3;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.statusActive {
+  background: rgba(74, 222, 128, 0.1);
+  color: #7ee2a3;
+}
+
+.statusRequest {
+  background: rgba(245, 197, 24, 0.12);
+  color: #f5d76e;
+}
+
+.memberDate {
+  color: #6b6b6b;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.memberActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.memberBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.memberBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.memberBtnAccept {
+  color: #7ee2a3;
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.memberBtnAccept:hover:not(:disabled) {
+  background: rgba(74, 222, 128, 0.16);
+  border-color: rgba(74, 222, 128, 0.55);
+}
+
+.memberBtnRemove {
+  color: #b3b3b3;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.memberBtnRemove:hover:not(:disabled) {
+  color: #ff8087;
+  background: rgba(229, 9, 20, 0.12);
+  border-color: rgba(229, 9, 20, 0.45);
+}
+
+.memberBtnFounder {
+  color: #f5d76e;
+  background: rgba(245, 197, 24, 0.06);
+  border-color: rgba(245, 197, 24, 0.25);
+}
+
+.memberBtnFounder:hover:not(:disabled) {
+  background: rgba(245, 197, 24, 0.14);
+  border-color: rgba(245, 197, 24, 0.5);
+}

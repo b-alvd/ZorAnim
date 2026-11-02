@@ -557,6 +557,158 @@ export async function deleteArtist(id: string): Promise<void> {
   await db.delete(artists).where(eq(artists.id, id));
 }
 
+export type AdminArtistRow = {
+  id: string;
+  name: string;
+  bio: string;
+  avatar: string;
+  userId: string | null;
+  userName: string | null;
+  userEmail: string | null;
+  studios: { id: string; name: string; isOwner: boolean }[];
+};
+
+// Artists with their linked account and the studios that account owns or is
+// an active member of.
+export type AdminUserActivity = {
+  views: number;
+  ratings: number;
+  comments: number;
+  favorites: number;
+  // Most recent watch, rating or comment.
+  lastActivityAt: string | null;
+  // Most recent sign-in (newest session).
+  lastLoginAt: string | null;
+  activeSessions: number;
+  pendingAppeal: boolean;
+};
+
+// Per-user activity for the admin, computed with one grouped query per table.
+export async function getUsersActivity(): Promise<Map<string, AdminUserActivity>> {
+  const now = Math.floor(Date.now() / 1000);
+  const [watchRows, ratingRows, commentRows, favoriteRows, sessionRows, appealRows] = await Promise.all([
+    db
+      .select({ userId: watchHistory.userId, n: sql<number>`count(*)`, last: sql<string>`max(${watchHistory.watchedAt})` })
+      .from(watchHistory)
+      .groupBy(watchHistory.userId),
+    db
+      .select({ userId: filmRatings.userId, n: sql<number>`count(*)`, last: sql<string>`max(${filmRatings.createdAt})` })
+      .from(filmRatings)
+      .groupBy(filmRatings.userId),
+    db
+      .select({ userId: comments.userId, n: sql<number>`count(*)`, last: sql<string>`max(${comments.createdAt})` })
+      .from(comments)
+      .groupBy(comments.userId),
+    db.select({ userId: favorites.userId, n: sql<number>`count(*)` }).from(favorites).groupBy(favorites.userId),
+    db
+      .select({
+        userId: sessions.userId,
+        last: sql<string>`max(${sessions.createdAt})`,
+        active: sql<number>`sum(case when ${sessions.expiresAt} > ${now} then 1 else 0 end)`,
+      })
+      .from(sessions)
+      .groupBy(sessions.userId),
+    db.select({ userId: banAppeals.userId }).from(banAppeals).where(eq(banAppeals.status, "pending")),
+  ]);
+
+  const map = new Map<string, AdminUserActivity>();
+  const entry = (userId: string) => {
+    let e = map.get(userId);
+    if (!e) {
+      e = {
+        views: 0,
+        ratings: 0,
+        comments: 0,
+        favorites: 0,
+        lastActivityAt: null,
+        lastLoginAt: null,
+        activeSessions: 0,
+        pendingAppeal: false,
+      };
+      map.set(userId, e);
+    }
+    return e;
+  };
+  // Dates come either as ISO strings or as SQLite "YYYY-MM-DD HH:MM:SS" (UTC).
+  const iso = (at: string | null) => (at ? (at.includes("T") ? at : `${at.replace(" ", "T")}Z`) : null);
+  const latest = (a: string | null, b: string | null) => (!a ? b : !b ? a : a > b ? a : b);
+
+  for (const r of watchRows) {
+    const e = entry(r.userId);
+    e.views = r.n;
+    e.lastActivityAt = latest(e.lastActivityAt, iso(r.last));
+  }
+  for (const r of ratingRows) {
+    const e = entry(r.userId);
+    e.ratings = r.n;
+    e.lastActivityAt = latest(e.lastActivityAt, iso(r.last));
+  }
+  for (const r of commentRows) {
+    const e = entry(r.userId);
+    e.comments = r.n;
+    e.lastActivityAt = latest(e.lastActivityAt, iso(r.last));
+  }
+  for (const r of favoriteRows) entry(r.userId).favorites = r.n;
+  for (const r of sessionRows) {
+    const e = entry(r.userId);
+    e.lastLoginAt = iso(r.last);
+    e.activeSessions = r.active ?? 0;
+  }
+  for (const r of appealRows) entry(r.userId).pendingAppeal = true;
+  return map;
+}
+
+export async function getAdminArtists(): Promise<AdminArtistRow[]> {
+  const [rows, studioRows, memberships] = await Promise.all([
+    db
+      .select({
+        id: artists.id,
+        name: artists.name,
+        bio: artists.bio,
+        avatar: artists.avatar,
+        userId: artists.userId,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(artists)
+      .leftJoin(users, eq(artists.userId, users.id)),
+    db.select({ id: studios.id, name: studios.name, ownerId: studios.ownerId }).from(studios),
+    db
+      .select({ studioId: studioMembers.studioId, userId: studioMembers.userId })
+      .from(studioMembers)
+      .where(eq(studioMembers.status, "active")),
+  ]);
+  const studioById = new Map(studioRows.map((s) => [s.id, s]));
+
+  return rows.map((a) => {
+    const list: AdminArtistRow["studios"] = [];
+    if (a.userId) {
+      for (const s of studioRows) if (s.ownerId === a.userId) list.push({ id: s.id, name: s.name, isOwner: true });
+      for (const m of memberships) {
+        const s = studioById.get(m.studioId);
+        if (m.userId === a.userId && s && !list.some((x) => x.id === s.id)) {
+          list.push({ id: s.id, name: s.name, isOwner: false });
+        }
+      }
+    }
+    return { ...a, studios: list };
+  });
+}
+
+// Links an artist profile to a user account. Every profile belongs to an
+// account, and an account can only carry one artist profile.
+export async function setArtistUser(artistId: string, userId: string): Promise<void> {
+  if (!userId) throw new Error("Choisis le compte auquel appartient ce profil d'artiste.");
+  const [account] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId));
+  if (!account) throw new Error("Ce compte n'existe pas.");
+  const [taken] = await db
+    .select({ id: artists.id, name: artists.name })
+    .from(artists)
+    .where(and(eq(artists.userId, userId), ne(artists.id, artistId)));
+  if (taken) throw new Error(`Ce compte est déjà lié à l'artiste ${taken.name}.`);
+  await db.update(artists).set({ userId }).where(eq(artists.id, artistId));
+}
+
 export async function updateStudio(id: string, input: ArtistInput): Promise<void> {
   await db.update(studios).set(input).where(eq(studios.id, id));
 }
@@ -569,6 +721,8 @@ export type AdminUser = {
   createdAt: string;
   banned: boolean;
   banReason: string | null;
+  bannedAt: string | null;
+  avatarUrl: string | null;
   mustChangePassword: boolean;
 };
 
@@ -582,6 +736,8 @@ export async function getUsers(): Promise<AdminUser[]> {
       createdAt: users.createdAt,
       banned: users.banned,
       banReason: users.banReason,
+      bannedAt: users.bannedAt,
+      avatarUrl: users.avatarUrl,
       mustChangePassword: users.mustChangePassword,
     })
     .from(users);
@@ -612,8 +768,30 @@ export async function updateUserRole(id: string, role: "user" | "admin"): Promis
   await db.update(users).set({ role }).where(eq(users.id, id));
 }
 
+// Every artist profile belongs to an account: an account carrying one can't
+// be deleted until the profile is moved to another account or removed.
+export async function getLinkedArtistName(userId: string): Promise<string | null> {
+  const [row] = await db.select({ name: artists.name }).from(artists).where(eq(artists.userId, userId));
+  return row?.name ?? null;
+}
+
+export async function getOwnedStudioNames(userId: string): Promise<string[]> {
+  const rows = await db.select({ name: studios.name }).from(studios).where(eq(studios.ownerId, userId));
+  return rows.map((r) => r.name);
+}
+
 export async function deleteUser(id: string): Promise<void> {
   await assertNotProtectedUser(id);
+  const artistName = await getLinkedArtistName(id);
+  if (artistName) {
+    throw new Error(
+      `Ce compte porte le profil d'artiste ${artistName} : relie-le à un autre compte ou supprime l'artiste d'abord.`
+    );
+  }
+  const owned = await getOwnedStudioNames(id);
+  if (owned.length) {
+    throw new Error(`Ce compte a fondé ${owned.join(", ")} : transfère le studio à un autre fondateur d'abord.`);
+  }
   await db.delete(users).where(eq(users.id, id));
 }
 
@@ -802,6 +980,8 @@ export async function updateArtistSubmission(id: string, input: ArtistSubmission
 export async function acceptArtistSubmission(id: string): Promise<void> {
   const submission = await getArtistSubmission(id);
   if (!submission) return;
+  // An artist profile always belongs to an account.
+  if (!submission.userId) throw new Error("Le compte à l'origine de cette demande n'existe plus.");
 
   await createArtist(
     {
@@ -1475,55 +1655,140 @@ export async function getFilmCreatorUserIds(filmId: string): Promise<string[]> {
   return [...ids];
 }
 
-export type AdminStudio = Artist & {
-  ownerName: string | null;
-  ownerEmail: string | null;
-  memberCount: number;
-  filmCount: number;
-};
-
-export async function getAllStudiosWithDetails(): Promise<AdminStudio[]> {
-  const studioList = await getStudios();
-  if (studioList.length === 0) return [];
-
-  const ids = studioList.map((s) => s.id);
-
-  const owners = await db
-    .select({ id: studios.id, ownerName: users.name, ownerEmail: users.email })
-    .from(studios)
-    .leftJoin(users, eq(studios.ownerId, users.id))
-    .where(inArray(studios.id, ids));
-  const ownerMap = new Map(owners.map((o) => [o.id, o]));
-
-  const memberRows = await db
-    .select({ studioId: studioMembers.studioId })
-    .from(studioMembers)
-    .where(and(inArray(studioMembers.studioId, ids), eq(studioMembers.status, "active")));
-  const memberCounts = new Map<string, number>();
-  for (const m of memberRows) memberCounts.set(m.studioId, (memberCounts.get(m.studioId) ?? 0) + 1);
-
-  const filmRows = await db.select({ studioId: films.studioId }).from(films).where(inArray(films.studioId, ids));
-  const filmCounts = new Map<string, number>();
-  for (const f of filmRows) {
-    if (!f.studioId) continue;
-    filmCounts.set(f.studioId, (filmCounts.get(f.studioId) ?? 0) + 1);
-  }
-
-  return studioList.map((s) => ({
-    ...s,
-    ownerName: ownerMap.get(s.id)?.ownerName ?? null,
-    ownerEmail: ownerMap.get(s.id)?.ownerEmail ?? null,
-    memberCount: memberCounts.get(s.id) ?? 0,
-    filmCount: filmCounts.get(s.id) ?? 0,
-  }));
-}
-
 export async function adminDeleteStudio(studioId: string): Promise<void> {
   await db.delete(studios).where(eq(studios.id, studioId));
 }
 
 export async function adminRemoveStudioMember(memberRowId: string): Promise<void> {
   await db.delete(studioMembers).where(eq(studioMembers.id, memberRowId));
+}
+
+export type AdminStudioMember = {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  status: "active" | "invited" | "requested";
+  createdAt: string;
+};
+
+export type AdminStudioRow = {
+  id: string;
+  name: string;
+  bio: string;
+  avatar: string;
+  createdAt: string;
+  ownerId: string | null;
+  ownerName: string | null;
+  ownerEmail: string | null;
+  members: AdminStudioMember[];
+};
+
+// Studios with their founder and every membership (active, invited,
+// requested); names are the artist name when the account has one.
+export async function getAdminStudios(): Promise<AdminStudioRow[]> {
+  const [rows, memberRows, artistRows] = await Promise.all([
+    db
+      .select({
+        id: studios.id,
+        name: studios.name,
+        bio: studios.bio,
+        avatar: studios.avatar,
+        createdAt: studios.createdAt,
+        ownerId: studios.ownerId,
+        ownerUserName: users.name,
+        ownerEmail: users.email,
+      })
+      .from(studios)
+      .leftJoin(users, eq(studios.ownerId, users.id)),
+    db
+      .select({
+        id: studioMembers.id,
+        studioId: studioMembers.studioId,
+        userId: studioMembers.userId,
+        status: studioMembers.status,
+        createdAt: studioMembers.createdAt,
+        userName: users.name,
+        email: users.email,
+      })
+      .from(studioMembers)
+      .innerJoin(users, eq(studioMembers.userId, users.id)),
+    db.select({ userId: artists.userId, name: artists.name }).from(artists),
+  ]);
+  const artistNameByUser = new Map(artistRows.filter((a) => a.userId).map((a) => [a.userId!, a.name]));
+
+  return rows.map(({ ownerUserName, ...s }) => ({
+    ...s,
+    ownerName: s.ownerId ? (artistNameByUser.get(s.ownerId) ?? ownerUserName) : null,
+    members: memberRows
+      .filter((m) => m.studioId === s.id)
+      .map((m) => ({
+        id: m.id,
+        userId: m.userId,
+        name: artistNameByUser.get(m.userId) ?? m.userName,
+        email: m.email,
+        status: m.status as AdminStudioMember["status"],
+        createdAt: m.createdAt,
+      })),
+  }));
+}
+
+// Admin edit of a studio, including handing it over to another founder: the
+// new founder's membership row goes away (founders aren't members) and the
+// previous founder stays in the studio as an active member.
+export async function adminUpdateStudio(id: string, input: ArtistInput, ownerId: string): Promise<void> {
+  if (!ownerId) throw new Error("Choisis le fondateur du studio.");
+  const [studio] = await db.select({ id: studios.id }).from(studios).where(eq(studios.id, id));
+  if (!studio) throw new Error("Studio introuvable.");
+  await db.update(studios).set(input).where(eq(studios.id, id));
+  await adminTransferStudio(id, ownerId);
+}
+
+// Hands a studio over to another account: the new founder's membership row
+// goes away (founders aren't members) and the previous founder stays in the
+// studio as an active member. Both are notified.
+export async function adminTransferStudio(studioId: string, newOwnerId: string): Promise<void> {
+  const [owner] = await db.select({ id: users.id }).from(users).where(eq(users.id, newOwnerId));
+  if (!owner) throw new Error("Ce compte n'existe pas.");
+  const [studio] = await db
+    .select({ ownerId: studios.ownerId, name: studios.name })
+    .from(studios)
+    .where(eq(studios.id, studioId));
+  if (!studio) throw new Error("Studio introuvable.");
+  if (studio.ownerId === newOwnerId) return;
+
+  await db.update(studios).set({ ownerId: newOwnerId }).where(eq(studios.id, studioId));
+  await db.delete(studioMembers).where(and(eq(studioMembers.studioId, studioId), eq(studioMembers.userId, newOwnerId)));
+  if (studio.ownerId) {
+    await db
+      .insert(studioMembers)
+      .values({ id: randomUUID(), studioId, userId: studio.ownerId, status: "active" })
+      .onConflictDoUpdate({
+        target: [studioMembers.studioId, studioMembers.userId],
+        set: { status: "active" },
+      });
+    await createNotification(
+      studio.ownerId,
+      "studio_owner",
+      `Le studio "${studio.name}" a un nouveau fondateur. Tu en restes membre.`,
+      "/profil"
+    );
+  }
+  await createNotification(newOwnerId, "studio_owner", `Tu es maintenant fondateur du studio "${studio.name}".`, "/profil");
+}
+
+// Admin answer to a pending join request or invitation.
+export async function adminSetStudioMemberActive(memberRowId: string): Promise<void> {
+  const [row] = await db.select().from(studioMembers).where(eq(studioMembers.id, memberRowId));
+  if (!row || row.status === "active") return;
+  await db.update(studioMembers).set({ status: "active" }).where(eq(studioMembers.id, memberRowId));
+  const [studio] = await db.select({ name: studios.name }).from(studios).where(eq(studios.id, row.studioId));
+  await createNotification(
+    row.userId,
+    "studio_join_request_response",
+    `Tu fais maintenant partie du studio "${studio?.name ?? ""}".`,
+    "/profil"
+  );
 }
 
 export type Notification = typeof notifications.$inferSelect;

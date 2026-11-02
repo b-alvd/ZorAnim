@@ -1,62 +1,47 @@
-import { getArtists, getArtistStudios, getFilms } from "@/db/queries";
-import Pagination from "@/components/Pagination/Pagination";
-import ArtistRowActions from "./ArtistRowActions";
+import { getAdminArtists, getFilmCreatedAts, getFilmEngagement, getFilms, getUsers } from "@/db/queries";
+import { summarizeContents } from "../content-summary";
 import ArtistCreateButton from "./ArtistCreateButton";
-import { countFilmsAndSeries, formatCatalogCountLabel } from "@/lib/series";
+import ArtistsManager, { type AdminArtist, type AccountChoice } from "./ArtistsManager";
 import styles from "../shared.module.css";
 
-const PAGE_SIZE = 20;
+export default async function AdminArtistesPage() {
+  const [rows, films, users, createdAts] = await Promise.all([
+    getAdminArtists(),
+    getFilms(),
+    getUsers(),
+    getFilmCreatedAts(),
+  ]);
+  const engagement = await getFilmEngagement(films.map((f) => f.id));
 
-export default async function AdminArtistesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string }>;
-}) {
-  const [allArtists, films] = await Promise.all([getArtists(), getFilms()]);
+  const artists: AdminArtist[] = rows.map((a) => {
+    const studioIds = new Map(a.studios.map((s) => [s.id, s.name]));
+    const personal = films.filter((f) => !f.isStudioAttribution && f.artistId === a.id);
+    const viaStudios = a.studios.flatMap((s) =>
+      summarizeContents(
+        films.filter((f) => f.isStudioAttribution && f.artistId === s.id),
+        studioIds.get(s.id) ?? null,
+        engagement,
+        createdAts
+      )
+    );
+    return {
+      ...a,
+      contents: [...summarizeContents(personal, null, engagement, createdAts), ...viaStudios],
+    };
+  });
 
-  const { page: pageParam } = await searchParams;
-  const totalPages = Math.max(1, Math.ceil(allArtists.length / PAGE_SIZE));
-  const page = Math.min(Math.max(1, Number(pageParam) || 1), totalPages);
-  const artists = allArtists.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  const counts = await Promise.all(
-    artists.map(async (a) => {
-      const artistStudios = await getArtistStudios(a.id);
-      const studioIds = new Set(artistStudios.map((s) => s.id));
-      const relevantFilms = films.filter((f) => f.artistId === a.id || studioIds.has(f.artistId));
-      return countFilmsAndSeries(relevantFilms);
-    })
-  );
+  const linkedArtistByUser = new Map(rows.filter((a) => a.userId).map((a) => [a.userId!, a.name]));
+  const accounts: AccountChoice[] = users
+    .map((u) => ({ id: u.id, label: `${u.name} — ${u.email}`, artistName: linkedArtistByUser.get(u.id) ?? null }))
+    .sort((a, b) => a.label.localeCompare(b.label, "fr"));
 
   return (
     <main>
       <div className={styles.header}>
         <h1 className={styles.title}>Artistes</h1>
-        <ArtistCreateButton />
+        <ArtistCreateButton accounts={accounts.filter((a) => !a.artistName)} />
       </div>
-      <div className={styles.tableWrap}>
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th>Nom</th>
-            <th>Films et séries</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {artists.map((a, i) => (
-            <tr key={a.id}>
-              <td>{a.name}</td>
-              <td>{formatCatalogCountLabel(counts[i].filmCount, counts[i].seriesCount)}</td>
-              <td>
-                <ArtistRowActions artist={a} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </div>
-      <Pagination page={page} totalPages={totalPages} basePath="/admin/artistes" />
+      <ArtistsManager artists={artists} accounts={accounts} />
     </main>
   );
 }

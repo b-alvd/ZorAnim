@@ -2,17 +2,10 @@
 
 import { useState, useTransition } from "react";
 import Modal from "@/components/Modal/Modal";
+import { resetPasswordAction } from "./actions";
 import adminStyles from "../shared.module.css";
 
-export default function ResetPasswordButton({
-  userId,
-  userName,
-  resetAction,
-}: {
-  userId: string;
-  userName: string;
-  resetAction: (id: string) => Promise<string>;
-}) {
+export default function ResetPasswordButton({ userId, userName }: { userId: string; userName: string }) {
   const [open, setOpen] = useState(false);
   const [temporaryPassword, setTemporaryPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -30,11 +23,9 @@ export default function ResetPasswordButton({
   const handleReset = () => {
     setError(null);
     startTransition(async () => {
-      try {
-        setTemporaryPassword(await resetAction(userId));
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Une erreur est survenue.");
-      }
+      const result = await resetPasswordAction(userId);
+      if (result.password) setTemporaryPassword(result.password);
+      else setError(result.error ?? "Une erreur est survenue.");
     });
   };
 
@@ -50,8 +41,17 @@ export default function ResetPasswordButton({
 
   return (
     <>
-      <button type="button" className={adminStyles.linkBtn} onClick={() => setOpen(true)}>
-        Réinitialiser le mot de passe
+      <button
+        type="button"
+        className={adminStyles.iconBtn}
+        onClick={() => setOpen(true)}
+        title="Réinitialiser le mot de passe"
+        aria-label="Réinitialiser le mot de passe"
+      >
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="7.5" cy="15.5" r="4.5" />
+          <path d="M10.7 12.3L21 2M17 6l3 3M15 8l2 2" />
+        </svg>
       </button>
       <Modal open={open} onClose={close} title="Réinitialiser le mot de passe">
         {temporaryPassword ? (

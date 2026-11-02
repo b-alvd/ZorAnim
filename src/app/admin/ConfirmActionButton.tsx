@@ -11,6 +11,9 @@ export default function ConfirmActionButton({
   confirmLabel = "Confirmer",
   action,
   variant = "neutral",
+  buttonClassName,
+  icon,
+  disabled,
 }: {
   label: string;
   confirmTitle: string;
@@ -18,6 +21,10 @@ export default function ConfirmActionButton({
   confirmLabel?: string;
   action: () => Promise<void>;
   variant?: "neutral" | "danger";
+  // Overrides the trigger's look (e.g. compact row buttons).
+  buttonClassName?: string;
+  icon?: React.ReactNode;
+  disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -26,9 +33,11 @@ export default function ConfirmActionButton({
     <>
       <button
         type="button"
-        className={variant === "danger" ? styles.deleteBtn : styles.editLink}
+        className={buttonClassName ?? (variant === "danger" ? styles.deleteBtn : styles.editLink)}
         onClick={() => setOpen(true)}
+        disabled={disabled}
       >
+        {icon}
         {label}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title={confirmTitle}>
