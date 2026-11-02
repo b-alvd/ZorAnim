@@ -158,15 +158,27 @@ export default function FilmModal({
     });
   };
 
+  // A teaser episode whose video is already one of the trailers is reached
+  // through the "Bande-annonce" button: don't offer it a second time (e.g. a
+  // coming-soon series that only exists through its teaser episode).
+  const trailerUrls = new Set(activeFilm.trailers.map((t) => t.videoUrl));
+  const isTrailerEpisode = (ep: Film) => ep.episodeKind === "teaser" && trailerUrls.has(ep.videoUrl);
+  const listedEpisodes = episodes.filter((ep) => !isTrailerEpisode(ep));
+  // "Lecture" on such a teaser plays the first real episode, if there is one.
+  const playTarget = isTrailerEpisode(activeFilm)
+    ? (listedEpisodes.find((ep) => ep.episodeKind !== "teaser") ?? null)
+    : activeFilm;
+
   const seasonNumbers = [
-    ...new Set(episodes.filter((ep) => ep.episodeKind !== "teaser").map((ep) => ep.seasonNumber ?? 1)),
+    ...new Set(listedEpisodes.filter((ep) => ep.episodeKind !== "teaser").map((ep) => ep.seasonNumber ?? 1)),
   ].sort((a, b) => a - b);
-  const hasTeaserEpisodes = episodes.some((ep) => ep.episodeKind === "teaser");
+  const hasTeaserEpisodes = listedEpisodes.some((ep) => ep.episodeKind === "teaser");
   const seasonOptions = [
     ...(hasTeaserEpisodes ? [TRAILERS_OPTION] : []),
     ...seasonNumbers.map((n) => `Saison ${n}`),
   ];
-  const episodesForSeason = episodes.filter((ep) => seasonOptionFor(ep) === selectedSeason);
+  const season = seasonOptions.includes(selectedSeason) ? selectedSeason : seasonOptions[0];
+  const episodesForSeason = listedEpisodes.filter((ep) => seasonOptionFor(ep) === season);
 
   const topLevelComments = comments.filter((c) => !c.parentId);
   const repliesByParent = new Map<string, Comment[]>();
@@ -234,12 +246,14 @@ export default function FilmModal({
           <p className={styles.synopsis}>{activeFilm.synopsis}</p>
 
           <div className={styles.actions}>
-            <Link href={`/watch/${activeFilm.id}?autoplay=1`} className={styles.playBtn}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              Lecture
-            </Link>
+            {playTarget && (
+              <Link href={`/watch/${playTarget.id}?autoplay=1`} className={styles.playBtn}>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+                Lecture
+              </Link>
+            )}
             {activeFilm.trailers.length > 0 && (
               <Link
                 href={`/watch/${activeFilm.id}?autoplay=1&variant=teaser&trailer=${activeFilm.trailers[0].id}`}
@@ -300,10 +314,10 @@ export default function FilmModal({
             </div>
           )}
 
-          {episodes.length >= 1 && film.seriesTitle && (
+          {listedEpisodes.length >= 1 && film.seriesTitle && (
             <div className={styles.episodesSection}>
               <h3 className={styles.episodesTitle}>Épisodes de {film.seriesTitle}</h3>
-              <Dropdown options={seasonOptions} value={selectedSeason} onChange={setSelectedSeason} />
+              <Dropdown options={seasonOptions} value={season} onChange={setSelectedSeason} />
               <div className={styles.episodesList}>
                 {episodesForSeason.map((ep) => (
                   <button
