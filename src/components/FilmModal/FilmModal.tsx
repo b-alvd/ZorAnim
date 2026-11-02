@@ -240,10 +240,11 @@ export default function FilmModal({
               </svg>
               Lecture
             </Link>
-            {(activeFilm.seriesTitle
-              ? !!activeFilm.seriesTrailerUrl
-              : !!activeFilm.teaserVideoUrl && activeFilm.episodeKind !== "teaser") && (
-              <Link href={`/watch/${activeFilm.id}?autoplay=1&variant=teaser`} className={styles.teaserBtn}>
+            {activeFilm.trailers.length > 0 && (
+              <Link
+                href={`/watch/${activeFilm.id}?autoplay=1&variant=teaser&trailer=${activeFilm.trailers[0].id}`}
+                className={styles.teaserBtn}
+              >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
                 </svg>
@@ -278,6 +279,26 @@ export default function FilmModal({
               </Link>
             )}
           </div>
+
+          {activeFilm.trailers.length > 1 && (
+            <div className={styles.episodesSection}>
+              <h3 className={styles.episodesTitle}>Bandes-annonces ({activeFilm.trailers.length})</h3>
+              <div className={styles.episodesList}>
+                {activeFilm.trailers.map((t) => (
+                  <Link
+                    key={t.id}
+                    href={`/watch/${activeFilm.id}?autoplay=1&variant=teaser&trailer=${t.id}`}
+                    className={styles.episodeItem}
+                  >
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" className={styles.trailerIcon}>
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                    <span className={styles.episodeTitle}>{t.title}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
 
           {episodes.length >= 1 && film.seriesTitle && (
             <div className={styles.episodesSection}>

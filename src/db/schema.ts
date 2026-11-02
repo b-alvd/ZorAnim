@@ -289,12 +289,18 @@ export const contactMessages = sqliteTable("contact_messages", {
     .default(sql`(current_timestamp)`),
 });
 
-// Series-level settings. A series has no row of its own (its episodes share a
-// `series_title`), so this table is keyed by that title.
-export const seriesInfo = sqliteTable("series_info", {
-  seriesTitle: text("series_title").primaryKey(),
-  trailerUrl: text("trailer_url"),
-  updatedAt: text("updated_at")
+// Trailers ("bandes-annonces"), several per film or per series. A series has
+// no row of its own (its episodes share a `series_title`), so a series trailer
+// is keyed by that title; a film trailer by the film's id. Exactly one of the
+// two is set.
+export const trailers = sqliteTable("trailers", {
+  id: text("id").primaryKey(),
+  seriesTitle: text("series_title"),
+  filmId: text("film_id").references(() => films.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  videoUrl: text("video_url").notNull(),
+  position: integer("position").notNull().default(0),
+  createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),
 });

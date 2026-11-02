@@ -7,12 +7,13 @@ import FilmForm from "./FilmForm";
 import {
   EMPTY_RELEASE,
   FormSection,
-  OptionalToggle,
+  TrailersEditor,
   ReleaseFields,
   Segmented,
   minutesFromSeconds,
   releaseComplete,
   type ReleaseValue,
+  type TrailerDraft,
 } from "./FormParts";
 import { createFilmAction, createSeriesAction } from "./actions";
 import type { Artist } from "@/data/types";
@@ -88,7 +89,7 @@ export default function AdminFilmSeriesForm({
   const [artistId, setArtistId] = useState(artists[0]?.id ?? "");
   const [seriesTitle, setSeriesTitle] = useState("");
   const [isNew, setIsNew] = useState(false);
-  const [trailerUrl, setTrailerUrl] = useState("");
+  const [trailers, setTrailers] = useState<TrailerDraft[]>([]);
   const [episodes, setEpisodes] = useState<EpisodeDraft[]>(() => [emptyEpisode()]);
   const [openKey, setOpenKey] = useState<number | null>(episodes[0].key);
   const [isPending, startTransition] = useTransition();
@@ -124,7 +125,7 @@ export default function AdminFilmSeriesForm({
         rating,
         category,
         isNew,
-        trailerUrl: trailerUrl || null,
+        trailers: trailers.map(({ title, videoUrl }) => ({ title, videoUrl })),
         // Release dates are datetime-local strings: converted to ISO here, in
         // the browser, so they resolve against the admin's own local time.
         episodes: episodes.map(({ release, ...draft }) => ({
@@ -202,21 +203,10 @@ export default function AdminFilmSeriesForm({
                 }}
               />
             </div>
-            <OptionalToggle
-              label="Ajouter une bande-annonce"
-              hint="Pour toute la série : bouton « Bande-annonce » dans la fiche."
-              onDisable={() => setTrailerUrl("")}
-            >
-              <FileUpload
-                allowUrl
-                name="seriesTrailerUrl"
-                label="Choisir une vidéo"
-                accept="video/*"
-                value={trailerUrl}
-                onChange={setTrailerUrl}
-                maxSizeMB={100}
-              />
-            </OptionalToggle>
+            <div className={adminStyles.field}>
+              <label>Bandes-annonces (facultatif)</label>
+              <TrailersEditor value={trailers} onChange={setTrailers} namePrefix="series-trailer" />
+            </div>
           </FormSection>
 
           <FormSection title={`Épisodes (${episodes.length})`}>

@@ -31,22 +31,24 @@ export default async function WatchPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ autoplay?: string; variant?: string }>;
+  searchParams: Promise<{ autoplay?: string; variant?: string; trailer?: string }>;
 }) {
   const user = await getCurrentUser();
 
   const { id } = await params;
-  const { autoplay, variant } = await searchParams;
+  const { autoplay, variant, trailer: trailerId } = await searchParams;
   const film = await getFilm(id);
   if (!film) notFound();
 
   // A trailer is promotional: playable even while the content itself is
   // locked (premiere, scheduled release), and not counted as a view.
-  const trailerUrl = variant === "teaser" ? (film.seriesTitle ? film.seriesTrailerUrl : film.teaserVideoUrl) : null;
-  if (trailerUrl) {
+  const trailer =
+    variant === "teaser" ? (film.trailers.find((t) => t.id === trailerId) ?? film.trailers[0] ?? null) : null;
+  if (trailer) {
+    const trailerFilm = { ...film, videoUrl: trailer.videoUrl, title: `${film.seriesTitle ?? film.title} · ${trailer.title}` };
     return (
       <main className={styles.page}>
-        <VideoPlayer film={{ ...film, videoUrl: trailerUrl }} suggestions={[]} episodes={[]} autoplay={autoplay === "1"} />
+        <VideoPlayer film={trailerFilm} suggestions={[]} episodes={[]} autoplay={autoplay === "1"} />
       </main>
     );
   }

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne, or, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   films,
@@ -20,9 +20,9 @@ import {
   banAppeals,
   premiereViewers,
   sessions,
-  seriesInfo,
+  trailers as trailersTable,
 } from "@/db/schema";
-import type { Film, Artist } from "@/data/types";
+import type { Film, Artist, Trailer } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
 import { formatEpisodeTag, splitComingSoon } from "@/lib/series";
 import { placeholderAvatar } from "@/lib/placeholder";
@@ -94,7 +94,7 @@ function mapFilm(row: FilmRow): Film {
     episodeNumber: row.episodeNumber,
     episodeKind: (row.episodeKind as "episode" | "teaser") ?? "episode",
     teaserVideoUrl: row.teaserVideoUrl,
-    seriesTrailerUrl: null,
+    trailers: [],
     premiereAt: row.premiereAt,
     premiereBanner: row.premiereBanner,
     releaseBanner: row.releaseBanner,
@@ -134,7 +134,10 @@ async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
     ])
   );
 
-  const trailers = await getSeriesTrailers(seriesTitles);
+  const trailerLists = await getTrailers(
+    seriesTitles,
+    filmsList.filter((f) => !f.seriesTitle).map((f) => f.id)
+  );
   return filmsList.map((f) => {
     const own = ownSummary(f.id);
     const content = f.seriesTitle ? seriesSummaries.get(f.seriesTitle) ?? null : own;
@@ -144,68 +147,110 @@ async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
       ratingCount: content?.count ?? 0,
       episodeAvgRating: own?.avg ?? null,
       episodeRatingCount: own?.count ?? 0,
-      seriesTrailerUrl: f.seriesTitle ? trailers.get(f.seriesTitle) ?? null : null,
+      trailers: trailersFor(f, trailerLists),
     };
   });
 }
 
-// series_info arrives with migration 0035. Until a database has it, reads
-// behave as "no series trailer" instead of breaking every page, so the code
-// can be deployed before the migration is run.
+// The trailers table arrives with migration 0036. Until a database has it,
+// reads fall back to the legacy single `teaser_video_url` of films (and no
+// series trailers) instead of breaking every page, so the code can be
+// deployed before the migration is run.
 function isMissingTable(e: unknown): boolean {
   const message = e instanceof Error ? `${e.message} ${e.cause instanceof Error ? e.cause.message : ""}` : String(e);
   return /no such table/i.test(message);
 }
 
-const MIGRATION_NEEDED = "La table series_info n'existe pas encore : lance la migration 0035 (scripts/apply-0035.ts).";
+const MIGRATION_NEEDED = "La table trailers n'existe pas encore : lance la migration 0036 (scripts/apply-0036.ts).";
 
-export async function getSeriesTrailers(seriesTitles: string[]): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
-  if (seriesTitles.length === 0) return map;
+type TrailerLists = { bySeries: Map<string, Trailer[]>; byFilm: Map<string, Trailer[]> };
+
+export async function getTrailers(seriesTitles: string[], filmIds: string[]): Promise<TrailerLists> {
+  const lists: TrailerLists = { bySeries: new Map(), byFilm: new Map() };
+  if (seriesTitles.length === 0 && filmIds.length === 0) return lists;
   try {
+    const conditions = [
+      ...(seriesTitles.length ? [inArray(trailersTable.seriesTitle, seriesTitles)] : []),
+      ...(filmIds.length ? [inArray(trailersTable.filmId, filmIds)] : []),
+    ];
     const rows = await db
-      .select({ seriesTitle: seriesInfo.seriesTitle, trailerUrl: seriesInfo.trailerUrl })
-      .from(seriesInfo)
-      .where(inArray(seriesInfo.seriesTitle, seriesTitles));
-    for (const r of rows) if (r.trailerUrl) map.set(r.seriesTitle, r.trailerUrl);
+      .select()
+      .from(trailersTable)
+      .where(conditions.length === 1 ? conditions[0] : or(...conditions))
+      .orderBy(trailersTable.position, trailersTable.createdAt);
+    for (const r of rows) {
+      const trailer = { id: r.id, title: r.title, videoUrl: r.videoUrl };
+      if (r.seriesTitle) lists.bySeries.set(r.seriesTitle, [...(lists.bySeries.get(r.seriesTitle) ?? []), trailer]);
+      else if (r.filmId) lists.byFilm.set(r.filmId, [...(lists.byFilm.get(r.filmId) ?? []), trailer]);
+    }
   } catch (e) {
     if (!isMissingTable(e)) throw e;
   }
-  return map;
+  return lists;
 }
 
-export async function setSeriesTrailer(seriesTitle: string, trailerUrl: string | null): Promise<void> {
+// Legacy single trailer of a film, used until it is moved to the trailers table.
+export const LEGACY_TRAILER_ID = "legacy";
+
+function trailersFor(f: Film, lists: TrailerLists): Trailer[] {
+  if (f.seriesTitle) return lists.bySeries.get(f.seriesTitle) ?? [];
+  const own = lists.byFilm.get(f.id);
+  if (own?.length) return own;
+  return f.teaserVideoUrl && f.episodeKind !== "teaser"
+    ? [{ id: LEGACY_TRAILER_ID, title: "Bande-annonce", videoUrl: f.teaserVideoUrl }]
+    : [];
+}
+
+export type TrailerInput = { title: string; videoUrl: string };
+export type TrailerOwner = { seriesTitle: string } | { filmId: string };
+
+// Replaces the whole trailer list of a film or a series.
+export async function setTrailers(owner: TrailerOwner, list: TrailerInput[]): Promise<void> {
+  const ownerCondition =
+    "seriesTitle" in owner ? eq(trailersTable.seriesTitle, owner.seriesTitle) : eq(trailersTable.filmId, owner.filmId);
+  const clean = list
+    .map((t) => ({ title: t.title.trim(), videoUrl: t.videoUrl.trim() }))
+    .filter((t) => t.videoUrl);
   try {
-    await db
-      .insert(seriesInfo)
-      .values({ seriesTitle, trailerUrl })
-      .onConflictDoUpdate({
-        target: seriesInfo.seriesTitle,
-        set: { trailerUrl, updatedAt: new Date().toISOString() },
-      });
+    await db.delete(trailersTable).where(ownerCondition);
+    if (clean.length) {
+      await db.insert(trailersTable).values(
+        clean.map((t, position) => ({
+          id: randomUUID(),
+          seriesTitle: "seriesTitle" in owner ? owner.seriesTitle : null,
+          filmId: "filmId" in owner ? owner.filmId : null,
+          title: t.title || (clean.length > 1 ? `Bande-annonce ${position + 1}` : "Bande-annonce"),
+          videoUrl: t.videoUrl,
+          position,
+        }))
+      );
+    }
   } catch (e) {
     if (isMissingTable(e)) {
       // Nothing to clear on a database that has never stored a trailer.
-      if (!trailerUrl) return;
+      if (clean.length === 0) return;
       throw new Error(MIGRATION_NEEDED);
     }
     throw e;
   }
+  // A film's list now lives in the trailers table: drop the legacy field so
+  // it isn't shown as a fallback anymore.
+  if ("filmId" in owner) await db.update(films).set({ teaserVideoUrl: null }).where(eq(films.id, owner.filmId));
 }
 
-// Keeps series_info in step when a series is renamed or deleted.
-async function renameSeriesInfo(oldTitle: string, newTitle: string): Promise<void> {
+// Keeps series trailers attached when a series is renamed or deleted.
+async function renameSeriesTrailers(oldTitle: string, newTitle: string): Promise<void> {
   if (oldTitle === newTitle) return;
   try {
-    await db.update(seriesInfo).set({ seriesTitle: newTitle }).where(eq(seriesInfo.seriesTitle, oldTitle));
+    await db.update(trailersTable).set({ seriesTitle: newTitle }).where(eq(trailersTable.seriesTitle, oldTitle));
   } catch (e) {
     if (!isMissingTable(e)) throw e;
   }
 }
 
-async function deleteSeriesInfo(seriesTitle: string): Promise<void> {
+async function deleteSeriesTrailers(seriesTitle: string): Promise<void> {
   try {
-    await db.delete(seriesInfo).where(eq(seriesInfo.seriesTitle, seriesTitle));
+    await db.delete(trailersTable).where(eq(trailersTable.seriesTitle, seriesTitle));
   } catch (e) {
     if (!isMissingTable(e)) throw e;
   }
@@ -458,12 +503,12 @@ export async function adminUpdateSeries(
     .update(films)
     .set({ seriesTitle: input.seriesTitle, rating: input.rating, category: input.category })
     .where(eq(films.seriesTitle, oldSeriesTitle));
-  await renameSeriesInfo(oldSeriesTitle, input.seriesTitle);
+  await renameSeriesTrailers(oldSeriesTitle, input.seriesTitle);
 }
 
 export async function deleteSeries(seriesTitle: string): Promise<void> {
   await db.delete(films).where(eq(films.seriesTitle, seriesTitle));
-  await deleteSeriesInfo(seriesTitle);
+  await deleteSeriesTrailers(seriesTitle);
 }
 
 export async function updateSeriesInfo(
@@ -477,7 +522,7 @@ export async function updateSeriesInfo(
     .update(films)
     .set({ seriesTitle: input.seriesTitle, rating: input.rating, category: input.category })
     .where(and(identityCondition, eq(films.seriesTitle, oldSeriesTitle)));
-  await renameSeriesInfo(oldSeriesTitle, input.seriesTitle);
+  await renameSeriesTrailers(oldSeriesTitle, input.seriesTitle);
 }
 
 export type ArtistInput = {

@@ -729,3 +729,8 @@
     gap: 0.6rem;
   }
 }
+
+.trailerIcon {
+  flex-shrink: 0;
+  color: #b3b3b3;
+}

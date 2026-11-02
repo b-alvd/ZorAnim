@@ -4,11 +4,10 @@ import { useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Dropdown from "@/components/Dropdown/Dropdown";
 import Modal from "@/components/Modal/Modal";
-import FileUpload from "@/components/FileUpload/FileUpload";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
 import FilmRowActions from "./FilmRowActions";
 import AddEpisodeButton from "./AddEpisodeButton";
-import { OptionalToggle } from "./FormParts";
+import { TrailersEditor, toTrailerDrafts, type TrailerDraft } from "./FormParts";
 import { deleteSeriesAction, setFilmsNewAction, updateSeriesAction } from "./actions";
 import { RATING_OPTIONS } from "@/lib/ratings";
 import { formatEpisodeTag } from "@/lib/series";
@@ -207,7 +206,7 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
   const [seriesTitle, setSeriesTitle] = useState(title);
   const [category, setCategory] = useState(sample.category);
   const [rating, setRating] = useState(sample.rating);
-  const [trailerUrl, setTrailerUrl] = useState(sample.seriesTrailerUrl ?? "");
+  const [trailers, setTrailers] = useState<TrailerDraft[]>(() => toTrailerDrafts(sample.trailers));
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -228,7 +227,7 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
           <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
         </svg>
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} title={`Modifier la série « ${title} »`}>
+      <Modal open={open} onClose={() => setOpen(false)} title={`Modifier la série « ${title} »`} fixedHeight>
         <form
           className={shared.form}
           onSubmit={(e) => {
@@ -240,7 +239,7 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
                   seriesTitle,
                   category,
                   rating,
-                  trailerUrl: trailerUrl || null,
+                  trailers: trailers.map(({ title, videoUrl }) => ({ title, videoUrl })),
                 });
                 setOpen(false);
               } catch (err) {
@@ -261,22 +260,11 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
             <label>Classification</label>
             <Dropdown options={RATING_OPTIONS} value={rating} onChange={setRating} />
           </div>
-          <OptionalToggle
-            label="Bande-annonce de la série"
-            hint="Bouton « Bande-annonce » dans la fiche, visible même avant la sortie."
-            defaultOn={!!sample.seriesTrailerUrl}
-            onDisable={() => setTrailerUrl("")}
-          >
-            <FileUpload
-              allowUrl
-              name="seriesTrailerUrl"
-              label="Choisir une vidéo"
-              accept="video/*"
-              value={trailerUrl}
-              onChange={setTrailerUrl}
-              maxSizeMB={100}
-            />
-          </OptionalToggle>
+          <div className={shared.field}>
+            <label>Bandes-annonces</label>
+            <TrailersEditor value={trailers} onChange={setTrailers} namePrefix="series-trailer" />
+            <span className={styles.formHint}>La première est celle du bouton « Bande-annonce » de la fiche.</span>
+          </div>
           <p className={styles.formHint}>S&apos;applique à tous les épisodes de la série.</p>
           {error && <p className={styles.formError}>{error}</p>}
           <button type="submit" className={shared.addBtn} disabled={isPending}>

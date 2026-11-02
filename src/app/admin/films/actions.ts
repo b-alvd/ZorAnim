@@ -9,10 +9,11 @@ import {
   deleteSeries,
   launchPremiere,
   setFilmsNew,
-  setSeriesTrailer,
+  setTrailers,
   stopPremiere,
   updateFilm,
   type FilmInput,
+  type TrailerInput,
 } from "@/db/queries";
 
 function readDateTimeLocal(formData: FormData, name: string): string | null {
@@ -61,14 +62,32 @@ function readFilmInput(formData: FormData): FilmInput {
   };
 }
 
+// The film form sends its trailer list as JSON in "trailers"; null when the
+// form has no such list (series episodes: trailers belong to the series).
+function readTrailers(formData: FormData): TrailerInput[] | null {
+  const raw = formData.get("trailers");
+  if (raw === null) return null;
+  const parsed: unknown = JSON.parse(String(raw));
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .filter((t): t is TrailerInput => typeof t?.videoUrl === "string")
+    .map((t) => ({ title: String(t.title ?? ""), videoUrl: t.videoUrl }));
+}
+
 export async function createFilmAction(formData: FormData) {
   await requireAdmin();
-  await createFilm(readFilmInput(formData));
+  const id = await createFilm(readFilmInput(formData));
+  const trailers = readTrailers(formData);
+  if (trailers?.length) await setTrailers({ filmId: id }, trailers);
   revalidatePath("/admin/films");
 }
 
 export async function updateFilmAction(id: string, formData: FormData) {
   await requireAdmin();
+  const trailers = readTrailers(formData);
+  // Trailers first: if that fails (e.g. migration not run yet) the film is
+  // left untouched rather than half-saved.
+  if (trailers) await setTrailers({ filmId: id }, trailers);
   await updateFilm(id, readFilmInput(formData));
   revalidatePath("/admin/films");
 }
@@ -88,17 +107,18 @@ export async function setFilmsNewAction(ids: string[], isNew: boolean) {
 
 export async function updateSeriesAction(
   oldSeriesTitle: string,
-  input: { seriesTitle: string; rating: string; category: string; trailerUrl: string | null }
+  input: { seriesTitle: string; rating: string; category: string; trailers: TrailerInput[] }
 ) {
   await requireAdmin();
   const seriesTitle = input.seriesTitle.trim();
   if (!seriesTitle) throw new Error("Le titre de la série est requis.");
+  // Trailers are saved under the current title, then follow the rename.
+  await setTrailers({ seriesTitle: oldSeriesTitle }, input.trailers);
   await adminUpdateSeries(oldSeriesTitle, {
     seriesTitle,
     rating: input.rating,
     category: input.category,
   });
-  await setSeriesTrailer(seriesTitle, input.trailerUrl || null);
   revalidatePath("/admin/films");
   revalidatePath("/", "layout");
 }
@@ -149,7 +169,7 @@ export async function createSeriesAction(input: {
   rating: string;
   category: string;
   isNew: boolean;
-  trailerUrl?: string | null;
+  trailers?: TrailerInput[];
   episodes: SeriesEpisodeInput[];
 }) {
   await requireAdmin();
@@ -183,6 +203,6 @@ export async function createSeriesAction(input: {
       videoDurationSeconds: episode.videoDurationSeconds ?? null,
     });
   }
-  if (input.trailerUrl) await setSeriesTrailer(seriesTitle, input.trailerUrl);
+  if (input.trailers?.length) await setTrailers({ seriesTitle }, input.trailers);
   revalidatePath("/admin/films");
 }

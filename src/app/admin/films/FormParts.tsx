@@ -281,3 +281,103 @@ export function ReleaseFields({
     </div>
   );
 }
+
+export type TrailerDraft = { key: number; title: string; videoUrl: string };
+
+let nextTrailerKey = 0;
+
+export function toTrailerDrafts(list: { title: string; videoUrl: string }[]): TrailerDraft[] {
+  return list.map((t) => ({ key: nextTrailerKey++, title: t.title, videoUrl: t.videoUrl }));
+}
+
+export function newTrailerDraft(videoUrl = "", title = ""): TrailerDraft {
+  return { key: nextTrailerKey++, title, videoUrl };
+}
+
+// Ordered list of trailers ("bandes-annonces"): the first one is the one the
+// "Bande-annonce" button plays.
+export function TrailersEditor({
+  value,
+  onChange,
+  namePrefix = "trailer",
+}: {
+  value: TrailerDraft[];
+  onChange: (next: TrailerDraft[]) => void;
+  namePrefix?: string;
+}) {
+  const update = (key: number, patch: Partial<TrailerDraft>) =>
+    onChange(value.map((t) => (t.key === key ? { ...t, ...patch } : t)));
+  const move = (index: number, delta: number) => {
+    const next = [...value];
+    const [item] = next.splice(index, 1);
+    next.splice(index + delta, 0, item);
+    onChange(next);
+  };
+
+  return (
+    <div className={styles.trailers}>
+      {value.length === 0 && <p className={styles.formHint}>Aucune bande-annonce.</p>}
+      {value.map((t, index) => (
+        <div key={t.key} className={styles.trailerItem}>
+          <div className={styles.trailerHead}>
+            <span className={styles.trailerIndex}>{index + 1}</span>
+            <input
+              className={styles.trailerTitle}
+              value={t.title}
+              placeholder={value.length > 1 ? `Bande-annonce ${index + 1}` : "Bande-annonce"}
+              onChange={(e) => update(t.key, { title: e.target.value })}
+              aria-label="Titre de la bande-annonce"
+            />
+            <button
+              type="button"
+              className={shared.iconBtn}
+              disabled={index === 0}
+              onClick={() => move(index, -1)}
+              title="Monter"
+              aria-label="Monter"
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M18 15l-6-6-6 6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={shared.iconBtn}
+              disabled={index === value.length - 1}
+              onClick={() => move(index, 1)}
+              title="Descendre"
+              aria-label="Descendre"
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={shared.deleteIconBtn}
+              onClick={() => onChange(value.filter((x) => x.key !== t.key))}
+              title="Retirer"
+              aria-label="Retirer cette bande-annonce"
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+              </svg>
+            </button>
+          </div>
+          <FileUpload
+            allowUrl
+            name={`${namePrefix}-${t.key}-video`}
+            label="Choisir une vidéo"
+            accept="video/*"
+            value={t.videoUrl}
+            onChange={(url) => update(t.key, { videoUrl: url })}
+            maxSizeMB={100}
+          />
+        </div>
+      ))}
+      <button type="button" className={styles.addEpisodeBtn} onClick={() => onChange([...value, newTrailerDraft()])}>
+        + Ajouter une bande-annonce
+      </button>
+    </div>
+  );
+}

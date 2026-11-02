@@ -6,6 +6,8 @@ export type Artist = {
   isStudio: boolean;
 };
 
+export type Trailer = { id: string; title: string; videoUrl: string };
+
 export type Film = {
   id: string;
   title: string;
@@ -33,8 +35,8 @@ export type Film = {
   episodeNumber: number | null;
   episodeKind: "episode" | "teaser";
   teaserVideoUrl: string | null;
-  // Trailer set on the whole series (see series_info), shared by its episodes.
-  seriesTrailerUrl: string | null;
+  // Trailers to show: the series' for an episode, the film's own otherwise.
+  trailers: Trailer[];
   premiereAt: string | null;
   premiereBanner: string | null;
   releaseBanner: string | null;

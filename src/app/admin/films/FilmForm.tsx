@@ -9,9 +9,13 @@ import {
   FormSection,
   OptionalToggle,
   ReleaseFields,
+  TrailersEditor,
+  newTrailerDraft,
+  toTrailerDrafts,
   minutesFromSeconds,
   toDatetimeLocal,
   type ReleaseValue,
+  type TrailerDraft,
 } from "./FormParts";
 import styles from "../shared.module.css";
 import formStyles from "./films.module.css";
@@ -32,6 +36,7 @@ type FilmFormValues = {
   episodeNumber?: number | null;
   episodeKind?: "episode" | "teaser";
   teaserVideoUrl?: string | null;
+  trailers?: { title: string; videoUrl: string }[];
   premiereAt?: string | null;
   premiereBanner?: string | null;
   releaseBanner?: string | null;
@@ -79,6 +84,15 @@ export default function FilmForm({
   const [durationMinutes, setDurationMinutes] = useState(initial?.durationMinutes || "");
   const [durationDetected, setDurationDetected] = useState(false);
   const [teaserVideoUrl, setTeaserVideoUrl] = useState(initial?.teaserVideoUrl ?? "");
+  // The admin manages a list of trailers; the creator space keeps the single
+  // legacy trailer field.
+  const multiTrailers = showRelease;
+  const [trailers, setTrailers] = useState<TrailerDraft[]>(() =>
+    toTrailerDrafts(
+      initial?.trailers ??
+        (initial?.teaserVideoUrl ? [{ title: "Bande-annonce", videoUrl: initial.teaserVideoUrl }] : [])
+    )
+  );
   const [release, setRelease] = useState<ReleaseValue>({
     premiereAt: toDatetimeLocal(initial?.premiereAt),
     releaseAt: toDatetimeLocal(initial?.releaseAt),
@@ -298,7 +312,8 @@ export default function FilmForm({
                   // The film is coming out: its teaser video becomes its
                   // trailer, and the main video slot waits for the real film.
                   if (!teaser && wasStandaloneTeaser && initial?.videoUrl && videoUrl === initial.videoUrl) {
-                    if (!teaserVideoUrl) setTeaserVideoUrl(initial.videoUrl);
+                    if (multiTrailers) setTrailers((list) => [newTrailerDraft(initial.videoUrl, "Teaser"), ...list]);
+                    else if (!teaserVideoUrl) setTeaserVideoUrl(initial.videoUrl);
                     setVideoUrl("");
                     setVideoDurationSeconds(null);
                     setTeaserKept(true);
@@ -308,6 +323,7 @@ export default function FilmForm({
                     setVideoUrl(initial?.videoUrl ?? "");
                     setVideoDurationSeconds(initial?.videoDurationSeconds ?? null);
                     setTeaserVideoUrl(initial?.teaserVideoUrl ?? "");
+                    if (multiTrailers) setTrailers((list) => list.slice(1));
                     setTeaserKept(false);
                   }
                 }}
@@ -320,7 +336,18 @@ export default function FilmForm({
                 L&apos;ancienne vidéo du teaser est gardée comme bande-annonce. Ajoute la vidéo du film ci-dessus.
               </p>
             )}
-            {!standaloneTeaser && (
+            {!standaloneTeaser && multiTrailers && (
+              <div className={styles.field}>
+                <label>Bandes-annonces</label>
+                <input
+                  type="hidden"
+                  name="trailers"
+                  value={JSON.stringify(trailers.map(({ title, videoUrl }) => ({ title, videoUrl })))}
+                />
+                <TrailersEditor value={trailers} onChange={setTrailers} />
+              </div>
+            )}
+            {!standaloneTeaser && !multiTrailers && (
               <OptionalToggle
                 label="Ajouter une bande-annonce"
                 defaultOn={!!teaserVideoUrl}
