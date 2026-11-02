@@ -1,4 +1,12 @@
-import { getDashboardStats } from "@/db/queries";
+import Image from "next/image";
+import {
+  getDashboardStats,
+  type DashboardStats,
+  type RankedContent,
+  type RankedEpisode,
+  type Trend,
+} from "@/db/queries";
+import PagedList from "./PagedList";
 import styles from "./dashboard.module.css";
 
 const icons = {
@@ -98,20 +106,42 @@ const icons = {
   ),
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+function formatFullDate(iso: string) {
+  return parseDate(iso).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function parseDate(iso: string) {
+  return new Date(iso.includes("T") ? iso : `${iso.replace(" ", "T")}Z`);
+}
+
+function formatRelative(iso: string) {
+  const date = parseDate(iso);
+  const minutes = Math.round((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) return "à l'instant";
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return days === 1 ? "hier" : `il y a ${days} jours`;
+  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
 function StatCard({
   icon,
   value,
   label,
+  sub,
   highlight,
   tone,
 }: {
   icon: React.ReactNode;
   value: React.ReactNode;
   label: React.ReactNode;
+  sub?: React.ReactNode;
   highlight?: boolean;
   tone?: "up" | "down";
 }) {
@@ -123,21 +153,79 @@ function StatCard({
           {value}
         </span>
         <span className={styles.label}>{label}</span>
+        {sub && <span className={styles.sub}>{sub}</span>}
       </div>
     </div>
   );
 }
+
+type RankRow = {
+  id: string;
+  name: React.ReactNode;
+  detail?: React.ReactNode;
+  value: React.ReactNode;
+  valueDetail?: React.ReactNode;
+};
 
 function RankCard({
   icon,
   title,
   emptyLabel,
   rows,
+  wide,
 }: {
   icon: React.ReactNode;
   title: string;
   emptyLabel: string;
-  rows: { id: string; name: string; value: string }[];
+  rows: RankRow[];
+  wide?: boolean;
+}) {
+  return (
+    <div className={`${styles.rankCard} ${wide ? styles.rankCardWide : ""}`}>
+      <h3 className={styles.rankTitle}>
+        <span className={styles.rankTitleIcon}>{icon}</span>
+        {title}
+      </h3>
+      {rows.length === 0 ? (
+        <p className={styles.rankEmpty}>{emptyLabel}</p>
+      ) : (
+        <PagedList className={styles.rankList} pageSize={5}>
+          {rows.map((r, i) => (
+            <li key={r.id} className={styles.rankRow}>
+              <span className={`${styles.rankBadge} ${i === 0 ? styles.rankBadgeFirst : ""}`}>{i + 1}</span>
+              <span className={styles.rankText}>
+                <span className={styles.rankName}>{r.name}</span>
+                {r.detail && <span className={styles.rankDetail}>{r.detail}</span>}
+              </span>
+              <span className={styles.rankValues}>
+                <span className={styles.rankValueMain}>{r.value}</span>
+                {r.valueDetail && <span className={styles.rankDetail}>{r.valueDetail}</span>}
+              </span>
+            </li>
+          ))}
+        </PagedList>
+      )}
+    </div>
+  );
+}
+
+type RankColumn = { label: string; hint?: string };
+type RankTableRow = { id: string; name: React.ReactNode; meta?: React.ReactNode; cells: React.ReactNode[] };
+
+function RankTable({
+  icon,
+  title,
+  emptyLabel,
+  nameLabel,
+  columns,
+  rows,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  emptyLabel: string;
+  nameLabel: string;
+  columns: RankColumn[];
+  rows: RankTableRow[];
 }) {
   return (
     <div className={styles.rankCard}>
@@ -148,18 +236,67 @@ function RankCard({
       {rows.length === 0 ? (
         <p className={styles.rankEmpty}>{emptyLabel}</p>
       ) : (
-        <ol className={styles.rankList}>
-          {rows.map((r, i) => (
-            <li key={r.id} className={styles.rankRow}>
-              <span className={`${styles.rankBadge} ${i === 0 ? styles.rankBadgeFirst : ""}`}>{i + 1}</span>
-              <span className={styles.rankName}>{r.name}</span>
-              <span className={styles.rankValue}>{r.value}</span>
-            </li>
-          ))}
-        </ol>
+        <table className={styles.rankTable}>
+          <thead>
+            <tr>
+              <th className={styles.rankTh} colSpan={2}>
+                {nameLabel}
+              </th>
+              {columns.map((c) => (
+                <th key={c.label} className={`${styles.rankTh} ${styles.rankThNum}`} title={c.hint}>
+                  {c.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={r.id} className={styles.rankTr}>
+                <td className={styles.rankTdBadge}>
+                  <span className={`${styles.rankBadge} ${i === 0 ? styles.rankBadgeFirst : ""}`}>{i + 1}</span>
+                </td>
+                <td className={styles.rankTdName}>
+                  <span className={styles.rankName}>{r.name}</span>
+                  {r.meta && <span className={styles.rankMeta}>{r.meta}</span>}
+                </td>
+                {r.cells.map((cell, j) => (
+                  <td key={j} className={`${styles.rankTdNum} ${j === 0 ? styles.rankTdMain : ""}`}>
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
+}
+
+function KindTag({ c }: { c: RankedContent }) {
+  return (
+    <span className={styles.rankTag}>{c.kind === "series" ? `Série · ${c.episodeCount + " ép."}` : "Film"}</span>
+  );
+}
+
+function contentMeta(c: RankedContent) {
+  return (
+    <>
+      <KindTag c={c} /> {c.creator}
+    </>
+  );
+}
+
+function episodeName(e: RankedEpisode) {
+  return (
+    <>
+      {e.seriesTitle} <span className={styles.rankTag}>{e.episodeTag}</span>
+    </>
+  );
+}
+
+function stars(value: number) {
+  return `★ ${value.toFixed(1)}`;
 }
 
 function AcceptanceCard({
@@ -174,31 +311,194 @@ function AcceptanceCard({
   pending: number;
 }) {
   const decided = accepted + refused;
+  const total = decided + pending;
   const rate = decided > 0 ? Math.round((accepted / decided) * 100) : null;
+
+  // Donut: accepted then refused, as fractions of the decided requests.
+  const R = 34;
+  const C = 2 * Math.PI * R;
+  const acceptedLen = decided > 0 ? (accepted / decided) * C : 0;
+  const refusedLen = decided > 0 ? (refused / decided) * C : 0;
+  // Leave a small gap between the two arcs when both exist.
+  const gap = accepted > 0 && refused > 0 ? 3 : 0;
+
+  return (
+    <div className={styles.rankCard}>
+      <div className={styles.acceptHeader}>
+        <h3 className={styles.rankTitle}>
+          <span className={styles.rankTitleIcon}>{icons.check}</span>
+          {title}
+        </h3>
+        <span className={styles.acceptTotal}>{plural(total, "demande")}</span>
+      </div>
+
+      <div className={styles.acceptBody}>
+        <div className={styles.donut}>
+          <svg viewBox="0 0 80 80" width="96" height="96" aria-hidden="true">
+            <circle cx="40" cy="40" r={R} className={styles.donutTrack} />
+            {acceptedLen > 0 && (
+              <circle
+                cx="40"
+                cy="40"
+                r={R}
+                className={styles.donutUp}
+                strokeDasharray={`${Math.max(acceptedLen - gap, 0)} ${C}`}
+              />
+            )}
+            {refusedLen > 0 && (
+              <circle
+                cx="40"
+                cy="40"
+                r={R}
+                className={styles.donutDown}
+                strokeDasharray={`${Math.max(refusedLen - gap, 0)} ${C}`}
+                strokeDashoffset={-acceptedLen}
+              />
+            )}
+          </svg>
+          <div className={styles.donutCenter}>
+            {rate !== null ? (
+              <>
+                <span className={styles.donutValue}>{rate}%</span>
+                <span className={styles.donutLabel}>acceptées</span>
+              </>
+            ) : (
+              <span className={styles.donutLabel}>Aucune décision</span>
+            )}
+          </div>
+        </div>
+
+        <div className={styles.acceptTiles}>
+          <div className={styles.acceptTile}>
+            <span className={`${styles.acceptDot} ${styles.acceptDotUp}`} />
+            <span className={styles.acceptTileValue}>{accepted}</span>
+            <span className={styles.acceptTileLabel}>{accepted > 1 ? "Acceptées" : "Acceptée"}</span>
+          </div>
+          <div className={styles.acceptTile}>
+            <span className={`${styles.acceptDot} ${styles.acceptDotDown}`} />
+            <span className={styles.acceptTileValue}>{refused}</span>
+            <span className={styles.acceptTileLabel}>{refused > 1 ? "Refusées" : "Refusée"}</span>
+          </div>
+          <div className={`${styles.acceptTile} ${pending > 0 ? styles.acceptTilePending : ""}`}>
+            <span className={`${styles.acceptDot} ${styles.acceptDotPending}`} />
+            <span className={styles.acceptTileValue}>{pending}</span>
+            <span className={styles.acceptTileLabel}>En attente</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function plural(n: number, word: string) {
+  return `${n} ${word}${n > 1 ? "s" : ""}`;
+}
+
+function TrendCard({ icon, label, trend }: { icon: React.ReactNode; label: string; trend: Trend }) {
+  const { current, previous } = trend;
+  const delta = previous > 0 ? Math.round(((current - previous) / previous) * 100) : null;
+  const tone = current > previous ? styles.reactionUp : current < previous ? styles.reactionDown : styles.trendFlat;
+  const arrow = current > previous ? "▲" : current < previous ? "▼" : "=";
+
+  return (
+    <div className={styles.card}>
+      <span className={styles.iconBadge}>{icon}</span>
+      <div className={styles.cardText}>
+        <span className={styles.number}>{current}</span>
+        <span className={styles.label}>{label}</span>
+        <span className={`${styles.trend} ${tone}`}>
+          {arrow} {delta !== null ? `${delta > 0 ? "+" : ""}${delta}%` : previous === 0 && current > 0 ? "nouveau" : "stable"}
+          <span className={styles.trendRef}> vs {previous} avant</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function formatDay(date: string) {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+
+function DailyChart({
+  title,
+  unit,
+  days,
+  pick,
+}: {
+  title: string;
+  unit: string;
+  days: DashboardStats["daily"];
+  pick: (d: DashboardStats["daily"][number]) => number;
+}) {
+  const values = days.map(pick);
+  const max = Math.max(...values, 1);
+  const total = values.reduce((sum, v) => sum + v, 0);
+
+  return (
+    <div className={styles.rankCard}>
+      <h3 className={styles.chartTitle}>
+        {title}
+        <span className={styles.chartTotal}>{plural(total, unit)}</span>
+      </h3>
+      <div className={styles.chart} role="img" aria-label={`${title} : ${plural(total, unit)} sur 30 jours`}>
+        <span className={styles.chartMax}>{max}</span>
+        <div className={styles.chartBars}>
+          {days.map((d, i) => (
+            <div key={d.date} className={styles.chartCol}>
+              <span className={styles.chartTip}>
+                {formatDay(d.date)} · {plural(values[i], unit)}
+              </span>
+              <span
+                className={`${styles.chartBar} ${values[i] === 0 ? styles.chartBarEmpty : ""}`}
+                style={{ height: `${(values[i] / max) * 100}%` }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className={styles.chartAxis}>
+        <span>{formatDay(days[0].date)}</span>
+        <span>Aujourd&apos;hui</span>
+      </div>
+    </div>
+  );
+}
+
+function RatingDistributionCard({
+  distribution,
+  average,
+  count,
+}: {
+  distribution: number[];
+  average: number | null;
+  count: number;
+}) {
+  const max = Math.max(...distribution, 1);
 
   return (
     <div className={styles.rankCard}>
       <h3 className={styles.rankTitle}>
-        <span className={styles.rankTitleIcon}>{icons.check}</span>
-        {title}
+        <span className={styles.rankTitleIcon}>{icons.star}</span>
+        Répartition des notes
       </h3>
       <div className={styles.acceptanceRate}>
-        {rate !== null ? `${rate}%` : "—"}
-        <span className={styles.acceptanceRateLabel}>acceptées</span>
+        {average !== null ? `★ ${average.toFixed(2)}` : "—"}
+        <span className={styles.acceptanceRateLabel}>sur {plural(count, "note")}</span>
       </div>
-      <div className={styles.acceptanceBar}>
-        {decided > 0 && (
-          <>
-            <span className={styles.acceptanceBarUp} style={{ width: `${(accepted / decided) * 100}%` }} />
-            <span className={styles.acceptanceBarDown} style={{ width: `${(refused / decided) * 100}%` }} />
-          </>
-        )}
-      </div>
-      <div className={styles.acceptanceStats}>
-        <span className={styles.reactionUp}>{accepted} acceptées</span>
-        <span className={styles.reactionDown}>{refused} refusées</span>
-        <span className={styles.label}>{pending} en attente</span>
-      </div>
+      <ul className={styles.distList}>
+        {[5, 4, 3, 2, 1].map((stars) => {
+          const n = distribution[stars - 1];
+          return (
+            <li key={stars} className={styles.distRow}>
+              <span className={styles.distLabel}>{stars}★</span>
+              <span className={styles.distTrack}>
+                <span className={styles.distFill} style={{ width: `${(n / max) * 100}%` }} />
+              </span>
+              <span className={styles.rankValue}>{n}</span>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -210,11 +510,8 @@ export default async function AdminDashboard() {
     <main>
       <h1 className={styles.title}>Tableau de bord</h1>
 
+      <h2 className={styles.sectionTitle}>À traiter</h2>
       <div className={styles.grid}>
-        <StatCard icon={icons.film} value={stats.filmCount} label="Films et séries" />
-        <StatCard icon={icons.artist} value={stats.artistCount} label="Artistes" />
-        <StatCard icon={icons.studio} value={stats.studioCount} label="Studios" />
-        <StatCard icon={icons.users} value={stats.userCount} label="Utilisateurs" />
         <StatCard
           icon={icons.demandes}
           value={stats.pendingCount}
@@ -235,15 +532,76 @@ export default async function AdminDashboard() {
         />
       </div>
 
-      <h2 className={styles.sectionTitle}>Engagement</h2>
+      <h2 className={styles.sectionTitle}>Vue d&apos;ensemble</h2>
       <div className={styles.grid}>
-        <StatCard icon={icons.eye} value={stats.totalViews} label="Visionnages" />
-        <StatCard icon={icons.heart} value={stats.totalFavorites} label="Ajouts à la liste" />
         <StatCard
-          icon={icons.star}
-          value={stats.averageRating !== null ? stats.averageRating.toFixed(1) : "—"}
-          label={`Note moyenne (${stats.ratingCount} note${stats.ratingCount > 1 ? "s" : ""})`}
+          icon={icons.film}
+          value={stats.filmCount}
+          label="Films et séries"
+          sub={`dont ${plural(stats.episodeCount, "épisode")}`}
         />
+        <StatCard
+          icon={icons.users}
+          value={stats.userCount}
+          label="Utilisateurs"
+          sub={`${stats.activeUsers30d} actif${stats.activeUsers30d > 1 ? "s" : ""} sur 30j`}
+        />
+        <StatCard icon={icons.artist} value={stats.artistCount} label="Artistes" />
+        <StatCard icon={icons.studio} value={stats.studioCount} label="Studios" />
+      </div>
+
+      <h2 className={styles.sectionTitle}>30 derniers jours</h2>
+      <div className={styles.grid}>
+        <TrendCard icon={icons.eye} label="Visionnages" trend={stats.trends.views} />
+        <TrendCard icon={icons.trending} label="Inscriptions" trend={stats.trends.signups} />
+        <TrendCard icon={icons.commentaires} label="Commentaires" trend={stats.trends.comments} />
+        <TrendCard icon={icons.star} label="Notes données" trend={stats.trends.ratings} />
+        <StatCard
+          icon={icons.users}
+          value={
+            <>
+              {stats.activeUsers7d}
+              <span className={styles.reactionSep}>/</span>
+              {stats.activeUsers30d}
+            </>
+          }
+          label="Membres actifs"
+          sub="7 jours / 30 jours"
+        />
+        <StatCard
+          icon={icons.film}
+          value={
+            <>
+              {stats.newFilms7d}
+              <span className={styles.reactionSep}>/</span>
+              {stats.newFilms30d}
+            </>
+          }
+          label="Nouveaux contenus"
+          sub="7 jours / 30 jours"
+        />
+      </div>
+
+      <div className={`${styles.rankings} ${styles.chartsRow}`}>
+        <DailyChart title="Visionnages" unit="visionnage" days={stats.daily} pick={(d) => d.views} />
+        <DailyChart
+          title="Commentaires et notes"
+          unit="interaction"
+          days={stats.daily}
+          pick={(d) => d.interactions}
+        />
+        <DailyChart title="Inscriptions" unit="inscription" days={stats.daily} pick={(d) => d.signups} />
+      </div>
+
+      <h2 className={styles.sectionTitle}>Engagement (total)</h2>
+      <div className={styles.grid}>
+        <StatCard
+          icon={icons.eye}
+          value={stats.totalViews}
+          label="Visionnages"
+          sub={`${stats.memberViews} membres · ${stats.guestViews} invités`}
+        />
+        <StatCard icon={icons.heart} value={stats.totalFavorites} label="Ajouts à la liste" />
         <StatCard icon={icons.commentaires} value={stats.commentCount} label="Commentaires" />
         <StatCard
           icon={icons.thumbs}
@@ -259,45 +617,139 @@ export default async function AdminDashboard() {
       </div>
 
       <h2 className={styles.sectionTitle}>Classements</h2>
-      <div className={styles.rankings}>
-        <RankCard
+      <div className={`${styles.rankings} ${styles.rankingsWide}`}>
+        <RankTable
           icon={icons.eye}
           title="Films et séries les plus vus"
           emptyLabel="Aucun visionnage."
-          rows={stats.topViewedFilms.map((f) => ({
-            id: f.id,
-            name: f.title,
-            value: `${f.views} vue${f.views > 1 ? "s" : ""}`,
+          nameLabel="Contenu"
+          columns={[
+            { label: "Vues" },
+            { label: "Membres", hint: "Vues de membres connectés" },
+            { label: "Invités", hint: "Vues sans compte" },
+          ]}
+          rows={stats.topContents.map((c) => ({
+            id: c.id,
+            name: c.title,
+            meta: contentMeta(c),
+            cells: [c.views, c.memberViews, c.guestViews],
           }))}
         />
-        <RankCard
+        <RankTable
+          icon={icons.eye}
+          title="Épisodes les plus vus"
+          emptyLabel="Aucun épisode vu."
+          nameLabel="Épisode"
+          columns={[{ label: "Vues" }, { label: "Membres" }, { label: "Invités" }]}
+          rows={stats.topEpisodes.map((e) => ({
+            id: e.id,
+            name: episodeName(e),
+            meta: e.episodeTitle,
+            cells: [e.views, e.memberViews, e.guestViews],
+          }))}
+        />
+        <RankTable
           icon={icons.star}
           title="Films et séries les mieux notés"
           emptyLabel="Aucune note."
-          rows={stats.topRatedFilms.map((f) => ({
-            id: f.id,
-            name: f.title,
-            value: `★ ${f.average.toFixed(1)} (${f.count})`,
+          nameLabel="Contenu"
+          columns={[{ label: "Note" }, { label: "Votants", hint: "Membres ayant noté (au moins un épisode pour une série)" }]}
+          rows={stats.topRatedContents.map((c) => ({
+            id: c.id,
+            name: c.title,
+            meta: contentMeta(c),
+            cells: [stars(c.average), c.voters],
           }))}
         />
-        <RankCard
+        <RankTable
+          icon={icons.star}
+          title="Épisodes les mieux notés"
+          emptyLabel="Aucun épisode noté."
+          nameLabel="Épisode"
+          columns={[{ label: "Note" }, { label: "Votants" }]}
+          rows={stats.topRatedEpisodes.map((e) => ({
+            id: e.id,
+            name: episodeName(e),
+            meta: e.episodeTitle,
+            cells: [stars(e.average), e.count],
+          }))}
+        />
+        <RankTable
+          icon={icons.commentaires}
+          title="Films et séries les plus commentés"
+          emptyLabel="Aucun commentaire."
+          nameLabel="Contenu"
+          columns={[
+            { label: "Total" },
+            { label: "Réponses", hint: "Réponses à un autre commentaire" },
+            { label: "Auteurs", hint: "Membres différents" },
+          ]}
+          rows={stats.topCommentedContents.map((c) => ({
+            id: c.id,
+            name: c.title,
+            meta: c.topEpisode ? (
+              <>
+                <KindTag c={c} /> surtout {c.topEpisode.episodeTag} ({c.topEpisode.count})
+              </>
+            ) : (
+              contentMeta(c)
+            ),
+            cells: [c.count, c.replies, c.commenters],
+          }))}
+        />
+        <RankTable
+          icon={icons.users}
+          title="Membres les plus actifs"
+          emptyLabel="Aucune activité."
+          nameLabel="Membre"
+          columns={[
+            { label: "Comm." , hint: "Commentaires et réponses" },
+            { label: "Notes" },
+            { label: "Moy.", hint: "Note moyenne donnée" },
+            { label: "Vus", hint: "Contenus regardés" },
+          ]}
+          rows={stats.topMembers.map((m) => ({
+            id: m.id,
+            name: m.name,
+            meta: m.joinedAt ? `Membre depuis le ${formatFullDate(m.joinedAt)}` : undefined,
+            cells: [m.comments, m.ratings, m.averageGiven !== null ? m.averageGiven.toFixed(1) : "—", m.views],
+          }))}
+        />
+        <RankTable
           icon={icons.artist}
-          title="Artistes les plus prolifiques"
+          title="Artistes les plus prolifiques (perso + studios)"
           emptyLabel="Aucun artiste."
+          nameLabel="Artiste"
+          columns={[
+            { label: "Films" },
+            { label: "Séries" },
+            { label: "Épisodes" },
+          ]}
           rows={stats.topArtists.map((a) => ({
             id: a.id,
             name: a.name,
-            value: `${a.filmCount} contenu${a.filmCount > 1 ? "s" : ""}`,
+            cells: [a.films, a.series, a.episodes],
           }))}
         />
       </div>
 
-      <h2 className={styles.sectionTitle}>Croissance</h2>
-      <div className={styles.grid}>
-        <StatCard icon={icons.trending} value={stats.newUsers7d} label="Nouveaux utilisateurs (7j)" />
-        <StatCard icon={icons.trending} value={stats.newUsers30d} label="Nouveaux utilisateurs (30j)" />
-        <StatCard icon={icons.film} value={stats.newFilms7d} label="Nouveaux films/séries (7j)" />
-        <StatCard icon={icons.film} value={stats.newFilms30d} label="Nouveaux films/séries (30j)" />
+      <h2 className={styles.sectionTitle}>Notes et catalogue</h2>
+      <div className={styles.rankings}>
+        <RatingDistributionCard
+          distribution={stats.ratingDistribution}
+          average={stats.averageRating}
+          count={stats.ratingCount}
+        />
+        <RankCard
+          icon={icons.tag}
+          title="Répartition par catégorie"
+          emptyLabel="Aucun film ou série."
+          rows={stats.categoryBreakdown.map((c) => ({
+            id: c.category,
+            name: c.category,
+            value: plural(c.count, "contenu"),
+          }))}
+        />
       </div>
 
       <h2 className={styles.sectionTitle}>Taux d&apos;acceptation</h2>
@@ -314,16 +766,6 @@ export default async function AdminDashboard() {
           refused={stats.artistSubmissionsRefused}
           pending={stats.artistSubmissionsPending}
         />
-        <RankCard
-          icon={icons.tag}
-          title="Répartition par catégorie"
-          emptyLabel="Aucun film ou série."
-          rows={stats.categoryBreakdown.map((c) => ({
-            id: c.category,
-            name: c.category,
-            value: `${c.count} contenu${c.count > 1 ? "s" : ""}`,
-          }))}
-        />
       </div>
 
       <h2 className={styles.sectionTitle}>Activité récente</h2>
@@ -336,17 +778,35 @@ export default async function AdminDashboard() {
           {stats.recentFilms.length === 0 ? (
             <p className={styles.rankEmpty}>Aucun film ou série.</p>
           ) : (
-            <ul className={styles.activityList}>
+            <PagedList className={styles.feed}>
               {stats.recentFilms.map((f) => (
-                <li key={f.id} className={styles.activityRow}>
-                  <div className={styles.activityText}>
-                    <span className={styles.activityTitle}>{f.title}</span>
-                    <span className={styles.activityMeta}>{f.artistName}</span>
+                <li key={f.id} className={styles.feedItem}>
+                  <span className={styles.feedPoster}>
+                    <Image src={f.poster} alt="" fill sizes="64px" unoptimized />
+                  </span>
+                  <div className={styles.feedBody}>
+                    <div className={styles.feedTop}>
+                      <span className={styles.feedTitle}>{f.title}</span>
+                      <time className={styles.feedDate} title={formatFullDate(f.createdAt)}>
+                        {formatRelative(f.createdAt)}
+                      </time>
+                    </div>
+                    <div className={styles.feedMeta}>
+                      <span className={styles.rankTag}>
+                        {f.kind === "series" ? `Série · ${f.episodeCount} ép.` : "Film"}
+                      </span>
+                      {f.artistName}
+                    </div>
+                    {f.latestEpisode && (
+                      <div className={styles.feedNote}>
+                        Dernier ajout : <span className={styles.rankTag}>{f.latestEpisode.episodeTag}</span>{" "}
+                        {f.latestEpisode.episodeTitle}
+                      </div>
+                    )}
                   </div>
-                  <span className={styles.activityDate}>{formatDate(f.createdAt)}</span>
                 </li>
               ))}
-            </ul>
+            </PagedList>
           )}
         </div>
 
@@ -358,19 +818,35 @@ export default async function AdminDashboard() {
           {stats.recentComments.length === 0 ? (
             <p className={styles.rankEmpty}>Aucun commentaire.</p>
           ) : (
-            <ul className={styles.activityList}>
+            <PagedList className={styles.feed} pageSize={3}>
               {stats.recentComments.map((c) => (
-                <li key={c.id} className={styles.activityRow}>
-                  <div className={styles.activityText}>
-                    <span className={styles.activityTitle}>{c.userName}</span>
-                    <span className={styles.activityMeta}>
-                      sur {c.filmTitle} - Message : {c.body.length > 60 ? `${c.body.slice(0, 60)}…` : c.body}
-                    </span>
+                <li key={c.id} className={styles.feedItem}>
+                  <span className={styles.feedAvatar}>
+                    {c.userAvatarUrl ? (
+                      <Image src={c.userAvatarUrl} alt="" fill sizes="36px" unoptimized />
+                    ) : (
+                      c.userName.charAt(0).toUpperCase()
+                    )}
+                  </span>
+                  <div className={styles.feedBody}>
+                    <div className={styles.feedTop}>
+                      <span className={styles.feedTitle}>
+                        {c.userName}{" "}
+                        <span className={styles.feedAction}>{c.isReply ? "a répondu sur" : "a commenté"}</span>
+                      </span>
+                      <time className={styles.feedDate} title={formatFullDate(c.createdAt)}>
+                        {formatRelative(c.createdAt)}
+                      </time>
+                    </div>
+                    <div className={styles.feedMeta}>
+                      {c.contentTitle}
+                      {c.episode && <span className={styles.rankTag}>{c.episode.episodeTag}</span>}
+                    </div>
+                    <p className={styles.feedQuote}>{c.body}</p>
                   </div>
-                  <span className={styles.activityDate}>{formatDate(c.createdAt)}</span>
                 </li>
               ))}
-            </ul>
+            </PagedList>
           )}
         </div>
       </div>

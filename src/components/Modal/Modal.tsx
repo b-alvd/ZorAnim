@@ -8,11 +8,14 @@ export default function Modal({
   onClose,
   title,
   children,
+  fixedHeight = false,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  // Keep the window at full height, e.g. for long forms with foldable parts.
+  fixedHeight?: boolean;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -31,7 +34,7 @@ export default function Modal({
 
   return (
     <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+      <div className={`${styles.modal} ${fixedHeight ? styles.modalFixed : ""}`} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>{title}</h2>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Fermer">

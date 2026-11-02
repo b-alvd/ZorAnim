@@ -50,17 +50,28 @@ export function collapseSeries(films: Film[], trueEpisodeCounts?: Map<string, nu
   return result;
 }
 
-export function formatEpisodeTag(film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">): string {
-  if (film.episodeKind === "teaser") {
-    return film.episodeNumber && film.episodeNumber > 1 ? `Teaser ${film.episodeNumber}` : "Teaser";
-  }
+// Viewers see "Bande-annonce"; the back-office (admin, creator space) keeps
+// the shorter technical "Teaser".
+export type LabelAudience = "public" | "admin";
+
+function teaserLabel(film: Pick<Film, "episodeNumber">, audience: LabelAudience): string {
+  const word = audience === "admin" ? "Teaser" : "Bande-annonce";
+  return film.episodeNumber && film.episodeNumber > 1 ? `${word} ${film.episodeNumber}` : word;
+}
+
+export function formatEpisodeTag(
+  film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">,
+  audience: LabelAudience = "public"
+): string {
+  if (film.episodeKind === "teaser") return teaserLabel(film, audience);
   return `S${film.seasonNumber ?? 1}E${film.episodeNumber ?? 1}`;
 }
 
-export function formatEpisodeLabel(film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">): string {
-  if (film.episodeKind === "teaser") {
-    return film.episodeNumber && film.episodeNumber > 1 ? `Teaser ${film.episodeNumber}` : "Teaser";
-  }
+export function formatEpisodeLabel(
+  film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">,
+  audience: LabelAudience = "public"
+): string {
+  if (film.episodeKind === "teaser") return teaserLabel(film, audience);
   return `Saison ${film.seasonNumber ?? 1} · Épisode ${film.episodeNumber ?? 1}`;
 }
 

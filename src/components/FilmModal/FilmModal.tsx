@@ -23,8 +23,10 @@ import styles from "./FilmModal.module.css";
 
 const ANIM_MS = 250;
 
+const TRAILERS_OPTION = "Bandes-annonces";
+
 function seasonOptionFor(ep: Pick<Film, "episodeKind" | "seasonNumber">): string {
-  return ep.episodeKind === "teaser" ? "Teaser" : `Saison ${ep.seasonNumber ?? 1}`;
+  return ep.episodeKind === "teaser" ? TRAILERS_OPTION : `Saison ${ep.seasonNumber ?? 1}`;
 }
 
 export default function FilmModal({
@@ -161,7 +163,7 @@ export default function FilmModal({
   ].sort((a, b) => a - b);
   const hasTeaserEpisodes = episodes.some((ep) => ep.episodeKind === "teaser");
   const seasonOptions = [
-    ...(hasTeaserEpisodes ? ["Teaser"] : []),
+    ...(hasTeaserEpisodes ? [TRAILERS_OPTION] : []),
     ...seasonNumbers.map((n) => `Saison ${n}`),
   ];
   const episodesForSeason = episodes.filter((ep) => seasonOptionFor(ep) === selectedSeason);
@@ -213,13 +215,21 @@ export default function FilmModal({
           </div>
 
           <div className={styles.ratingRow}>
-            <StarRating value={activeFilm.avgRating ?? 0} readOnly />
+            <StarRating value={activeFilm.episodeAvgRating ?? 0} readOnly />
             <span className={styles.ratingMeta}>
-              {activeFilm.ratingCount > 0
-                ? `${activeFilm.avgRating!.toFixed(1)} (${activeFilm.ratingCount} avis)`
-                : "Aucune note pour l'instant"}
+              {activeFilm.episodeRatingCount > 0
+                ? `${activeFilm.episodeAvgRating!.toFixed(1)} (${activeFilm.episodeRatingCount} avis${activeFilm.seriesTitle ? " sur cet épisode" : ""})`
+                : activeFilm.seriesTitle
+                  ? "Aucune note pour cet épisode"
+                  : "Aucune note pour l'instant"}
             </span>
           </div>
+          {activeFilm.seriesTitle && activeFilm.ratingCount > 0 && (
+            <p className={styles.seriesRating}>
+              Série : <strong>★ {activeFilm.avgRating!.toFixed(1)}</strong> en moyenne · {activeFilm.ratingCount}{" "}
+              spectateur{activeFilm.ratingCount > 1 ? "s" : ""}
+            </p>
+          )}
 
           <p className={styles.synopsis}>{activeFilm.synopsis}</p>
 
@@ -230,7 +240,9 @@ export default function FilmModal({
               </svg>
               Lecture
             </Link>
-            {!activeFilm.seriesTitle && activeFilm.teaserVideoUrl && activeFilm.episodeKind !== "teaser" && (
+            {(activeFilm.seriesTitle
+              ? !!activeFilm.seriesTrailerUrl
+              : !!activeFilm.teaserVideoUrl && activeFilm.episodeKind !== "teaser") && (
               <Link href={`/watch/${activeFilm.id}?autoplay=1&variant=teaser`} className={styles.teaserBtn}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
@@ -290,7 +302,7 @@ export default function FilmModal({
 
           <div className={styles.myRating}>
             <div className={styles.myRatingRow}>
-              <span className={styles.myRatingLabel}>Ta note</span>
+              <span className={styles.myRatingLabel}>{activeFilm.seriesTitle ? "Ta note pour cet épisode" : "Ta note"}</span>
               <StarRating value={currentUserId ? userRating ?? 0 : 0} onRate={currentUserId ? handleRate : undefined} readOnly={!currentUserId || isRating} />
             </div>
             {!currentUserId && (
@@ -302,7 +314,7 @@ export default function FilmModal({
 
           <div className={styles.commentsSection}>
             <h3 className={styles.commentsTitle}>
-              {activeFilm.seriesTitle ? `Commentaires de la série` : "Commentaires"}{" "}
+              {activeFilm.seriesTitle ? `Commentaires de l'épisode` : "Commentaires"}{" "}
               {comments.length > 0 && `(${comments.length})`}
             </h3>
 
@@ -311,7 +323,7 @@ export default function FilmModal({
                 <textarea
                   className={styles.commentInput}
                   rows={2}
-                  placeholder="Ton avis sur ce film..."
+                  placeholder={activeFilm.seriesTitle ? "Ton avis sur cet épisode..." : "Ton avis sur ce film..."}
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                 />

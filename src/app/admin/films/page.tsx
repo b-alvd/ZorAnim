@@ -1,56 +1,68 @@
-import { getArtists, getCategories, getFilms, getStudios } from "@/db/queries";
+import {
+  getArtists,
+  getCategories,
+  getFilmCreatedAts,
+  getFilmEngagement,
+  getFilms,
+  getStudios,
+} from "@/db/queries";
 import { mergeCategories } from "@/lib/categories";
-import Pagination from "@/components/Pagination/Pagination";
-import FilmsList, { type FilmRow } from "./FilmsList";
+import { getPremiereStatus } from "@/lib/premiere";
+import type { Film } from "@/data/types";
+import FilmsManager, { type AdminFilm, type FilmStatus } from "./FilmsManager";
 import FilmCreateButton from "./FilmCreateButton";
 import styles from "../shared.module.css";
 
-const PAGE_SIZE = 20;
+// Formatted here, pinned to Paris time, so server and browser render the
+// exact same string.
+function formatWhen(iso: string) {
+  return new Date(iso).toLocaleString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Paris",
+  });
+}
 
-export default async function AdminFilmsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string }>;
-}) {
-  const [allFilms, personalArtists, studioList, existingCategories] = await Promise.all([
+function statusOf(film: Film): FilmStatus {
+  const status = getPremiereStatus(film);
+  if (status === "preview") return { kind: "live" };
+  if (status === "locked") {
+    const premiereUpcoming = !!film.premiereAt && new Date(film.premiereAt).getTime() > Date.now();
+    if (premiereUpcoming) return { kind: "premiere", at: film.premiereAt!, label: formatWhen(film.premiereAt!) };
+    if (film.releaseAt) return { kind: "scheduled", at: film.releaseAt, label: formatWhen(film.releaseAt) };
+  }
+  return { kind: "available" };
+}
+
+export default async function AdminFilmsPage() {
+  const [allFilms, personalArtists, studioList, existingCategories, createdAts] = await Promise.all([
     getFilms(),
     getArtists(),
     getStudios(),
     getCategories(),
+    getFilmCreatedAts(),
   ]);
   const artists = [...personalArtists, ...studioList];
   const categories = mergeCategories(existingCategories);
+  const engagement = await getFilmEngagement(allFilms.map((f) => f.id));
 
-  const rows: FilmRow[] = [];
-  const seriesIndex = new Map<string, number>();
-  for (const film of allFilms) {
-    if (!film.seriesTitle) {
-      rows.push({ type: "film", film });
-      continue;
-    }
-    const existingIndex = seriesIndex.get(film.seriesTitle);
-    if (existingIndex === undefined) {
-      seriesIndex.set(film.seriesTitle, rows.length);
-      rows.push({ type: "series", title: film.seriesTitle, episodes: [film] });
-    } else {
-      const row = rows[existingIndex];
-      if (row.type === "series") row.episodes.push(film);
-    }
-  }
-
-  const { page: pageParam } = await searchParams;
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
-  const page = Math.min(Math.max(1, Number(pageParam) || 1), totalPages);
-  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const films: AdminFilm[] = allFilms.map((film) => ({
+    ...film,
+    createdAt: createdAts.get(film.id) ?? "",
+    views: engagement.get(film.id)?.views ?? 0,
+    comments: engagement.get(film.id)?.comments ?? 0,
+    status: statusOf(film),
+  }));
 
   return (
     <main>
       <div className={styles.header}>
-        <h1 className={styles.title}>Films</h1>
+        <h1 className={styles.title}>Films &amp; séries</h1>
         <FilmCreateButton artists={artists} categories={categories} />
       </div>
-      <FilmsList rows={pageRows} artists={artists} categories={categories} />
-      <Pagination page={page} totalPages={totalPages} basePath="/admin/films" />
+      <FilmsManager films={films} artists={artists} categories={categories} />
     </main>
   );
 }

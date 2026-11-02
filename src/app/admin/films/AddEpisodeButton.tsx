@@ -5,7 +5,7 @@ import Modal from "@/components/Modal/Modal";
 import FilmForm from "./FilmForm";
 import { createFilmAction } from "./actions";
 import type { Artist, Film } from "@/data/types";
-import listStyles from "./films.module.css";
+import sharedStyles from "../shared.module.css";
 
 // Figures out sensible defaults for the next episode of an existing series:
 // same season as the latest non-teaser episode, next episode number after it.
@@ -53,15 +53,19 @@ export default function AddEpisodeButton({
     <>
       <button
         type="button"
-        className={listStyles.addEpisodeInlineBtn}
+        className={sharedStyles.iconBtn}
         onClick={(e) => {
           e.stopPropagation();
           setOpen(true);
         }}
+        title="Ajouter un épisode"
+        aria-label="Ajouter un épisode"
       >
-        + Ajouter un épisode
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
       </button>
-      <Modal open={open} onClose={() => setOpen(false)} title={`Ajouter un épisode à ${seriesTitle}`}>
+      <Modal open={open} onClose={() => setOpen(false)} title={`Ajouter un épisode à « ${seriesTitle} »`} fixedHeight>
         <FilmForm
           artists={artists}
           categories={categories}

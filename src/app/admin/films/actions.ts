@@ -2,7 +2,18 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/require-admin";
-import { createFilm, deleteFilm, launchPremiere, stopPremiere, updateFilm, type FilmInput } from "@/db/queries";
+import {
+  adminUpdateSeries,
+  createFilm,
+  deleteFilm,
+  deleteSeries,
+  launchPremiere,
+  setFilmsNew,
+  setSeriesTrailer,
+  stopPremiere,
+  updateFilm,
+  type FilmInput,
+} from "@/db/queries";
 
 function readDateTimeLocal(formData: FormData, name: string): string | null {
   const raw = String(formData.get(name) ?? "").trim();
@@ -68,6 +79,37 @@ export async function deleteFilmAction(id: string) {
   revalidatePath("/admin/films");
 }
 
+export async function setFilmsNewAction(ids: string[], isNew: boolean) {
+  await requireAdmin();
+  await setFilmsNew(ids, isNew);
+  revalidatePath("/admin/films");
+  revalidatePath("/", "layout");
+}
+
+export async function updateSeriesAction(
+  oldSeriesTitle: string,
+  input: { seriesTitle: string; rating: string; category: string; trailerUrl: string | null }
+) {
+  await requireAdmin();
+  const seriesTitle = input.seriesTitle.trim();
+  if (!seriesTitle) throw new Error("Le titre de la série est requis.");
+  await adminUpdateSeries(oldSeriesTitle, {
+    seriesTitle,
+    rating: input.rating,
+    category: input.category,
+  });
+  await setSeriesTrailer(seriesTitle, input.trailerUrl || null);
+  revalidatePath("/admin/films");
+  revalidatePath("/", "layout");
+}
+
+export async function deleteSeriesAction(seriesTitle: string) {
+  await requireAdmin();
+  await deleteSeries(seriesTitle);
+  revalidatePath("/admin/films");
+  revalidatePath("/", "layout");
+}
+
 export async function launchPremiereAction(id: string) {
   await requireAdmin();
   await launchPremiere(id);
@@ -97,6 +139,7 @@ export type SeriesEpisodeInput = {
   premiereAdUrl?: string | null;
   premiereAdDurationSeconds?: number | null;
   releaseAt?: string | null;
+  videoDurationSeconds?: number | null;
 };
 
 export async function createSeriesAction(input: {
@@ -106,6 +149,7 @@ export async function createSeriesAction(input: {
   rating: string;
   category: string;
   isNew: boolean;
+  trailerUrl?: string | null;
   episodes: SeriesEpisodeInput[];
 }) {
   await requireAdmin();
@@ -136,7 +180,9 @@ export async function createSeriesAction(input: {
       premiereAdUrl: episode.premiereAdUrl ?? null,
       premiereAdDurationSeconds: episode.premiereAdDurationSeconds ?? null,
       releaseAt: episode.releaseAt ?? null,
+      videoDurationSeconds: episode.videoDurationSeconds ?? null,
     });
   }
+  if (input.trailerUrl) await setSeriesTrailer(seriesTitle, input.trailerUrl);
   revalidatePath("/admin/films");
 }

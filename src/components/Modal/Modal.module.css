@@ -47,3 +47,7 @@
 .closeBtn:hover {
   color: #fff;
 }
+
+.modalFixed {
+  height: 90vh;
+}

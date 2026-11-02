@@ -5,7 +5,16 @@ import Dropdown from "@/components/Dropdown/Dropdown";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import type { Artist } from "@/data/types";
 import { RATING_OPTIONS } from "@/lib/ratings";
+import {
+  FormSection,
+  OptionalToggle,
+  ReleaseFields,
+  minutesFromSeconds,
+  toDatetimeLocal,
+  type ReleaseValue,
+} from "./FormParts";
 import styles from "../shared.module.css";
+import formStyles from "./films.module.css";
 
 type FilmFormValues = {
   title: string;
@@ -32,14 +41,6 @@ type FilmFormValues = {
   videoDurationSeconds?: number | null;
 };
 
-function toDatetimeLocal(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 const SEASON_TYPE_OPTIONS = ["Teaser", "Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
 
 function seasonTypeLabel(episodeKind: string | undefined, seasonNumber: number | null | undefined): string {
@@ -56,6 +57,7 @@ export default function FilmForm({
   lockedSeriesTitle,
   allowSeries = true,
   seasonOptions,
+  showRelease = true,
 }: {
   onSubmit: (formData: FormData) => void;
   artists: Artist[];
@@ -65,35 +67,51 @@ export default function FilmForm({
   lockedSeriesTitle?: string;
   allowSeries?: boolean;
   seasonOptions?: string[];
+  // Premiere / scheduled release settings; only the admin can set them.
+  showRelease?: boolean;
 }) {
-  const [rating, setRating] = useState(initial?.rating ?? RATING_OPTIONS[0]);
+  const [rating, setRating] = useState(initial?.rating || RATING_OPTIONS[0]);
   const [category, setCategory] = useState(initial?.category ?? categories[0]);
   const [artistId, setArtistId] = useState(initial?.artistId ?? artists[0]?.id ?? "");
   const [poster, setPoster] = useState(initial?.poster ?? "");
   const [videoUrl, setVideoUrl] = useState(initial?.videoUrl ?? "");
   const [videoDurationSeconds, setVideoDurationSeconds] = useState(initial?.videoDurationSeconds ?? null);
+  const [durationMinutes, setDurationMinutes] = useState(initial?.durationMinutes || "");
+  const [durationDetected, setDurationDetected] = useState(false);
   const [teaserVideoUrl, setTeaserVideoUrl] = useState(initial?.teaserVideoUrl ?? "");
-  const [premiereBanner, setPremiereBanner] = useState(initial?.premiereBanner ?? "");
-  const [releaseBanner, setReleaseBanner] = useState(initial?.releaseBanner ?? "");
-  const [premiereAdUrl, setPremiereAdUrl] = useState(initial?.premiereAdUrl ?? "");
-  const [premiereAdDuration, setPremiereAdDuration] = useState(initial?.premiereAdDurationSeconds ?? null);
+  const [release, setRelease] = useState<ReleaseValue>({
+    premiereAt: toDatetimeLocal(initial?.premiereAt),
+    releaseAt: toDatetimeLocal(initial?.releaseAt),
+    premiereBanner: initial?.premiereBanner ?? "",
+    releaseBanner: initial?.releaseBanner ?? "",
+    premiereAdUrl: initial?.premiereAdUrl ?? "",
+    premiereAdDurationSeconds: initial?.premiereAdDurationSeconds ?? null,
+  });
   const [seriesTitleValue, setSeriesTitleValue] = useState(lockedSeriesTitle ?? initial?.seriesTitle ?? "");
   const [seasonType, setSeasonType] = useState(
-    initial ? seasonTypeLabel(initial.episodeKind, initial.seasonNumber) : "Teaser"
+    initial ? seasonTypeLabel(initial.episodeKind, initial.seasonNumber) : "Saison 1"
   );
   const isSeries = !!lockedSeriesTitle || !!seriesTitleValue.trim();
   const isTeaser = seasonType === "Teaser";
-  const [standaloneTeaser, setStandaloneTeaser] = useState(!isSeries && initial?.episodeKind === "teaser");
+  const wasStandaloneTeaser = !isSeries && initial?.episodeKind === "teaser";
+  const [standaloneTeaser, setStandaloneTeaser] = useState(wasStandaloneTeaser);
+  const [teaserKept, setTeaserKept] = useState(false);
   const showSeriesTitleInput = allowSeries && !lockedSeriesTitle && (!initial || !!initial.seriesTitle);
   const [valid, setValid] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   const artistNames = artists.map((a) => (a.isStudio ? `${a.name} (studio)` : a.name));
   const selectedArtist = artists.find((a) => a.id === artistId);
-  const selectedArtistName = selectedArtist ? (selectedArtist.isStudio ? `${selectedArtist.name} (studio)` : selectedArtist.name) : artistNames[0];
+  const selectedArtistName = selectedArtist
+    ? selectedArtist.isStudio
+      ? `${selectedArtist.name} (studio)`
+      : selectedArtist.name
+    : artistNames[0];
 
   const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
   useEffect(updateValidity, []);
+  // Showing/hiding release fields changes which inputs are required.
+  useEffect(updateValidity, [release, isSeries, standaloneTeaser]);
 
   return (
     <form
@@ -117,232 +135,224 @@ export default function FilmForm({
       }}
       onChange={updateValidity}
       onInput={updateValidity}
-      className={styles.form}
+      className={`${styles.form} ${formStyles.filmForm}`}
     >
-      {lockedSeriesTitle && <input type="hidden" name="seriesTitle" value={lockedSeriesTitle} />}
-      {showSeriesTitleInput && (
+      <FormSection title="Informations">
+        {lockedSeriesTitle && <input type="hidden" name="seriesTitle" value={lockedSeriesTitle} />}
+        {showSeriesTitleInput && (
+          <div className={styles.field}>
+            <label htmlFor="seriesTitle">Série</label>
+            <input
+              id="seriesTitle"
+              name="seriesTitle"
+              value={seriesTitleValue}
+              onChange={(e) => {
+                setSeriesTitleValue(e.target.value);
+                updateValidity();
+              }}
+            />
+            <span className={formStyles.formHint}>Vider ce champ transforme l&apos;épisode en film.</span>
+          </div>
+        )}
+        {isSeries && (
+          <>
+            <input type="hidden" name="episodeKind" value={isTeaser ? "teaser" : "episode"} />
+            {!isTeaser && <input type="hidden" name="seasonNumber" value={seasonType.replace("Saison ", "")} />}
+            <div className={styles.row2}>
+              <div className={styles.field}>
+                <label>Saison</label>
+                <Dropdown options={seasonOptions ?? SEASON_TYPE_OPTIONS} value={seasonType} onChange={setSeasonType} />
+              </div>
+              <div className={styles.field}>
+                <label htmlFor="episodeNumber">{isTeaser ? "Numéro du teaser" : "Numéro d'épisode"}</label>
+                <input
+                  id="episodeNumber"
+                  name="episodeNumber"
+                  type="number"
+                  min={1}
+                  defaultValue={initial?.episodeNumber ?? undefined}
+                  required={isSeries}
+                />
+              </div>
+            </div>
+          </>
+        )}
         <div className={styles.field}>
-          <label htmlFor="seriesTitle">Titre de la série (optionnel)</label>
-          <input
-            id="seriesTitle"
-            name="seriesTitle"
-            value={seriesTitleValue}
-            onChange={(e) => {
-              setSeriesTitleValue(e.target.value);
-              updateValidity();
-            }}
-          />
+          <label htmlFor="title">Titre</label>
+          <input id="title" name="title" defaultValue={initial?.title} required />
         </div>
-      )}
-      {isSeries && (
-        <>
-          <input type="hidden" name="episodeKind" value={isTeaser ? "teaser" : "episode"} />
-          {!isTeaser && (
-            <input type="hidden" name="seasonNumber" value={seasonType.replace("Saison ", "")} />
-          )}
-          <div className={styles.row2}>
-            <div className={styles.field}>
-              <label>Type</label>
-              <Dropdown options={seasonOptions ?? SEASON_TYPE_OPTIONS} value={seasonType} onChange={setSeasonType} />
+        <div className={styles.field}>
+          <label htmlFor="synopsis">Synopsis</label>
+          <textarea id="synopsis" name="synopsis" rows={3} defaultValue={initial?.synopsis} required />
+        </div>
+        <div className={styles.row2}>
+          <div className={styles.field}>
+            <label htmlFor="year">Année</label>
+            <input
+              id="year"
+              name="year"
+              type="number"
+              defaultValue={initial?.year || new Date().getFullYear()}
+              required
+            />
+          </div>
+          <div className={styles.field}>
+            <label htmlFor="durationMinutes">Durée (minutes)</label>
+            <input
+              id="durationMinutes"
+              name="durationMinutes"
+              type="number"
+              min={1}
+              value={durationMinutes}
+              onChange={(e) => {
+                setDurationMinutes(e.target.value === "" ? "" : Number(e.target.value));
+                setDurationDetected(false);
+              }}
+              required
+            />
+            {durationDetected && <span className={formStyles.formHint}>Calculée depuis la vidéo.</span>}
+          </div>
+        </div>
+        {lockedSeriesTitle ? (
+          <>
+            <input type="hidden" name="rating" value={rating} />
+            <input type="hidden" name="category" value={category} />
+            <input type="hidden" name="artistId" value={artistId} />
+            <input type="hidden" name="isStudio" value={selectedArtist?.isStudio ? "1" : ""} />
+          </>
+        ) : (
+          <>
+            <div className={styles.row2}>
+              <div className={styles.field}>
+                <label>Classification</label>
+                <input type="hidden" name="rating" value={rating} />
+                <Dropdown options={RATING_OPTIONS} value={rating} onChange={setRating} />
+              </div>
+              <div className={styles.field}>
+                <label>Catégorie</label>
+                <input type="hidden" name="category" value={category} />
+                <Dropdown options={categories} value={category} onChange={setCategory} />
+              </div>
             </div>
             <div className={styles.field}>
-              <label htmlFor="episodeNumber">Numéro</label>
-              <input
-                id="episodeNumber"
-                name="episodeNumber"
-                type="number"
-                min={1}
-                defaultValue={initial?.episodeNumber ?? undefined}
-                required={isSeries}
+              <label>{artists.length > 1 ? "Artiste ou studio" : "Artiste"}</label>
+              <input type="hidden" name="artistId" value={artistId} />
+              <input type="hidden" name="isStudio" value={selectedArtist?.isStudio ? "1" : ""} />
+              <Dropdown
+                options={artistNames}
+                value={selectedArtistName}
+                onChange={(name) => {
+                  const found = artists.find((a) => (a.isStudio ? `${a.name} (studio)` : a.name) === name);
+                  if (found) setArtistId(found.id);
+                }}
               />
             </div>
-          </div>
-        </>
-      )}
-      {!isSeries && (
-        <>
-          <input type="hidden" name="episodeKind" value={standaloneTeaser ? "teaser" : "episode"} />
-          <label className={styles.customCheckbox}>
-            <input
-              type="checkbox"
-              checked={standaloneTeaser}
-              onChange={(e) => setStandaloneTeaser(e.target.checked)}
-            />
-            <span className={styles.checkboxBox} />
-            Teaser uniquement (le film n&apos;est pas encore sorti, affiché dans &quot;Bientôt sur ZorAnim&quot;)
-          </label>
-        </>
-      )}
-      {!isSeries && !standaloneTeaser && (
+          </>
+        )}
+      </FormSection>
+
+      <FormSection title="Médias">
         <div className={styles.field}>
-          <label>Bande-annonce (optionnel)</label>
+          <label>Affiche</label>
           <FileUpload
             allowUrl
-            name="teaserVideoUrl"
+            name="poster"
+            label="Choisir une image"
+            accept="image/*"
+            value={poster}
+            onChange={setPoster}
+            preview
+          />
+        </div>
+        <div className={styles.field}>
+          <label>{!isSeries && standaloneTeaser ? "Vidéo du teaser" : "Vidéo"}</label>
+          <input type="hidden" name="videoDurationSeconds" value={videoDurationSeconds ?? ""} />
+          <FileUpload
+            allowUrl
+            name="videoUrl"
             label="Choisir une vidéo"
             accept="video/*"
-            value={teaserVideoUrl}
-            onChange={setTeaserVideoUrl}
+            value={videoUrl}
+            onChange={(url) => {
+              setVideoUrl(url);
+              setVideoDurationSeconds(null);
+            }}
+            onDurationChange={(seconds) => {
+              setVideoDurationSeconds(Math.round(seconds));
+              setDurationMinutes(minutesFromSeconds(seconds));
+              setDurationDetected(true);
+            }}
             maxSizeMB={100}
           />
         </div>
+        {!isSeries && (
+          <>
+            <input type="hidden" name="episodeKind" value={standaloneTeaser ? "teaser" : "episode"} />
+            <label className={styles.customCheckbox}>
+              <input
+                type="checkbox"
+                checked={standaloneTeaser}
+                onChange={(e) => {
+                  const teaser = e.target.checked;
+                  setStandaloneTeaser(teaser);
+                  // The film is coming out: its teaser video becomes its
+                  // trailer, and the main video slot waits for the real film.
+                  if (!teaser && wasStandaloneTeaser && initial?.videoUrl && videoUrl === initial.videoUrl) {
+                    if (!teaserVideoUrl) setTeaserVideoUrl(initial.videoUrl);
+                    setVideoUrl("");
+                    setVideoDurationSeconds(null);
+                    setTeaserKept(true);
+                  }
+                  // Re-checked before saving: put things back as they were.
+                  if (teaser && teaserKept) {
+                    setVideoUrl(initial?.videoUrl ?? "");
+                    setVideoDurationSeconds(initial?.videoDurationSeconds ?? null);
+                    setTeaserVideoUrl(initial?.teaserVideoUrl ?? "");
+                    setTeaserKept(false);
+                  }
+                }}
+              />
+              <span className={styles.checkboxBox} />
+              Pas encore sorti : la vidéo est un teaser (affiché dans « Bientôt sur ZorAnim »)
+            </label>
+            {teaserKept && (
+              <p className={formStyles.formHint}>
+                L&apos;ancienne vidéo du teaser est gardée comme bande-annonce. Ajoute la vidéo du film ci-dessus.
+              </p>
+            )}
+            {!standaloneTeaser && (
+              <OptionalToggle
+                label="Ajouter une bande-annonce"
+                defaultOn={!!teaserVideoUrl}
+                onDisable={() => setTeaserVideoUrl("")}
+              >
+                <FileUpload
+                  allowUrl
+                  name="teaserVideoUrl"
+                  label="Choisir une vidéo"
+                  accept="video/*"
+                  value={teaserVideoUrl}
+                  onChange={setTeaserVideoUrl}
+                  maxSizeMB={100}
+                />
+              </OptionalToggle>
+            )}
+          </>
+        )}
+      </FormSection>
+
+      {showRelease && (
+        <FormSection title="Diffusion">
+          <ReleaseFields value={release} onChange={(patch) => setRelease((r) => ({ ...r, ...patch }))} />
+        </FormSection>
       )}
-      <div className={styles.field}>
-        <label htmlFor="title">Titre</label>
-        <input id="title" name="title" defaultValue={initial?.title} required />
-      </div>
-      <div className={styles.field}>
-        <label htmlFor="synopsis">Synopsis</label>
-        <textarea id="synopsis" name="synopsis" rows={4} defaultValue={initial?.synopsis} required />
-      </div>
-      <div className={styles.row2}>
-        <div className={styles.field}>
-          <label htmlFor="year">Année</label>
-          <input id="year" name="year" type="number" defaultValue={initial?.year} required />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="durationMinutes">Durée (minutes)</label>
-          <input
-            id="durationMinutes"
-            name="durationMinutes"
-            type="number"
-            min={1}
-            defaultValue={initial?.durationMinutes}
-            required
-          />
-        </div>
-      </div>
-      {lockedSeriesTitle ? (
-        <>
-          <input type="hidden" name="rating" value={rating} />
-          <input type="hidden" name="category" value={category} />
-          <input type="hidden" name="artistId" value={artistId} />
-          <input type="hidden" name="isStudio" value={selectedArtist?.isStudio ? "1" : ""} />
-        </>
-      ) : (
-        <>
-          <div className={styles.row2}>
-            <div className={styles.field}>
-              <label>Classification</label>
-              <input type="hidden" name="rating" value={rating} />
-              <Dropdown options={RATING_OPTIONS} value={rating} onChange={setRating} />
-            </div>
-            <div className={styles.field}>
-              <label>Catégorie</label>
-              <input type="hidden" name="category" value={category} />
-              <Dropdown options={categories} value={category} onChange={setCategory} />
-            </div>
-          </div>
-          <div className={styles.field}>
-            <label>Artiste</label>
-            <input type="hidden" name="artistId" value={artistId} />
-            <input type="hidden" name="isStudio" value={selectedArtist?.isStudio ? "1" : ""} />
-            <Dropdown
-              options={artistNames}
-              value={selectedArtistName}
-              onChange={(name) => {
-                const found = artists.find((a) => (a.isStudio ? `${a.name} (studio)` : a.name) === name);
-                if (found) setArtistId(found.id);
-              }}
-            />
-          </div>
-        </>
-      )}
-      <div className={styles.field}>
-        <label>Poster</label>
-        <FileUpload
-          allowUrl
-          name="poster"
-          label="Choisir une image"
-          accept="image/*"
-          value={poster}
-          onChange={setPoster}
-          preview
-        />
-      </div>
-      <div className={styles.field}>
-        <label>{!isSeries && standaloneTeaser ? "Vidéo (teaser)" : "Vidéo"}</label>
-        <input type="hidden" name="videoDurationSeconds" value={videoDurationSeconds ?? ""} />
-        <FileUpload
-          allowUrl
-          name="videoUrl"
-          label="Choisir une vidéo"
-          accept="video/*"
-          value={videoUrl}
-          onChange={(url) => {
-            setVideoUrl(url);
-            setVideoDurationSeconds(null);
-          }}
-          onDurationChange={(seconds) => setVideoDurationSeconds(Math.round(seconds))}
-          maxSizeMB={100}
-        />
-      </div>
+
       <label className={styles.customCheckbox}>
         <input type="checkbox" name="isNew" defaultChecked={initial?.isNew} />
         <span className={styles.checkboxBox} />
-        Marquer comme nouveauté (visible 7 jours)
+        Afficher le badge « Nouveau » (7 jours)
       </label>
-      <div className={styles.row2}>
-        <div className={styles.field}>
-          <label htmlFor="premiereAt">Avant-première (optionnel)</label>
-          <input
-            id="premiereAt"
-            name="premiereAt"
-            type="datetime-local"
-            defaultValue={toDatetimeLocal(initial?.premiereAt)}
-          />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="releaseAt">Sortie officielle (optionnel)</label>
-          <input
-            id="releaseAt"
-            name="releaseAt"
-            type="datetime-local"
-            defaultValue={toDatetimeLocal(initial?.releaseAt)}
-          />
-        </div>
-      </div>
-      <div className={styles.field}>
-        <label>Bannière d&apos;accueil — avant-première (optionnel)</label>
-        <FileUpload
-          allowUrl
-          name="premiereBanner"
-          label="Choisir une image"
-          accept="image/*"
-          value={premiereBanner}
-          onChange={setPremiereBanner}
-          preview
-        />
-      </div>
-      <div className={styles.field}>
-        <label>Bannière d&apos;accueil — sortie officielle, après l&apos;avant-première (optionnel)</label>
-        <FileUpload
-          allowUrl
-          name="releaseBanner"
-          label="Choisir une image"
-          accept="image/*"
-          value={releaseBanner}
-          onChange={setReleaseBanner}
-          preview
-        />
-      </div>
-      <div className={styles.field}>
-        <label>Publicité avant l&apos;avant-première (optionnel)</label>
-        <input type="hidden" name="premiereAdDurationSeconds" value={premiereAdDuration ?? ""} />
-        <FileUpload
-          allowUrl
-          name="premiereAdUrl"
-          label="Choisir une vidéo"
-          accept="video/*"
-          value={premiereAdUrl}
-          onChange={(url) => {
-            setPremiereAdUrl(url);
-            setPremiereAdDuration(null);
-          }}
-          onDurationChange={(seconds) => setPremiereAdDuration(Math.round(seconds))}
-          maxSizeMB={100}
-        />
-      </div>
+
       <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !poster || !videoUrl}>
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>

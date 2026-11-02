@@ -77,12 +77,6 @@ function sortEpisodes(episodes: Film[]) {
   );
 }
 
-function averageRating(films: Film[]): number | null {
-  const rated = films.filter((f) => f.avgRating !== null);
-  if (rated.length === 0) return null;
-  return rated.reduce((sum, f) => sum + f.avgRating!, 0) / rated.length;
-}
-
 function RowActions({
   onEdit,
   deleteAction,
@@ -163,7 +157,7 @@ function SeriesRow({
   const cover = sorted[0];
   const totalViews = episodes.reduce((sum, ep) => sum + (engagement[ep.id]?.views ?? 0), 0);
   const totalComments = episodes.reduce((sum, ep) => sum + (engagement[ep.id]?.comments ?? 0), 0);
-  const rating = averageRating(episodes);
+  const rating = cover.avgRating;
 
   return (
     <div className={styles.row}>
@@ -210,11 +204,11 @@ function EpisodesManager({
       <div className={styles.episodesList}>
         {sorted.map((ep) => (
           <div key={ep.id} className={styles.episodeRow}>
-            <span className={styles.episodeTag}>{formatEpisodeTag(ep)}</span>
+            <span className={styles.episodeTag}>{formatEpisodeTag(ep, "admin")}</span>
             <div className={styles.episodeInfo}>
               <span className={styles.rowTitle}>{ep.title}</span>
             </div>
-            <RowStats rating={ep.avgRating} engagement={engagement[ep.id]} />
+            <RowStats rating={ep.episodeAvgRating} engagement={engagement[ep.id]} />
             <RowActions
               onEdit={() => onEdit(ep.id)}
               deleteAction={() => deleteOwnFilmAction(ep.id)}
@@ -395,9 +389,10 @@ export default function IdentitySection({
         />
       </Modal>
 
-      <Modal open={!!editingFilm} onClose={() => setEditingFilmId(null)} title={editingFilm ? `Modifier ${editingFilm.title}` : ""}>
+      <Modal open={!!editingFilm} onClose={() => setEditingFilmId(null)} title={editingFilm ? `Modifier « ${editingFilm.title} »` : ""} fixedHeight>
         {editingFilm && (
           <FilmForm
+            showRelease={false}
             artists={identities}
             categories={categories}
             initial={editingFilm}
@@ -416,7 +411,7 @@ export default function IdentitySection({
       <Modal
         open={!!managingSeries}
         onClose={() => setManagingSeries(null)}
-        title={managingSeries ? `Épisodes de ${managingSeries}` : ""}
+        title={managingSeries ? `Épisodes de « ${managingSeries} »` : ""}
       >
         {managingSeries && (
           <EpisodesManager
@@ -439,7 +434,7 @@ export default function IdentitySection({
       <Modal
         open={!!editingSeriesInfo}
         onClose={() => setEditingSeriesInfo(null)}
-        title={editingSeriesInfo ? `Modifier ${editingSeriesInfo}` : ""}
+        title={editingSeriesInfo ? `Modifier la série « ${editingSeriesInfo} »` : ""}
       >
         {editingSeriesInfo && editingSeriesCover && (
           <SeriesInfoForm
@@ -461,10 +456,12 @@ export default function IdentitySection({
       <Modal
         open={!!addingEpisodeSeries}
         onClose={() => setAddingEpisodeSeries(null)}
-        title={addingEpisodeSeries ? `Ajouter un épisode à ${addingEpisodeSeries}` : ""}
+        title={addingEpisodeSeries ? `Ajouter un épisode à « ${addingEpisodeSeries} »` : ""}
+        fixedHeight
       >
         {addingEpisodeSeries && (
           <FilmForm
+            showRelease={false}
             artists={identities}
             categories={categories}
             lockedSeriesTitle={addingEpisodeSeries}

@@ -40,6 +40,17 @@ export default async function WatchPage({
   const film = await getFilm(id);
   if (!film) notFound();
 
+  // A trailer is promotional: playable even while the content itself is
+  // locked (premiere, scheduled release), and not counted as a view.
+  const trailerUrl = variant === "teaser" ? (film.seriesTitle ? film.seriesTrailerUrl : film.teaserVideoUrl) : null;
+  if (trailerUrl) {
+    return (
+      <main className={styles.page}>
+        <VideoPlayer film={{ ...film, videoUrl: trailerUrl }} suggestions={[]} episodes={[]} autoplay={autoplay === "1"} />
+      </main>
+    );
+  }
+
   if (getPremiereStatus(film) === "locked" && user?.role !== "admin") {
     const hasAired = !!film.premiereAt && new Date(film.premiereAt).getTime() <= Date.now();
     return (
@@ -66,12 +77,10 @@ export default async function WatchPage({
     user ? markWatched(user.id, film.id) : incrementGuestView(film.id),
   ]);
 
-  const playbackFilm = variant === "teaser" && film.teaserVideoUrl ? { ...film, videoUrl: film.teaserVideoUrl } : film;
-
   return (
     <main className={styles.page}>
       <VideoPlayer
-        film={playbackFilm}
+        film={film}
         suggestions={suggestions}
         episodes={episodes}
         autoplay={autoplay === "1"}

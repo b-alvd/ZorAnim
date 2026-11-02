@@ -288,3 +288,13 @@ export const contactMessages = sqliteTable("contact_messages", {
     .notNull()
     .default(sql`(current_timestamp)`),
 });
+
+// Series-level settings. A series has no row of its own (its episodes share a
+// `series_title`), so this table is keyed by that title.
+export const seriesInfo = sqliteTable("series_info", {
+  seriesTitle: text("series_title").primaryKey(),
+  trailerUrl: text("trailer_url"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
+});

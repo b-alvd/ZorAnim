@@ -135,6 +135,17 @@
   color: #a0a0a0;
 }
 
+.seriesRating {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.82rem;
+  color: #8c8c8c;
+}
+
+.seriesRating strong {
+  color: #e5e5e5;
+  font-weight: 600;
+}
+
 .synopsis {
   font-size: 1rem;
   line-height: 1.55;

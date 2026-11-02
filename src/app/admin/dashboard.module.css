@@ -132,7 +132,7 @@
 
 .rankRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   font-size: 0.88rem;
 }
@@ -157,12 +157,58 @@
 }
 
 .rankName {
-  color: #d2d2d2;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: #e5e5e5;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rankingsWide {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr));
+}
+
+.rankText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
   flex: 1;
+}
+
+.rankDetail {
+  color: #7a7a7a;
+  font-size: 0.76rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.rankTag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #b3b3b3;
+  font-size: 0.7rem;
+  font-weight: 700;
+  vertical-align: 1px;
+}
+
+.rankValues {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  max-width: 45%;
+  text-align: right;
+}
+
+.rankValueMain {
+  color: #d2d2d2;
+  font-size: 0.84rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .rankValue {
@@ -245,9 +291,7 @@
 .activityMeta {
   color: #808080;
   font-size: 0.78rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.4;
 }
 
 .activityDate {
@@ -255,4 +299,565 @@
   font-size: 0.75rem;
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+.trend {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.trendFlat {
+  color: #808080;
+}
+
+.trendRef {
+  color: #666;
+  font-weight: 400;
+}
+
+.chartsRow {
+  margin-top: 14px;
+}
+
+.chartTitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: #fff;
+}
+
+.chartTotal {
+  color: #808080;
+  font-size: 0.78rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart {
+  position: relative;
+  height: 110px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px) top / 100% 50%;
+}
+
+.chartMax {
+  position: absolute;
+  top: -2px;
+  left: 0;
+  font-size: 0.65rem;
+  color: #666;
+  line-height: 1;
+}
+
+.chartBars {
+  position: absolute;
+  inset: 0 0 0 18px;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.chartCol {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.chartBar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 0 0;
+  background: var(--accent, #e50914);
+  opacity: 0.75;
+  transition: opacity 0.15s ease;
+}
+
+.chartBarEmpty {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chartCol:hover .chartBar {
+  opacity: 1;
+}
+
+.chartTip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #222;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e5e5e5;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  z-index: 2;
+}
+
+.chartCol:hover .chartTip {
+  opacity: 1;
+}
+
+.chartCol:first-child .chartTip {
+  left: 0;
+  transform: none;
+}
+
+.chartCol:last-child .chartTip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.chartAxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  padding-left: 18px;
+  font-size: 0.68rem;
+  color: #666;
+}
+
+.distList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+}
+
+.distRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.distLabel {
+  width: 24px;
+  flex-shrink: 0;
+  color: #b3b3b3;
+  font-size: 0.8rem;
+}
+
+.distTrack {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.distFill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: #f5c518;
+}
+
+.sub {
+  color: #666;
+  font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.rankTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.rankTh {
+  padding: 0 8px 10px;
+  text-align: left;
+  color: #6b6b6b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rankTh:first-child {
+  padding-left: 0;
+}
+
+.rankThNum {
+  text-align: right;
+  width: 1%;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.rankTr + .rankTr td {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rankTr td {
+  padding: 11px 8px;
+  vertical-align: middle;
+}
+
+.rankTdBadge {
+  width: 1%;
+  padding-left: 0 !important;
+}
+
+.rankTdName .rankName {
+  display: block;
+}
+
+.rankMeta {
+  margin-top: 3px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: #808080;
+  font-size: 0.78rem;
+}
+
+.rankTdNum {
+  text-align: right;
+  white-space: nowrap;
+  color: #9a9a9a;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankTdMain {
+  color: #fff;
+  font-weight: 700;
+}
+
+.rankMeta .rankTag {
+  margin-left: 0;
+}
+
+.acceptHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.acceptTotal {
+  color: #6b6b6b;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.acceptBody {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+.donut {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+}
+
+.donut svg {
+  transform: rotate(-90deg);
+}
+
+.donut circle {
+  fill: none;
+  stroke-width: 8;
+}
+
+.donutTrack {
+  stroke: rgba(255, 255, 255, 0.07);
+}
+
+.donutUp {
+  stroke: #4ade80;
+  stroke-linecap: round;
+}
+
+.donutDown {
+  stroke: #ff8087;
+  stroke-linecap: round;
+}
+
+.donutCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 14px;
+}
+
+.donutValue {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.donutLabel {
+  margin-top: 3px;
+  font-size: 0.62rem;
+  color: #808080;
+  line-height: 1.2;
+}
+
+.acceptTiles {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 240px;
+}
+
+.acceptTile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.acceptTilePending {
+  border-color: rgba(229, 9, 20, 0.45);
+}
+
+.acceptDot {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.acceptDotUp {
+  background: #4ade80;
+}
+
+.acceptDotDown {
+  background: #ff8087;
+}
+
+.acceptDotPending {
+  background: #808080;
+}
+
+.acceptTilePending .acceptDotPending {
+  background: var(--accent, #e50914);
+}
+
+.acceptTileValue {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.acceptTileLabel {
+  font-size: 0.75rem;
+  color: #808080;
+}
+
+.feed {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+}
+
+.feedItem {
+  display: flex;
+  gap: 14px;
+  padding: 12px 0;
+}
+
+.feedItem + .feedItem {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.feedItem:first-child {
+  padding-top: 0;
+}
+
+.feedPoster {
+  position: relative;
+  width: 64px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.feedPoster img {
+  object-fit: cover;
+}
+
+.feedAvatar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(229, 9, 20, 0.18);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.feedAvatar img {
+  object-fit: cover;
+}
+
+.feedBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.feedTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.feedTitle {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.feedAction {
+  color: #808080;
+  font-weight: 400;
+}
+
+.feedDate {
+  color: #6b6b6b;
+  font-size: 0.74rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.feedMeta,
+.feedNote {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: #9a9a9a;
+  font-size: 0.8rem;
+}
+
+.feedNote {
+  color: #6b6b6b;
+  font-size: 0.75rem;
+}
+
+.feedMeta .rankTag,
+.feedNote .rankTag {
+  margin-left: 0;
+}
+
+.feedQuote {
+  margin-top: 4px;
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 2px solid rgba(229, 9, 20, 0.6);
+  color: #d2d2d2;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rankCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.pager {
+  margin-top: auto;
+  padding-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.pagerBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d2d2d2;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.pagerBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.pagerBtn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.pagerLabel {
+  min-width: 40px;
+  text-align: center;
+  color: #808080;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.pagerStack {
+  display: grid;
+}
+
+.pagerStack > * {
+  grid-area: 1 / 1;
+  align-self: start;
+}
+
+.pagerHidden {
+  visibility: hidden;
 }

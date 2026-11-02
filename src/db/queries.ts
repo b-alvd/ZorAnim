@@ -20,11 +20,13 @@ import {
   banAppeals,
   premiereViewers,
   sessions,
+  seriesInfo,
 } from "@/db/schema";
 import type { Film, Artist } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
 import { formatEpisodeTag, splitComingSoon } from "@/lib/series";
 import { placeholderAvatar } from "@/lib/placeholder";
+import { seriesRatingSummary } from "@/lib/series-rating";
 import { getPremiereStatus, liveSeconds } from "@/lib/premiere";
 
 const filmSelection = {
@@ -85,11 +87,14 @@ function mapFilm(row: FilmRow): Film {
     videoUrl: row.videoUrl,
     avgRating: null,
     ratingCount: 0,
+    episodeAvgRating: null,
+    episodeRatingCount: 0,
     seriesTitle: row.seriesTitle,
     seasonNumber: row.seasonNumber,
     episodeNumber: row.episodeNumber,
     episodeKind: (row.episodeKind as "episode" | "teaser") ?? "episode",
     teaserVideoUrl: row.teaserVideoUrl,
+    seriesTrailerUrl: null,
     premiereAt: row.premiereAt,
     premiereBanner: row.premiereBanner,
     releaseBanner: row.releaseBanner,
@@ -100,57 +105,110 @@ function mapFilm(row: FilmRow): Film {
   };
 }
 
-async function getSeriesCanonicalIds(seriesTitles: string[]): Promise<Map<string, string>> {
+async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
+  if (filmsList.length === 0) return filmsList;
+  const seriesTitles = [...new Set(filmsList.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
+  const episodeIdsBySeries = await getSeriesEpisodeIds(seriesTitles);
+
+  const ids = [...new Set([...filmsList.map((f) => f.id), ...[...episodeIdsBySeries.values()].flat()])];
+  const rows = await db
+    .select({ userId: filmRatings.userId, filmId: filmRatings.filmId, value: filmRatings.value })
+    .from(filmRatings)
+    .where(inArray(filmRatings.filmId, ids));
+
+  const rowsByFilm = new Map<string, typeof rows>();
+  for (const r of rows) {
+    const arr = rowsByFilm.get(r.filmId) ?? [];
+    arr.push(r);
+    rowsByFilm.set(r.filmId, arr);
+  }
+  const ownSummary = (id: string) => {
+    const list = rowsByFilm.get(id) ?? [];
+    if (list.length === 0) return null;
+    return { avg: list.reduce((sum, r) => sum + r.value, 0) / list.length, count: list.length };
+  };
+  const seriesSummaries = new Map(
+    [...episodeIdsBySeries.entries()].map(([title, epIds]) => [
+      title,
+      seriesRatingSummary(epIds.flatMap((id) => rowsByFilm.get(id) ?? [])),
+    ])
+  );
+
+  const trailers = await getSeriesTrailers(seriesTitles);
+  return filmsList.map((f) => {
+    const own = ownSummary(f.id);
+    const content = f.seriesTitle ? seriesSummaries.get(f.seriesTitle) ?? null : own;
+    return {
+      ...f,
+      avgRating: content?.avg ?? null,
+      ratingCount: content?.count ?? 0,
+      episodeAvgRating: own?.avg ?? null,
+      episodeRatingCount: own?.count ?? 0,
+      seriesTrailerUrl: f.seriesTitle ? trailers.get(f.seriesTitle) ?? null : null,
+    };
+  });
+}
+
+// series_info arrives with migration 0035. Until a database has it, reads
+// behave as "no series trailer" instead of breaking every page, so the code
+// can be deployed before the migration is run.
+function isMissingTable(e: unknown): boolean {
+  const message = e instanceof Error ? `${e.message} ${e.cause instanceof Error ? e.cause.message : ""}` : String(e);
+  return /no such table/i.test(message);
+}
+
+const MIGRATION_NEEDED = "La table series_info n'existe pas encore : lance la migration 0035 (scripts/apply-0035.ts).";
+
+export async function getSeriesTrailers(seriesTitles: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   if (seriesTitles.length === 0) return map;
-  const rows = await db
-    .select({
-      id: films.id,
-      seriesTitle: films.seriesTitle,
-      seasonNumber: films.seasonNumber,
-      episodeNumber: films.episodeNumber,
-    })
-    .from(films)
-    .where(inArray(films.seriesTitle, seriesTitles));
-
-  const bySeries = new Map<string, typeof rows>();
-  for (const r of rows) {
-    if (!r.seriesTitle) continue;
-    const arr = bySeries.get(r.seriesTitle) ?? [];
-    arr.push(r);
-    bySeries.set(r.seriesTitle, arr);
-  }
-  for (const [title, episodes] of bySeries) {
-    const sorted = [...episodes].sort(
-      (a, b) => (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) || (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
-    );
-    map.set(title, sorted[0].id);
+  try {
+    const rows = await db
+      .select({ seriesTitle: seriesInfo.seriesTitle, trailerUrl: seriesInfo.trailerUrl })
+      .from(seriesInfo)
+      .where(inArray(seriesInfo.seriesTitle, seriesTitles));
+    for (const r of rows) if (r.trailerUrl) map.set(r.seriesTitle, r.trailerUrl);
+  } catch (e) {
+    if (!isMissingTable(e)) throw e;
   }
   return map;
 }
 
-async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
-  if (filmsList.length === 0) return filmsList;
-  const seriesTitles = [...new Set(filmsList.filter((f) => f.seriesTitle).map((f) => f.seriesTitle!))];
-  const canonicalMap = await getSeriesCanonicalIds(seriesTitles);
-  const ratingKeyOf = (f: Film) => (f.seriesTitle ? canonicalMap.get(f.seriesTitle) ?? f.id : f.id);
+export async function setSeriesTrailer(seriesTitle: string, trailerUrl: string | null): Promise<void> {
+  try {
+    await db
+      .insert(seriesInfo)
+      .values({ seriesTitle, trailerUrl })
+      .onConflictDoUpdate({
+        target: seriesInfo.seriesTitle,
+        set: { trailerUrl, updatedAt: new Date().toISOString() },
+      });
+  } catch (e) {
+    if (isMissingTable(e)) {
+      // Nothing to clear on a database that has never stored a trailer.
+      if (!trailerUrl) return;
+      throw new Error(MIGRATION_NEEDED);
+    }
+    throw e;
+  }
+}
 
-  const ids = [...new Set(filmsList.map(ratingKeyOf))];
-  const rows = await db
-    .select({
-      filmId: filmRatings.filmId,
-      avg: sql<number>`avg(${filmRatings.value})`,
-      count: sql<number>`count(*)`,
-    })
-    .from(filmRatings)
-    .where(inArray(filmRatings.filmId, ids))
-    .groupBy(filmRatings.filmId);
+// Keeps series_info in step when a series is renamed or deleted.
+async function renameSeriesInfo(oldTitle: string, newTitle: string): Promise<void> {
+  if (oldTitle === newTitle) return;
+  try {
+    await db.update(seriesInfo).set({ seriesTitle: newTitle }).where(eq(seriesInfo.seriesTitle, oldTitle));
+  } catch (e) {
+    if (!isMissingTable(e)) throw e;
+  }
+}
 
-  const map = new Map(rows.map((r) => [r.filmId, { avg: r.avg, count: r.count }]));
-  return filmsList.map((f) => {
-    const summary = map.get(ratingKeyOf(f));
-    return { ...f, avgRating: summary ? summary.avg : null, ratingCount: summary?.count ?? 0 };
-  });
+async function deleteSeriesInfo(seriesTitle: string): Promise<void> {
+  try {
+    await db.delete(seriesInfo).where(eq(seriesInfo.seriesTitle, seriesTitle));
+  } catch (e) {
+    if (!isMissingTable(e)) throw e;
+  }
 }
 
 export async function getFilms(): Promise<Film[]> {
@@ -251,13 +309,6 @@ export async function getSeriesEpisodes(seriesTitle: string): Promise<Film[]> {
   return episodes.sort(
     (a, b) => (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) || (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
   );
-}
-
-export async function resolveSeriesCanonicalId(filmId: string): Promise<string> {
-  const [film] = await db.select({ seriesTitle: films.seriesTitle }).from(films).where(eq(films.id, filmId));
-  if (!film?.seriesTitle) return filmId;
-  const episodes = await getSeriesEpisodes(film.seriesTitle);
-  return episodes[0]?.id ?? filmId;
 }
 
 export async function getSuggestions(excludeId: string, limit = 4): Promise<Film[]> {
@@ -385,6 +436,36 @@ export async function deleteFilm(id: string): Promise<void> {
   await db.delete(films).where(eq(films.id, id));
 }
 
+export async function getFilmCreatedAts(): Promise<Map<string, string>> {
+  const rows = await db.select({ id: films.id, createdAt: films.createdAt }).from(films);
+  return new Map(rows.map((r) => [r.id, r.createdAt]));
+}
+
+export async function setFilmsNew(ids: string[], isNew: boolean): Promise<void> {
+  if (ids.length === 0) return;
+  await db
+    .update(films)
+    .set({ markedNewAt: isNew ? new Date().toISOString() : null })
+    .where(inArray(films.id, ids));
+}
+
+// Admin-side counterpart of updateSeriesInfo: not scoped to one creator.
+export async function adminUpdateSeries(
+  oldSeriesTitle: string,
+  input: { seriesTitle: string; rating: string; category: string }
+): Promise<void> {
+  await db
+    .update(films)
+    .set({ seriesTitle: input.seriesTitle, rating: input.rating, category: input.category })
+    .where(eq(films.seriesTitle, oldSeriesTitle));
+  await renameSeriesInfo(oldSeriesTitle, input.seriesTitle);
+}
+
+export async function deleteSeries(seriesTitle: string): Promise<void> {
+  await db.delete(films).where(eq(films.seriesTitle, seriesTitle));
+  await deleteSeriesInfo(seriesTitle);
+}
+
 export async function updateSeriesInfo(
   artistId: string | null,
   studioId: string | null,
@@ -396,6 +477,7 @@ export async function updateSeriesInfo(
     .update(films)
     .set({ seriesTitle: input.seriesTitle, rating: input.rating, category: input.category })
     .where(and(identityCondition, eq(films.seriesTitle, oldSeriesTitle)));
+  await renameSeriesInfo(oldSeriesTitle, input.seriesTitle);
 }
 
 export type ArtistInput = {
@@ -1431,24 +1513,70 @@ export async function markAllNotificationsRead(userId: string): Promise<void> {
   await db.update(notifications).set({ read: true }).where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
 }
 
+export type Trend = { current: number; previous: number };
+
+export type RankedContent = {
+  id: string;
+  title: string;
+  kind: "film" | "series";
+  creator: string;
+  category: string;
+  year: number;
+  episodeCount: number;
+};
+
+export type RankedEpisode = {
+  id: string;
+  seriesTitle: string;
+  episodeTag: string;
+  episodeTitle: string;
+  creator: string;
+};
+
 export type DashboardStats = {
   filmCount: number;
+  episodeCount: number;
   artistCount: number;
   studioCount: number;
   userCount: number;
   pendingCount: number;
   openMessageCount: number;
+  pendingInviteCount: number;
   totalViews: number;
+  memberViews: number;
+  guestViews: number;
   totalFavorites: number;
   ratingCount: number;
   averageRating: number | null;
+  ratingDistribution: number[];
   commentCount: number;
   reactionUpCount: number;
   reactionDownCount: number;
-  pendingInviteCount: number;
-  topViewedFilms: { id: string; title: string; views: number }[];
-  topRatedFilms: { id: string; title: string; average: number; count: number }[];
-  topArtists: { id: string; name: string; filmCount: number }[];
+  activeUsers7d: number;
+  activeUsers30d: number;
+  trends: { views: Trend; signups: Trend; comments: Trend; ratings: Trend };
+  daily: { date: string; views: number; interactions: number; signups: number }[];
+  topContents: (RankedContent & { views: number; memberViews: number; guestViews: number; viewers: number })[];
+  topEpisodes: (RankedEpisode & { views: number; memberViews: number; guestViews: number })[];
+  topRatedContents: (RankedContent & { average: number; voters: number; ratingCount: number })[];
+  topRatedEpisodes: (RankedEpisode & { average: number; count: number })[];
+  topCommentedContents: (RankedContent & {
+    count: number;
+    replies: number;
+    commenters: number;
+    topEpisode: (RankedEpisode & { count: number }) | null;
+  })[];
+  topMembers: {
+    id: string;
+    name: string;
+    joinedAt: string;
+    comments: number;
+    ratings: number;
+    views: number;
+    favorites: number;
+    averageGiven: number | null;
+  }[];
+  topArtists: { id: string; name: string; contentCount: number; films: number; series: number; episodes: number }[];
   newUsers7d: number;
   newUsers30d: number;
   newFilms7d: number;
@@ -1460,8 +1588,26 @@ export type DashboardStats = {
   artistSubmissionsRefused: number;
   artistSubmissionsPending: number;
   categoryBreakdown: { category: string; count: number }[];
-  recentFilms: { id: string; title: string; artistName: string; createdAt: string }[];
-  recentComments: { id: string; userName: string; filmTitle: string; body: string; createdAt: string }[];
+  recentFilms: {
+    id: string;
+    title: string;
+    artistName: string;
+    poster: string;
+    kind: "film" | "series";
+    episodeCount: number;
+    latestEpisode: RankedEpisode | null;
+    createdAt: string;
+  }[];
+  recentComments: {
+    id: string;
+    userName: string;
+    userAvatarUrl: string | null;
+    contentTitle: string;
+    episode: RankedEpisode | null;
+    isReply: boolean;
+    body: string;
+    createdAt: string;
+  }[];
 };
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -1492,23 +1638,29 @@ export async function getDashboardStats(): Promise<DashboardStats> {
         studioId: films.studioId,
         createdAt: films.createdAt,
         category: films.category,
+        year: films.year,
         seriesTitle: films.seriesTitle,
         seasonNumber: films.seasonNumber,
         episodeNumber: films.episodeNumber,
         episodeKind: films.episodeKind,
         guestViewCount: films.guestViewCount,
+        poster: films.poster,
       })
       .from(films),
     db.select({ id: artists.id, name: artists.name, userId: artists.userId }).from(artists),
     db.select({ id: studios.id, name: studios.name, ownerId: studios.ownerId }).from(studios),
-    db.select({ id: users.id, createdAt: users.createdAt }).from(users),
+    db.select({ id: users.id, name: users.name, createdAt: users.createdAt }).from(users),
     getPendingFilmSubmissions(),
     getPendingArtistSubmissions(),
     getContactMessages(),
-    db.select({ filmId: watchHistory.filmId }).from(watchHistory),
-    db.select({ filmId: favorites.filmId }).from(favorites),
-    db.select({ filmId: filmRatings.filmId, value: filmRatings.value }).from(filmRatings),
-    db.select({ id: comments.id }).from(comments),
+    db.select({ filmId: watchHistory.filmId, userId: watchHistory.userId, at: watchHistory.watchedAt }).from(watchHistory),
+    db.select({ filmId: favorites.filmId, userId: favorites.userId }).from(favorites),
+    db
+      .select({ filmId: filmRatings.filmId, userId: filmRatings.userId, value: filmRatings.value, at: filmRatings.createdAt })
+      .from(filmRatings),
+    db
+      .select({ filmId: comments.filmId, userId: comments.userId, parentId: comments.parentId, at: comments.createdAt })
+      .from(comments),
     db.select({ type: commentReactions.type }).from(commentReactions),
     db.select({ id: studioMembers.id }).from(studioMembers).where(eq(studioMembers.status, "invited")),
     db
@@ -1521,7 +1673,9 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .select({
         id: comments.id,
         userName: users.name,
-        filmTitle: films.title,
+        userAvatarUrl: users.avatarUrl,
+        filmId: comments.filmId,
+        parentId: comments.parentId,
         body: comments.body,
         createdAt: comments.createdAt,
       })
@@ -1529,7 +1683,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       .innerJoin(users, eq(comments.userId, users.id))
       .innerJoin(films, eq(comments.filmId, films.id))
       .orderBy(desc(comments.createdAt))
-      .limit(5),
+      .limit(40),
   ]);
 
   const filmMap = new Map(filmRows.map((f) => [f.id, f]));
@@ -1566,27 +1720,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .map(([category, count]) => ({ category, count }))
     .sort((a, b) => b.count - a.count);
 
-  const recentFilms = [...contentRepresentatives]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5)
-    .map((f) => ({
-      id: f.id,
-      title: f.seriesTitle ?? f.title,
-      artistName: creatorMap.get(creatorIdOf(f))?.name ?? "?",
-      createdAt: f.createdAt,
-    }));
-
   const viewsByFilm = new Map<string, number>();
   for (const w of watchRows) viewsByFilm.set(w.filmId, (viewsByFilm.get(w.filmId) ?? 0) + 1);
   for (const f of filmRows) {
     if (f.guestViewCount > 0) viewsByFilm.set(f.id, (viewsByFilm.get(f.id) ?? 0) + f.guestViewCount);
-  }
-
-  const ratingSumByFilm = new Map<string, number>();
-  const ratingCountByFilm = new Map<string, number>();
-  for (const r of ratingRows) {
-    ratingSumByFilm.set(r.filmId, (ratingSumByFilm.get(r.filmId) ?? 0) + r.value);
-    ratingCountByFilm.set(r.filmId, (ratingCountByFilm.get(r.filmId) ?? 0) + 1);
   }
 
   // Content credited to a studio also counts toward each of that studio's
@@ -1610,13 +1747,17 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     memberArtistIdsByStudio.set(s.id, arr);
   }
 
-  const filmCountByArtist = new Map<string, number>();
+  const artistCounts = new Map<string, { films: number; series: number; episodes: number }>();
   const seenContentByArtist = new Set<string>();
   const countFor = (id: string, f: (typeof filmRows)[number]) => {
+    const counts = artistCounts.get(id) ?? { films: 0, series: 0, episodes: 0 };
+    artistCounts.set(id, counts);
+    if (f.seriesTitle) counts.episodes += 1;
     const contentKey = `${id}::${f.seriesTitle ?? f.id}`;
     if (seenContentByArtist.has(contentKey)) return;
     seenContentByArtist.add(contentKey);
-    filmCountByArtist.set(id, (filmCountByArtist.get(id) ?? 0) + 1);
+    if (f.seriesTitle) counts.series += 1;
+    else counts.films += 1;
   };
   for (const f of filmRows) {
     countFor(creatorIdOf(f), f);
@@ -1627,54 +1768,271 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     }
   }
 
-  const rankingTitleFor = (id: string) => {
+  const episodeOf = (id: string): RankedEpisode | null => {
     const f = filmMap.get(id);
-    if (!f) return "?";
-    return f.seriesTitle
-      ? `${f.seriesTitle} - ${formatEpisodeTag({ ...f, episodeKind: f.episodeKind as "episode" | "teaser" })}`
-      : f.title;
+    if (!f?.seriesTitle) return null;
+    return {
+      id,
+      seriesTitle: f.seriesTitle,
+      episodeTag: formatEpisodeTag({ ...f, episodeKind: f.episodeKind as "episode" | "teaser" }, "admin"),
+      episodeTitle: f.title,
+      creator: creatorMap.get(creatorIdOf(f))?.name ?? "?",
+    };
   };
 
-  const topViewedFilms = [...viewsByFilm.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([id, views]) => ({ id, title: rankingTitleFor(id), views }));
+  // A series counts as one content: its episodes' numbers are pooled.
+  const contentKeyOf = (filmId: string) => {
+    const f = filmMap.get(filmId);
+    return f?.seriesTitle ?? filmId;
+  };
+  const contentOf = (key: string): RankedContent => {
+    const group = contentGroups.get(key) ?? [];
+    const f = group[0] ?? filmMap.get(key);
+    const isSeries = !!f?.seriesTitle;
+    return {
+      id: key,
+      title: isSeries ? key : f?.title ?? key,
+      kind: isSeries ? "series" : "film",
+      creator: f ? creatorMap.get(creatorIdOf(f))?.name ?? "?" : "?",
+      category: f?.category ?? "",
+      year: f?.year ?? 0,
+      episodeCount: isSeries ? group.length : 0,
+    };
+  };
 
-  const topRatedFilms = [...ratingSumByFilm.entries()]
-    .map(([id, sum]) => ({
-      id,
-      title: rankingTitleFor(id),
-      average: sum / (ratingCountByFilm.get(id) ?? 1),
-      count: ratingCountByFilm.get(id) ?? 0,
+  const memberViewsByFilm = new Map<string, number>();
+  for (const w of watchRows) memberViewsByFilm.set(w.filmId, (memberViewsByFilm.get(w.filmId) ?? 0) + 1);
+
+  const viewStatsByContent = new Map<string, { memberViews: number; guestViews: number; viewers: Set<string> }>();
+  const viewStatsOf = (key: string) => {
+    const e = viewStatsByContent.get(key) ?? { memberViews: 0, guestViews: 0, viewers: new Set<string>() };
+    viewStatsByContent.set(key, e);
+    return e;
+  };
+  for (const w of watchRows) {
+    const e = viewStatsOf(contentKeyOf(w.filmId));
+    e.memberViews += 1;
+    e.viewers.add(w.userId);
+  }
+  for (const f of filmRows) if (f.guestViewCount > 0) viewStatsOf(contentKeyOf(f.id)).guestViews += f.guestViewCount;
+
+  const topContents = [...viewStatsByContent.entries()]
+    .map(([key, e]) => ({
+      ...contentOf(key),
+      views: e.memberViews + e.guestViews,
+      memberViews: e.memberViews,
+      guestViews: e.guestViews,
+      viewers: e.viewers.size,
     }))
-    .sort((a, b) => b.average - a.average || b.count - a.count)
+    .sort((a, b) => b.views - a.views)
     .slice(0, 5);
 
-  const topArtists = [...filmCountByArtist.entries()]
-    .filter(([id]) => !creatorMap.get(id)?.isStudio)
+  const topEpisodes = [...viewsByFilm.entries()]
+    .filter(([id]) => filmMap.get(id)?.seriesTitle)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([id, filmCount]) => ({ id, name: creatorMap.get(id)?.name ?? "?", filmCount }));
+    .map(([id, views]) => ({
+      ...episodeOf(id)!,
+      views,
+      memberViews: memberViewsByFilm.get(id) ?? 0,
+      guestViews: filmMap.get(id)?.guestViewCount ?? 0,
+    }));
 
+  // Ratings per content: a film's own ratings; for a series, each user's
+  // mean over its episodes, averaged (seriesRatingSummary).
+  const ratingsByContent = new Map<string, typeof ratingRows>();
+  const ratingsByEpisode = new Map<string, typeof ratingRows>();
+  for (const r of ratingRows) {
+    const key = contentKeyOf(r.filmId);
+    ratingsByContent.set(key, [...(ratingsByContent.get(key) ?? []), r]);
+    if (filmMap.get(r.filmId)?.seriesTitle) ratingsByEpisode.set(r.filmId, [...(ratingsByEpisode.get(r.filmId) ?? []), r]);
+  }
   const ratingTotal = ratingRows.reduce((sum, r) => sum + r.value, 0);
+  const globalAverage = ratingRows.length > 0 ? ratingTotal / ratingRows.length : 0;
+  // Bayesian ranking: pull small samples toward the global mean so a single
+  // 5★ can't top contents rated by many people.
+  const PRIOR_WEIGHT = 3;
+  const bayes = (avg: number, n: number) => (avg * n + globalAverage * PRIOR_WEIGHT) / (n + PRIOR_WEIGHT);
+
+  const topRatedContents = [...ratingsByContent.entries()]
+    .map(([key, rows]) => {
+      const summary = seriesRatingSummary(rows)!;
+      return {
+        ...contentOf(key),
+        average: summary.avg,
+        voters: summary.count,
+        ratingCount: rows.length,
+      };
+    })
+    .sort((a, b) => bayes(b.average, b.voters) - bayes(a.average, a.voters) || b.voters - a.voters)
+    .slice(0, 5);
+
+  const topRatedEpisodes = [...ratingsByEpisode.entries()]
+    .map(([id, rows]) => {
+      const average = rows.reduce((sum, r) => sum + r.value, 0) / rows.length;
+      return { ...episodeOf(id)!, average, count: rows.length };
+    })
+    .sort((a, b) => bayes(b.average, b.count) - bayes(a.average, a.count) || b.count - a.count)
+    .slice(0, 5);
+
+  const commentStatsByContent = new Map<
+    string,
+    { count: number; replies: number; commenters: Set<string>; byEpisode: Map<string, number> }
+  >();
+  for (const c of commentRows) {
+    const key = contentKeyOf(c.filmId);
+    const e = commentStatsByContent.get(key) ?? { count: 0, replies: 0, commenters: new Set<string>(), byEpisode: new Map() };
+    commentStatsByContent.set(key, e);
+    e.count += 1;
+    if (c.parentId) e.replies += 1;
+    e.commenters.add(c.userId);
+    if (filmMap.get(c.filmId)?.seriesTitle) e.byEpisode.set(c.filmId, (e.byEpisode.get(c.filmId) ?? 0) + 1);
+  }
+  const topCommentedContents = [...commentStatsByContent.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5)
+    .map(([key, e]) => {
+      const [topEpisodeId, topEpisodeCount] = [...e.byEpisode.entries()].sort((a, b) => b[1] - a[1])[0] ?? [];
+      return {
+        ...contentOf(key),
+        count: e.count,
+        replies: e.replies,
+        commenters: e.commenters.size,
+        topEpisode: topEpisodeId ? { ...episodeOf(topEpisodeId)!, count: topEpisodeCount } : null,
+      };
+    });
+
+  const userById = new Map(userRows.map((u) => [u.id, u]));
+  const memberActivity = new Map<
+    string,
+    { comments: number; ratings: number; ratingSum: number; views: number; favorites: number }
+  >();
+  const activityOf = (userId: string) => {
+    const e = memberActivity.get(userId) ?? { comments: 0, ratings: 0, ratingSum: 0, views: 0, favorites: 0 };
+    memberActivity.set(userId, e);
+    return e;
+  };
+  for (const c of commentRows) activityOf(c.userId).comments += 1;
+  for (const r of ratingRows) {
+    const e = activityOf(r.userId);
+    e.ratings += 1;
+    e.ratingSum += r.value;
+  }
+  for (const w of watchRows) activityOf(w.userId).views += 1;
+  for (const f of favoriteRows) activityOf(f.userId).favorites += 1;
+  const memberScore = (m: { comments: number; ratings: number; favorites: number; views: number }) =>
+    m.comments * 3 + m.ratings * 2 + m.favorites + m.views;
+  const topMembers = [...memberActivity.entries()]
+    .map(([id, a]) => ({
+      id,
+      name: userById.get(id)?.name ?? "?",
+      joinedAt: userById.get(id)?.createdAt ?? "",
+      comments: a.comments,
+      ratings: a.ratings,
+      views: a.views,
+      favorites: a.favorites,
+      averageGiven: a.ratings > 0 ? a.ratingSum / a.ratings : null,
+    }))
+    // Writing a comment is worth more than a click.
+    .sort((a, b) => memberScore(b) - memberScore(a))
+    .slice(0, 5);
+
+  const ratingDistribution = [1, 2, 3, 4, 5].map((v) => ratingRows.filter((r) => r.value === v).length);
+
+  // Timestamps are either ISO strings or SQLite's "YYYY-MM-DD HH:MM:SS" (UTC).
+  const timeOf = (at: string) => new Date(at.includes("T") ? at : at.replace(" ", "T") + "Z").getTime();
+  const between = (at: string, fromDays: number, toDays: number) => {
+    const t = timeOf(at);
+    return t >= since(fromDays) && t < since(toDays);
+  };
+  const trendOf = (dates: string[]): Trend => ({
+    current: dates.filter((at) => between(at, 30, 0)).length,
+    previous: dates.filter((at) => between(at, 60, 30)).length,
+  });
+
+  const activeSince = (days: number) => {
+    const ids = new Set<string>();
+    for (const rows of [watchRows, commentRows, ratingRows]) {
+      for (const r of rows) if (timeOf(r.at) >= since(days)) ids.add(r.userId);
+    }
+    return ids.size;
+  };
+
+  const DAYS = 30;
+  const dayKey = (t: number) => new Date(t).toISOString().slice(0, 10);
+  const daily = Array.from({ length: DAYS }, (_, i) => ({
+    date: dayKey(now - (DAYS - 1 - i) * DAY),
+    views: 0,
+    interactions: 0,
+    signups: 0,
+  }));
+  const dayIndex = new Map(daily.map((d, i) => [d.date, i]));
+  const bump = (at: string, field: "views" | "interactions" | "signups") => {
+    const i = dayIndex.get(dayKey(timeOf(at)));
+    if (i !== undefined) daily[i][field] += 1;
+  };
+  for (const w of watchRows) bump(w.at, "views");
+  for (const c of commentRows) bump(c.at, "interactions");
+  for (const r of ratingRows) bump(r.at, "interactions");
+  for (const u of userRows) bump(u.createdAt, "signups");
+
+  const topArtists = [...artistCounts.entries()]
+    .filter(([id]) => !creatorMap.get(id)?.isStudio)
+    .map(([id, c]) => ({ id, name: creatorMap.get(id)?.name ?? "?", contentCount: c.films + c.series, ...c }))
+    .sort((a, b) => b.contentCount - a.contentCount || b.episodes - a.episodes)
+    .slice(0, 5);
+
+  const recentFilms = [...contentRepresentatives]
+    .sort((a, b) => timeOf(b.createdAt) - timeOf(a.createdAt))
+    .slice(0, 40)
+    .map((f) => ({
+      id: f.id,
+      title: f.seriesTitle ?? f.title,
+      artistName: creatorMap.get(creatorIdOf(f))?.name ?? "?",
+      poster: f.poster,
+      kind: (f.seriesTitle ? "series" : "film") as "film" | "series",
+      episodeCount: f.seriesTitle ? contentGroups.get(f.seriesTitle)?.length ?? 0 : 0,
+      // For a series, the representative is its most recently added episode.
+      latestEpisode: episodeOf(f.id),
+      createdAt: f.createdAt,
+    }));
+
+  const guestViews = filmRows.reduce((sum, f) => sum + f.guestViewCount, 0);
 
   return {
     filmCount: contentRepresentatives.length,
+    episodeCount: filmRows.filter((f) => f.seriesTitle).length,
     artistCount: artistRows.length,
     studioCount: studioRows.length,
     userCount: userRows.length,
     pendingCount: filmSubs.length + artistSubs.length,
     openMessageCount: messages.filter((m) => m.status === "open").length,
-    totalViews: watchRows.length + filmRows.reduce((sum, f) => sum + f.guestViewCount, 0),
+    pendingInviteCount: inviteRows.length,
+    totalViews: watchRows.length + guestViews,
+    memberViews: watchRows.length,
+    guestViews,
     totalFavorites: favoriteRows.length,
     ratingCount: ratingRows.length,
-    averageRating: ratingRows.length > 0 ? ratingTotal / ratingRows.length : null,
+    averageRating: ratingRows.length > 0 ? globalAverage : null,
+    ratingDistribution,
     commentCount: commentRows.length,
     reactionUpCount: reactionRows.filter((r) => r.type === "up").length,
     reactionDownCount: reactionRows.filter((r) => r.type === "down").length,
-    pendingInviteCount: inviteRows.length,
-    topViewedFilms,
-    topRatedFilms,
+    activeUsers7d: activeSince(7),
+    activeUsers30d: activeSince(30),
+    trends: {
+      views: trendOf(watchRows.map((w) => w.at)),
+      signups: trendOf(userRows.map((u) => u.createdAt)),
+      comments: trendOf(commentRows.map((c) => c.at)),
+      ratings: trendOf(ratingRows.map((r) => r.at)),
+    },
+    daily,
+    topContents,
+    topEpisodes,
+    topRatedContents,
+    topRatedEpisodes,
+    topCommentedContents,
+    topMembers,
     topArtists,
     newUsers7d,
     newUsers30d,
@@ -1688,7 +2046,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     artistSubmissionsPending: allArtistSubs.filter((s) => s.status === "pending").length,
     categoryBreakdown,
     recentFilms,
-    recentComments: recentCommentRows,
+    recentComments: recentCommentRows.map(({ filmId, parentId, ...c }) => ({
+      ...c,
+      contentTitle: contentOf(contentKeyOf(filmId)).title,
+      episode: episodeOf(filmId),
+      isReply: !!parentId,
+    })),
   };
 }
 

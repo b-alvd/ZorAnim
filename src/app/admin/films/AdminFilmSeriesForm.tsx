@@ -4,7 +4,17 @@ import { useState, useTransition } from "react";
 import Dropdown from "@/components/Dropdown/Dropdown";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import FilmForm from "./FilmForm";
-import { createFilmAction, createSeriesAction, type SeriesEpisodeInput } from "./actions";
+import {
+  EMPTY_RELEASE,
+  FormSection,
+  OptionalToggle,
+  ReleaseFields,
+  Segmented,
+  minutesFromSeconds,
+  releaseComplete,
+  type ReleaseValue,
+} from "./FormParts";
+import { createFilmAction, createSeriesAction } from "./actions";
 import type { Artist } from "@/data/types";
 import { RATING_OPTIONS } from "@/lib/ratings";
 import adminStyles from "../shared.module.css";
@@ -12,35 +22,54 @@ import styles from "./films.module.css";
 
 const SEASON_TYPE_OPTIONS = ["Teaser", "Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
 
-function toDatetimeLocal(iso: string | null | undefined): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+type EpisodeDraft = {
+  key: number;
+  title: string;
+  synopsis: string;
+  year: number;
+  durationMinutes: number;
+  episodeKind: "episode" | "teaser";
+  seasonNumber: number;
+  episodeNumber: number;
+  poster: string;
+  videoUrl: string;
+  videoDurationSeconds: number | null;
+  release: ReleaseValue;
+};
 
-function seasonTypeLabel(episodeKind: "episode" | "teaser", seasonNumber: number): string {
-  return episodeKind === "teaser" ? "Teaser" : `Saison ${seasonNumber}`;
-}
+let nextKey = 0;
 
-const emptyEpisode = (previous?: SeriesEpisodeInput): SeriesEpisodeInput => ({
+const emptyEpisode = (previous?: EpisodeDraft): EpisodeDraft => ({
+  key: nextKey++,
   title: "",
   synopsis: "",
   year: previous?.year ?? new Date().getFullYear(),
   durationMinutes: 0,
-  episodeKind: previous?.episodeKind ?? "teaser",
+  episodeKind: previous?.episodeKind ?? "episode",
   seasonNumber: previous?.seasonNumber ?? 1,
   episodeNumber: previous ? previous.episodeNumber + 1 : 1,
   poster: "",
   videoUrl: "",
-  premiereAt: null,
-  premiereBanner: null,
-  releaseBanner: null,
-  premiereAdUrl: null,
-  premiereAdDurationSeconds: null,
-  releaseAt: null,
+  videoDurationSeconds: null,
+  release: EMPTY_RELEASE,
 });
+
+const episodeLabel = (ep: EpisodeDraft) =>
+  ep.episodeKind === "teaser"
+    ? `Teaser ${ep.episodeNumber || "?"}`
+    : `S${ep.seasonNumber || "?"} · Épisode ${ep.episodeNumber || "?"}`;
+
+const episodeReady = (ep: EpisodeDraft) =>
+  !!ep.title.trim() &&
+  !!ep.synopsis.trim() &&
+  ep.year > 0 &&
+  ep.durationMinutes > 0 &&
+  ep.episodeNumber > 0 &&
+  !!ep.poster &&
+  !!ep.videoUrl &&
+  releaseComplete(ep.release);
+
+const toIso = (local: string) => (local ? new Date(local).toISOString() : null);
 
 export default function AdminFilmSeriesForm({
   artists,
@@ -53,13 +82,15 @@ export default function AdminFilmSeriesForm({
   pending?: boolean;
   onDone: () => void;
 }) {
-  const [contentType, setContentType] = useState("Film");
+  const [contentType, setContentType] = useState<"film" | "series">("film");
   const [rating, setRating] = useState(RATING_OPTIONS[0]);
   const [category, setCategory] = useState(categories[0]);
   const [artistId, setArtistId] = useState(artists[0]?.id ?? "");
   const [seriesTitle, setSeriesTitle] = useState("");
   const [isNew, setIsNew] = useState(false);
-  const [episodes, setEpisodes] = useState<SeriesEpisodeInput[]>([emptyEpisode()]);
+  const [trailerUrl, setTrailerUrl] = useState("");
+  const [episodes, setEpisodes] = useState<EpisodeDraft[]>(() => [emptyEpisode()]);
+  const [openKey, setOpenKey] = useState<number | null>(episodes[0].key);
   const [isPending, startTransition] = useTransition();
 
   const artistNames = artists.map((a) => (a.isStudio ? `${a.name} (studio)` : a.name));
@@ -70,27 +101,18 @@ export default function AdminFilmSeriesForm({
       : selectedArtist.name
     : artistNames[0];
 
-  const updateEpisode = (index: number, patch: Partial<SeriesEpisodeInput>) => {
-    setEpisodes((prev) => prev.map((ep, i) => (i === index ? { ...ep, ...patch } : ep)));
+  const updateEpisode = (key: number, patch: Partial<EpisodeDraft>) =>
+    setEpisodes((prev) => prev.map((ep) => (ep.key === key ? { ...ep, ...patch } : ep)));
+  const updateRelease = (key: number, patch: Partial<ReleaseValue>) =>
+    setEpisodes((prev) => prev.map((ep) => (ep.key === key ? { ...ep, release: { ...ep.release, ...patch } } : ep)));
+  const addEpisode = () => {
+    const ep = emptyEpisode(episodes[episodes.length - 1]);
+    setEpisodes((prev) => [...prev, ep]);
+    setOpenKey(ep.key);
   };
-  const addEpisode = () => setEpisodes((prev) => [...prev, emptyEpisode(prev[prev.length - 1])]);
-  const removeEpisode = (index: number) => setEpisodes((prev) => prev.filter((_, i) => i !== index));
+  const removeEpisode = (key: number) => setEpisodes((prev) => prev.filter((ep) => ep.key !== key));
 
-  const seriesReady =
-    seriesTitle.trim() &&
-    !!selectedArtist &&
-    episodes.length > 0 &&
-    episodes.every(
-      (ep) =>
-        ep.title.trim() &&
-        ep.synopsis.trim() &&
-        ep.year > 0 &&
-        ep.durationMinutes > 0 &&
-        (ep.episodeKind === "teaser" || ep.seasonNumber > 0) &&
-        ep.episodeNumber > 0 &&
-        ep.poster &&
-        ep.videoUrl
-    );
+  const seriesReady = !!seriesTitle.trim() && !!selectedArtist && episodes.length > 0 && episodes.every(episodeReady);
 
   const handleSubmitSeries = () => {
     if (!seriesReady || !selectedArtist) return;
@@ -102,13 +124,26 @@ export default function AdminFilmSeriesForm({
         rating,
         category,
         isNew,
-        // `releaseAt` inputs are raw datetime-local strings (no timezone) --
-        // convert to ISO here, in the browser, so it resolves against the
-        // admin's own local time rather than the server's.
-        episodes: episodes.map((ep) => ({
-          ...ep,
-          premiereAt: ep.premiereAt ? new Date(ep.premiereAt).toISOString() : null,
-          releaseAt: ep.releaseAt ? new Date(ep.releaseAt).toISOString() : null,
+        trailerUrl: trailerUrl || null,
+        // Release dates are datetime-local strings: converted to ISO here, in
+        // the browser, so they resolve against the admin's own local time.
+        episodes: episodes.map(({ release, ...draft }) => ({
+          title: draft.title,
+          synopsis: draft.synopsis,
+          year: draft.year,
+          durationMinutes: draft.durationMinutes,
+          episodeKind: draft.episodeKind,
+          seasonNumber: draft.seasonNumber,
+          episodeNumber: draft.episodeNumber,
+          poster: draft.poster,
+          videoUrl: draft.videoUrl,
+          videoDurationSeconds: draft.videoDurationSeconds,
+          premiereAt: toIso(release.premiereAt),
+          releaseAt: toIso(release.releaseAt),
+          premiereBanner: release.premiereBanner || null,
+          releaseBanner: release.releaseBanner || null,
+          premiereAdUrl: release.premiereAdUrl || null,
+          premiereAdDurationSeconds: release.premiereAdDurationSeconds,
         })),
       });
       onDone();
@@ -116,13 +151,17 @@ export default function AdminFilmSeriesForm({
   };
 
   return (
-    <div className={adminStyles.form}>
-      <div className={adminStyles.field}>
-        <label>Type de contenu</label>
-        <Dropdown options={["Film", "Série"]} value={contentType} onChange={setContentType} />
-      </div>
+    <div className={`${adminStyles.form} ${styles.filmForm}`}>
+      <Segmented
+        options={[
+          { value: "film", label: "Film" },
+          { value: "series", label: "Série" },
+        ]}
+        value={contentType}
+        onChange={setContentType}
+      />
 
-      {contentType === "Film" ? (
+      {contentType === "film" ? (
         <FilmForm
           artists={artists}
           categories={categories}
@@ -137,201 +176,210 @@ export default function AdminFilmSeriesForm({
         />
       ) : (
         <>
-          <div className={adminStyles.field}>
-            <label htmlFor="seriesTitle">Titre de la série</label>
-            <input id="seriesTitle" value={seriesTitle} onChange={(e) => setSeriesTitle(e.target.value)} required />
-          </div>
-          <div className={adminStyles.row2}>
+          <FormSection title="Série">
             <div className={adminStyles.field}>
-              <label>Classification</label>
-              <Dropdown options={RATING_OPTIONS} value={rating} onChange={setRating} />
+              <label htmlFor="seriesTitle">Titre de la série</label>
+              <input id="seriesTitle" value={seriesTitle} onChange={(e) => setSeriesTitle(e.target.value)} required />
             </div>
-            <div className={adminStyles.field}>
-              <label>Catégorie</label>
-              <Dropdown options={categories} value={category} onChange={setCategory} />
-            </div>
-          </div>
-          <div className={adminStyles.field}>
-            <label>Artiste</label>
-            <Dropdown
-              options={artistNames}
-              value={selectedArtistName}
-              onChange={(name) => {
-                const found = artists.find((a) => (a.isStudio ? `${a.name} (studio)` : a.name) === name);
-                if (found) setArtistId(found.id);
-              }}
-            />
-          </div>
-
-          <div className={styles.episodes}>
-            {episodes.map((episode, index) => (
-              <div key={index} className={styles.episodeCard}>
-                <div className={styles.episodeCardHeader}>
-                  <span className={styles.episodeCardLabel}>
-                    {episode.episodeKind === "teaser"
-                      ? `Teaser ${episode.episodeNumber || "?"}`
-                      : `Saison ${episode.seasonNumber || "?"} · Épisode ${episode.episodeNumber || "?"}`}
-                  </span>
-                  {episodes.length > 1 && (
-                    <button type="button" className={styles.removeBtn} onClick={() => removeEpisode(index)}>
-                      Retirer
-                    </button>
-                  )}
-                </div>
-                <div className={adminStyles.row2}>
-                  <div className={adminStyles.field}>
-                    <label>Type</label>
-                    <Dropdown
-                      options={SEASON_TYPE_OPTIONS}
-                      value={seasonTypeLabel(episode.episodeKind, episode.seasonNumber)}
-                      onChange={(label) => {
-                        if (label === "Teaser") {
-                          updateEpisode(index, { episodeKind: "teaser" });
-                        } else {
-                          updateEpisode(index, {
-                            episodeKind: "episode",
-                            seasonNumber: Number(label.replace("Saison ", "")),
-                          });
-                        }
-                      }}
-                    />
-                  </div>
-                  <div className={adminStyles.field}>
-                    <label>Numéro</label>
-                    <input
-                      value={episode.episodeNumber || ""}
-                      onChange={(e) => updateEpisode(index, { episodeNumber: Number(e.target.value) })}
-                      type="number"
-                      min={1}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className={adminStyles.field}>
-                  <label>Titre de l&apos;épisode</label>
-                  <input value={episode.title} onChange={(e) => updateEpisode(index, { title: e.target.value })} required />
-                </div>
-                <div className={adminStyles.field}>
-                  <label>Synopsis</label>
-                  <textarea
-                    value={episode.synopsis}
-                    onChange={(e) => updateEpisode(index, { synopsis: e.target.value })}
-                    rows={3}
-                    required
-                  />
-                </div>
-                <div className={adminStyles.row2}>
-                  <div className={adminStyles.field}>
-                    <label>Année</label>
-                    <input
-                      value={episode.year || ""}
-                      onChange={(e) => updateEpisode(index, { year: Number(e.target.value) })}
-                      type="number"
-                      required
-                    />
-                  </div>
-                  <div className={adminStyles.field}>
-                    <label>Durée (minutes)</label>
-                    <input
-                      value={episode.durationMinutes || ""}
-                      onChange={(e) => updateEpisode(index, { durationMinutes: Number(e.target.value) })}
-                      type="number"
-                      min={1}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className={adminStyles.field}>
-                  <label>Poster</label>
-                  <FileUpload
-                    allowUrl
-                    name={`episode-${index}-poster`}
-                    label="Choisir une image"
-                    accept="image/*"
-                    value={episode.poster}
-                    onChange={(url) => updateEpisode(index, { poster: url })}
-                    preview
-                  />
-                </div>
-                <div className={adminStyles.field}>
-                  <label>Vidéo</label>
-                  <FileUpload
-                    allowUrl
-                    name={`episode-${index}-video`}
-                    label="Choisir une vidéo"
-                    accept="video/*"
-                    value={episode.videoUrl}
-                    onChange={(url) => updateEpisode(index, { videoUrl: url })}
-                    maxSizeMB={100}
-                  />
-                </div>
-                <div className={adminStyles.row2}>
-                  <div className={adminStyles.field}>
-                    <label>Avant-première (optionnel)</label>
-                    <input
-                      type="datetime-local"
-                      value={toDatetimeLocal(episode.premiereAt)}
-                      onChange={(e) => updateEpisode(index, { premiereAt: e.target.value || null })}
-                    />
-                  </div>
-                  <div className={adminStyles.field}>
-                    <label>Sortie {episode.premiereAt ? "officielle" : "programmée"} (optionnel)</label>
-                    <input
-                      type="datetime-local"
-                      value={toDatetimeLocal(episode.releaseAt)}
-                      onChange={(e) => updateEpisode(index, { releaseAt: e.target.value || null })}
-                    />
-                  </div>
-                </div>
-                <div className={adminStyles.field}>
-                  <label>Bannière d&apos;accueil — avant-première (optionnel)</label>
-                  <FileUpload
-                    allowUrl
-                    name={`episode-${index}-premiere-banner`}
-                    label="Choisir une image"
-                    accept="image/*"
-                    value={episode.premiereBanner ?? ""}
-                    onChange={(url) => updateEpisode(index, { premiereBanner: url || null })}
-                    preview
-                  />
-                </div>
-                <div className={adminStyles.field}>
-                  <label>Bannière d&apos;accueil — sortie officielle, après l&apos;avant-première (optionnel)</label>
-                  <FileUpload
-                    allowUrl
-                    name={`episode-${index}-release-banner`}
-                    label="Choisir une image"
-                    accept="image/*"
-                    value={episode.releaseBanner ?? ""}
-                    onChange={(url) => updateEpisode(index, { releaseBanner: url || null })}
-                    preview
-                  />
-                </div>
-                <div className={adminStyles.field}>
-                  <label>Publicité avant l&apos;avant-première (optionnel)</label>
-                  <FileUpload
-                    allowUrl
-                    name={`episode-${index}-premiere-ad`}
-                    label="Choisir une vidéo"
-                    accept="video/*"
-                    value={episode.premiereAdUrl ?? ""}
-                    onChange={(url) => updateEpisode(index, { premiereAdUrl: url || null, premiereAdDurationSeconds: null })}
-                    onDurationChange={(seconds) => updateEpisode(index, { premiereAdDurationSeconds: Math.round(seconds) })}
-                    maxSizeMB={100}
-                  />
-                </div>
+            <div className={adminStyles.row2}>
+              <div className={adminStyles.field}>
+                <label>Classification</label>
+                <Dropdown options={RATING_OPTIONS} value={rating} onChange={setRating} />
               </div>
-            ))}
-          </div>
+              <div className={adminStyles.field}>
+                <label>Catégorie</label>
+                <Dropdown options={categories} value={category} onChange={setCategory} />
+              </div>
+            </div>
+            <div className={adminStyles.field}>
+              <label>Artiste ou studio</label>
+              <Dropdown
+                options={artistNames}
+                value={selectedArtistName}
+                onChange={(name) => {
+                  const found = artists.find((a) => (a.isStudio ? `${a.name} (studio)` : a.name) === name);
+                  if (found) setArtistId(found.id);
+                }}
+              />
+            </div>
+            <OptionalToggle
+              label="Ajouter une bande-annonce"
+              hint="Pour toute la série : bouton « Bande-annonce » dans la fiche."
+              onDisable={() => setTrailerUrl("")}
+            >
+              <FileUpload
+                allowUrl
+                name="seriesTrailerUrl"
+                label="Choisir une vidéo"
+                accept="video/*"
+                value={trailerUrl}
+                onChange={setTrailerUrl}
+                maxSizeMB={100}
+              />
+            </OptionalToggle>
+          </FormSection>
 
-          <button type="button" className={styles.addEpisodeBtn} onClick={addEpisode}>
-            + Ajouter un épisode
-          </button>
+          <FormSection title={`Épisodes (${episodes.length})`}>
+            <div className={styles.episodes}>
+              {episodes.map((episode) => {
+                const open = openKey === episode.key;
+                const ready = episodeReady(episode);
+                return (
+                  <div key={episode.key} className={`${styles.episodeCard} ${open ? styles.episodeCardOpen : ""}`}>
+                    <button
+                      type="button"
+                      className={styles.episodeCardHeader}
+                      onClick={() => setOpenKey(open ? null : episode.key)}
+                      aria-expanded={open}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        width="13"
+                        height="13"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 0.15s" }}
+                      >
+                        <path d="M9 6l6 6-6 6" />
+                      </svg>
+                      <span className={styles.episodeCardLabel}>{episodeLabel(episode)}</span>
+                      <span className={styles.episodeCardTitle}>{episode.title || "Sans titre"}</span>
+                      <span className={`${styles.episodeCardState} ${ready ? styles.episodeCardReady : ""}`}>
+                        {ready ? "Prêt" : "À compléter"}
+                      </span>
+                    </button>
+
+                    {open && (
+                      <div className={styles.episodeCardBody}>
+                        <div className={adminStyles.row2}>
+                          <div className={adminStyles.field}>
+                            <label>Saison</label>
+                            <Dropdown
+                              options={SEASON_TYPE_OPTIONS}
+                              value={episode.episodeKind === "teaser" ? "Teaser" : `Saison ${episode.seasonNumber}`}
+                              onChange={(label) =>
+                                updateEpisode(
+                                  episode.key,
+                                  label === "Teaser"
+                                    ? { episodeKind: "teaser" }
+                                    : { episodeKind: "episode", seasonNumber: Number(label.replace("Saison ", "")) }
+                                )
+                              }
+                            />
+                          </div>
+                          <div className={adminStyles.field}>
+                            <label>{episode.episodeKind === "teaser" ? "Numéro du teaser" : "Numéro d'épisode"}</label>
+                            <input
+                              value={episode.episodeNumber || ""}
+                              onChange={(e) => updateEpisode(episode.key, { episodeNumber: Number(e.target.value) })}
+                              type="number"
+                              min={1}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className={adminStyles.field}>
+                          <label>Titre de l&apos;épisode</label>
+                          <input
+                            value={episode.title}
+                            onChange={(e) => updateEpisode(episode.key, { title: e.target.value })}
+                            required
+                          />
+                        </div>
+                        <div className={adminStyles.field}>
+                          <label>Synopsis</label>
+                          <textarea
+                            value={episode.synopsis}
+                            onChange={(e) => updateEpisode(episode.key, { synopsis: e.target.value })}
+                            rows={3}
+                            required
+                          />
+                        </div>
+                        <div className={adminStyles.row2}>
+                          <div className={adminStyles.field}>
+                            <label>Année</label>
+                            <input
+                              value={episode.year || ""}
+                              onChange={(e) => updateEpisode(episode.key, { year: Number(e.target.value) })}
+                              type="number"
+                              required
+                            />
+                          </div>
+                          <div className={adminStyles.field}>
+                            <label>Durée (minutes)</label>
+                            <input
+                              value={episode.durationMinutes || ""}
+                              onChange={(e) => updateEpisode(episode.key, { durationMinutes: Number(e.target.value) })}
+                              type="number"
+                              min={1}
+                              required
+                            />
+                            {episode.videoDurationSeconds !== null &&
+                              episode.durationMinutes === minutesFromSeconds(episode.videoDurationSeconds) && (
+                                <span className={styles.formHint}>Calculée depuis la vidéo.</span>
+                              )}
+                          </div>
+                        </div>
+                        <div className={adminStyles.field}>
+                          <label>Affiche</label>
+                          <FileUpload
+                            allowUrl
+                            name={`episode-${episode.key}-poster`}
+                            label="Choisir une image"
+                            accept="image/*"
+                            value={episode.poster}
+                            onChange={(url) => updateEpisode(episode.key, { poster: url })}
+                            preview
+                          />
+                        </div>
+                        <div className={adminStyles.field}>
+                          <label>Vidéo</label>
+                          <FileUpload
+                            allowUrl
+                            name={`episode-${episode.key}-video`}
+                            label="Choisir une vidéo"
+                            accept="video/*"
+                            value={episode.videoUrl}
+                            onChange={(url) => updateEpisode(episode.key, { videoUrl: url, videoDurationSeconds: null })}
+                            onDurationChange={(seconds) =>
+                              updateEpisode(episode.key, {
+                                videoDurationSeconds: Math.round(seconds),
+                                durationMinutes: minutesFromSeconds(seconds),
+                              })
+                            }
+                            maxSizeMB={100}
+                          />
+                        </div>
+                        <div className={adminStyles.field}>
+                          <label>Diffusion</label>
+                          <ReleaseFields
+                            namePrefix={`episode-${episode.key}`}
+                            value={episode.release}
+                            onChange={(patch) => updateRelease(episode.key, patch)}
+                          />
+                        </div>
+                        {episodes.length > 1 && (
+                          <button type="button" className={styles.removeBtn} onClick={() => removeEpisode(episode.key)}>
+                            Retirer cet épisode
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button type="button" className={styles.addEpisodeBtn} onClick={addEpisode}>
+              + Ajouter un épisode
+            </button>
+          </FormSection>
 
           <label className={adminStyles.customCheckbox}>
             <input type="checkbox" checked={isNew} onChange={(e) => setIsNew(e.target.checked)} />
             <span className={adminStyles.checkboxBox} />
-            Marquer comme nouveauté (visible 7 jours)
+            Afficher le badge « Nouveau » (7 jours)
           </label>
 
           <button

@@ -16,7 +16,6 @@ import {
   getWatchedFilmIds,
   isFilmFavorite,
   markAllNotificationsRead,
-  resolveSeriesCanonicalId,
   toggleCommentReaction,
   toggleFavorite,
   upsertRating,
@@ -51,8 +50,7 @@ export async function rateFilmAction(filmId: string, value: number): Promise<voi
     throw new Error("Trop de notes envoyées, réessaie dans quelques minutes.");
   }
 
-  const ratingFilmId = await resolveSeriesCanonicalId(filmId);
-  await upsertRating(user.id, ratingFilmId, value);
+  await upsertRating(user.id, filmId, value);
   revalidatePath("/", "layout");
 }
 
@@ -65,10 +63,9 @@ export async function getFilmSocialDataAction(filmId: string): Promise<{
   isFavorite: boolean;
 }> {
   const user = await getCurrentUser();
-  const canonicalFilmId = await resolveSeriesCanonicalId(filmId);
   const [filmComments, userRating, creatorUserIds, isFavorite] = await Promise.all([
-    getFilmComments(canonicalFilmId, user?.id),
-    user ? getUserRating(user.id, canonicalFilmId) : Promise.resolve(null),
+    getFilmComments(filmId, user?.id),
+    user ? getUserRating(user.id, filmId) : Promise.resolve(null),
     getFilmCreatorUserIds(filmId),
     user ? isFilmFavorite(user.id, filmId) : Promise.resolve(false),
   ]);
@@ -91,18 +88,16 @@ export async function addCommentAction(filmId: string, body: string, parentId?: 
     throw new Error("Trop de commentaires envoyés, réessaie dans quelques minutes.");
   }
 
-  const commentFilmId = await resolveSeriesCanonicalId(filmId);
-  await addComment(user.id, commentFilmId, body.trim(), parentId ?? null);
-  return getFilmComments(commentFilmId, user.id);
+  await addComment(user.id, filmId, body.trim(), parentId ?? null);
+  return getFilmComments(filmId, user.id);
 }
 
 export async function deleteCommentAction(commentId: string, filmId: string): Promise<Comment[]> {
   const user = await getCurrentUser();
   if (!user) throw new Error("Non authentifié.");
 
-  const commentFilmId = await resolveSeriesCanonicalId(filmId);
   await deleteComment(commentId, user.id, user.role === "admin");
-  return getFilmComments(commentFilmId, user.id);
+  return getFilmComments(filmId, user.id);
 }
 
 export async function toggleCommentReactionAction(
@@ -116,9 +111,8 @@ export async function toggleCommentReactionAction(
     throw new Error("Trop de réactions envoyées, réessaie dans un instant.");
   }
 
-  const commentFilmId = await resolveSeriesCanonicalId(filmId);
   await toggleCommentReaction(user.id, commentId, type);
-  return getFilmComments(commentFilmId, user.id);
+  return getFilmComments(filmId, user.id);
 }
 
 export async function getNotificationsAction(): Promise<{ notifications: Notification[]; unreadCount: number }> {

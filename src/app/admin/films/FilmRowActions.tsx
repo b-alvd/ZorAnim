@@ -5,8 +5,8 @@ import Modal from "@/components/Modal/Modal";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
 import FilmForm from "./FilmForm";
 import { deleteFilmAction, launchPremiereAction, stopPremiereAction, updateFilmAction } from "./actions";
-import { getPremiereStatus } from "@/lib/premiere";
-import type { Artist, Film } from "@/data/types";
+import type { Artist } from "@/data/types";
+import type { AdminFilm } from "./FilmsManager";
 import styles from "../shared.module.css";
 
 export default function FilmRowActions({
@@ -14,20 +14,30 @@ export default function FilmRowActions({
   artists,
   categories,
 }: {
-  film: Film;
+  film: AdminFilm;
   artists: Artist[];
   categories: string[];
 }) {
   const [open, setOpen] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const premiereNotStarted = !!film.premiereAt && new Date(film.premiereAt).getTime() > Date.now();
-  const premiereLive = getPremiereStatus(film) === "preview";
+  // Status is computed on the server (see page.tsx), keeping render pure.
+  const premiereNotStarted = film.status.kind === "premiere";
+  const premiereLive = film.status.kind === "live";
 
   return (
     <div className={styles.rowActions}>
-      <button type="button" className={styles.editLink} onClick={() => setOpen(true)}>
-        Modifier
+      <button
+        type="button"
+        className={styles.iconBtn}
+        onClick={() => setOpen(true)}
+        title="Modifier"
+        aria-label="Modifier"
+      >
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+        </svg>
       </button>
       {premiereNotStarted && (
         <button
@@ -44,7 +54,7 @@ export default function FilmRowActions({
           Arrêter l&apos;avant-première
         </button>
       )}
-      <Modal open={confirmStop} onClose={() => setConfirmStop(false)} title="Arrêter l'avant-première">
+      <Modal open={confirmStop} onClose={() => setConfirmStop(false)} title={`Arrêter l'avant-première de « ${film.title} »`}>
         <p className={styles.confirmText}>
           Arrêter le direct de <strong>{film.title}</strong> maintenant ? Les spectateurs seront renvoyés à
           l&apos;accueil.{" "}
@@ -71,7 +81,7 @@ export default function FilmRowActions({
           </button>
         </div>
       </Modal>
-      <Modal open={open} onClose={() => setOpen(false)} title={`Modifier ${film.title}`}>
+      <Modal open={open} onClose={() => setOpen(false)} title={`Modifier « ${film.title} »`} fixedHeight>
         <FilmForm
           artists={artists}
           categories={categories}
@@ -85,7 +95,7 @@ export default function FilmRowActions({
           }
         />
       </Modal>
-      <ConfirmDeleteButton action={deleteFilmAction.bind(null, film.id)} itemName={film.title} />
+      <ConfirmDeleteButton action={deleteFilmAction.bind(null, film.id)} itemName={film.title} compact />
     </div>
   );
 }
