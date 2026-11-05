@@ -553,6 +553,18 @@ export async function createFilm(input: FilmInput): Promise<string> {
   return id;
 }
 
+// Poster, year and synopsis of an announced series' fiche, edited along with
+// the series itself.
+export async function updateSeriesAnnouncement(
+  seriesTitle: string,
+  input: { poster: string; year: number; synopsis: string }
+): Promise<void> {
+  await db
+    .update(films)
+    .set({ poster: input.poster, year: input.year, synopsis: input.synopsis })
+    .where(and(eq(films.seriesTitle, seriesTitle), inArray(films.episodeKind, ["announcement", "teaser"])));
+}
+
 // Reviews open once the content is out: an announcement, an upcoming
 // premiere or a scheduled release can't be rated or commented yet.
 export async function isOpenForReviews(id: string): Promise<boolean> {

@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Dropdown from "@/components/Dropdown/Dropdown";
 import Modal from "@/components/Modal/Modal";
+import FileUpload from "@/components/FileUpload/FileUpload";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
 import FilmRowActions from "./FilmRowActions";
 import AddEpisodeButton from "./AddEpisodeButton";
@@ -214,13 +215,26 @@ function Poster({ src }: { src: string }) {
   return <span className={styles.poster}>{src && <Image src={src} alt="" fill sizes="72px" unoptimized />}</span>;
 }
 
-function EditSeriesButton({ title, sample, categories }: { title: string; sample: AdminFilm; categories: string[] }) {
+function EditSeriesButton({
+  title,
+  sample,
+  categories,
+  fiche,
+}: {
+  title: string;
+  sample: AdminFilm;
+  categories: string[];
+  // The announcement row of a series that has no episode yet.
+  fiche: AdminFilm | null;
+}) {
   const [open, setOpen] = useState(false);
+  const [poster, setPoster] = useState(fiche?.poster ?? "");
+  const [year, setYear] = useState(fiche?.year ?? new Date().getFullYear());
   const [seriesTitle, setSeriesTitle] = useState(title);
   const [category, setCategory] = useState(sample.category);
   const [rating, setRating] = useState(sample.rating);
   const [trailers, setTrailers] = useState<TrailerDraft[]>(() => toTrailerDrafts(sample.trailers));
-  const [synopsis, setSynopsis] = useState(sample.seriesSynopsis ?? "");
+  const [synopsis, setSynopsis] = useState(sample.seriesSynopsis ?? fiche?.synopsis ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -235,7 +249,9 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
           setCategory(sample.category);
           setRating(sample.rating);
           setTrailers(toTrailerDrafts(sample.trailers));
-          setSynopsis(sample.seriesSynopsis ?? "");
+          setSynopsis(sample.seriesSynopsis ?? fiche?.synopsis ?? "");
+          setPoster(fiche?.poster ?? "");
+          setYear(fiche?.year ?? new Date().getFullYear());
           setError(null);
           setOpen(true);
         }}
@@ -260,6 +276,7 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
                 rating,
                 synopsis,
                 trailers: trailers.map(({ title, videoUrl }) => ({ title, videoUrl })),
+                announcement: fiche ? { poster, year } : null,
               });
               if (result.error) setError(result.error);
               else setOpen(false);
@@ -280,6 +297,32 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
               placeholder="Présentation générale, affichée en haut de la fiche. Chaque épisode garde son propre synopsis."
             />
           </div>
+          {fiche && (
+            <>
+              <div className={shared.field}>
+                <label>Affiche (affichée dans « Bientôt » tant qu&apos;il n&apos;y a pas d&apos;épisode)</label>
+                <FileUpload
+                  allowUrl
+                  name="series-announcement-poster"
+                  label="Choisir une image"
+                  accept="image/*"
+                  value={poster}
+                  onChange={setPoster}
+                  preview
+                />
+              </div>
+              <div className={shared.field}>
+                <label htmlFor="series-year">Année</label>
+                <input
+                  id="series-year"
+                  type="number"
+                  value={year || ""}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                  required
+                />
+              </div>
+            </>
+          )}
           <div className={shared.field}>
             <label>Catégorie</label>
             <Dropdown options={categories} value={category} onChange={setCategory} />
@@ -415,7 +458,12 @@ function SeriesLines({
           <div className={styles.actions} onClick={(e) => e.stopPropagation()}>
             <ViewLink id={cover.id} />
             <NewToggle ids={episodes.map((e) => e.id)} active={allNew} />
-            <EditSeriesButton title={title} sample={cover} categories={categories} />
+            <EditSeriesButton
+              title={title}
+              sample={cover}
+              categories={categories}
+              fiche={realCount === 0 ? (episodes.find((e) => e.episodeKind === "announcement") ?? null) : null}
+            />
             <AddEpisodeButton seriesTitle={title} episodes={episodes} artists={artists} categories={categories} />
             <ConfirmDeleteButton
               action={() => deleteSeriesAction(title)}
@@ -473,6 +521,8 @@ function SeriesLines({
         ))}
       {open &&
         sorted
+          // The announcement row is edited with the series itself.
+          .filter((ep) => ep.episodeKind !== "announcement")
           .filter((ep) => !shownEpisodeIds || shownEpisodeIds.has(ep.id))
           .map((ep) => (
             <tr key={ep.id} className={`${styles.row} ${styles.episodeRow}`}>

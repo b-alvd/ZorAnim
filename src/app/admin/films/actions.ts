@@ -10,6 +10,7 @@ import {
   launchPremiere,
   setFilmsNew,
   setSeriesSynopsis,
+  updateSeriesAnnouncement,
   setTrailers,
   stopPremiere,
   updateFilm,
@@ -109,7 +110,15 @@ export async function setFilmsNewAction(ids: string[], isNew: boolean) {
 // Returned rather than thrown: Next.js hides thrown messages in production.
 export async function updateSeriesAction(
   oldSeriesTitle: string,
-  input: { seriesTitle: string; rating: string; category: string; synopsis: string; trailers: TrailerInput[] }
+  input: {
+    seriesTitle: string;
+    rating: string;
+    category: string;
+    synopsis: string;
+    trailers: TrailerInput[];
+    // Only for a series announced without episode yet.
+    announcement?: { poster: string; year: number } | null;
+  }
 ): Promise<{ error?: string }> {
   await requireAdmin();
   const seriesTitle = input.seriesTitle.trim();
@@ -118,6 +127,9 @@ export async function updateSeriesAction(
     // Saved under the current title, then they follow the rename.
     await setTrailers({ seriesTitle: oldSeriesTitle }, input.trailers);
     await setSeriesSynopsis(oldSeriesTitle, input.synopsis);
+    if (input.announcement) {
+      await updateSeriesAnnouncement(oldSeriesTitle, { ...input.announcement, synopsis: input.synopsis });
+    }
     await adminUpdateSeries(oldSeriesTitle, {
       seriesTitle,
       rating: input.rating,
