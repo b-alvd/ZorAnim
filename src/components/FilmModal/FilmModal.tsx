@@ -232,7 +232,7 @@ export default function FilmModal({
           <div className={styles.badges}>
             {activeFilm.isNew && <span className={`${styles.badge} ${styles.newBadge}`}>Nouveau</span>}
             <span className={styles.badge}>{activeFilm.year}</span>
-            {!hidesEpisode && <span className={styles.badge}>{activeFilm.duration}</span>}
+            {released && <span className={styles.badge}>{activeFilm.duration}</span>}
             <span className={styles.badge}>{activeFilm.rating}</span>
           </div>
 
@@ -346,7 +346,8 @@ export default function FilmModal({
             </div>
           )}
 
-          {listedEpisodes.length >= 1 && film.seriesTitle && (
+          {/* No episode out yet (coming soon): the list stays hidden. */}
+          {listedEpisodes.some((ep) => isReleased(ep)) && film.seriesTitle && (
             <div className={styles.episodesSection}>
               <h3 className={styles.episodesTitle}>Épisodes de {film.seriesTitle}</h3>
               <Dropdown options={seasonOptions} value={season} onChange={setSelectedSeason} />
