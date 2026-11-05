@@ -793,7 +793,13 @@ export default async function AdminDashboard() {
                     </div>
                     <div className={styles.feedMeta}>
                       <span className={styles.rankTag}>
-                        {f.kind === "series" ? `Série · ${f.episodeCount} ép.` : "Film"}
+                        {f.announced
+                          ? f.kind === "series"
+                            ? "Série · annonce"
+                            : "Film · annonce"
+                          : f.kind === "series"
+                            ? `Série · ${f.episodeCount} ép.`
+                            : "Film"}
                       </span>
                       {f.artistName}
                     </div>

@@ -2033,6 +2033,8 @@ export type DashboardStats = {
     poster: string;
     kind: "film" | "series";
     episodeCount: number;
+    // Added as an announcement (no video / no episode yet).
+    announced: boolean;
     latestEpisode: RankedEpisode | null;
     createdAt: string;
   }[];
@@ -2234,7 +2236,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       creator: f ? creatorMap.get(creatorIdOf(f))?.name ?? "?" : "?",
       category: f?.category ?? "",
       year: f?.year ?? 0,
-      episodeCount: isSeries ? group.length : 0,
+      episodeCount: isSeries ? group.filter((e) => toEpisodeKind(e.episodeKind) === "episode").length : 0,
     };
   };
 
@@ -2266,7 +2268,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     .slice(0, 5);
 
   const topEpisodes = [...viewsByFilm.entries()]
-    .filter(([id]) => filmMap.get(id)?.seriesTitle)
+    .filter(([id]) => {
+      const f = filmMap.get(id);
+      return !!f?.seriesTitle && toEpisodeKind(f.episodeKind) === "episode";
+    })
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([id, views]) => ({
@@ -2429,9 +2434,13 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       artistName: creatorMap.get(creatorIdOf(f))?.name ?? "?",
       poster: f.poster,
       kind: (f.seriesTitle ? "series" : "film") as "film" | "series",
-      episodeCount: f.seriesTitle ? contentGroups.get(f.seriesTitle)?.length ?? 0 : 0,
+      episodeCount: f.seriesTitle
+        ? (contentGroups.get(f.seriesTitle) ?? []).filter((e) => toEpisodeKind(e.episodeKind) === "episode").length
+        : 0,
+      announced: toEpisodeKind(f.episodeKind) === "announcement",
       // For a series, the representative is its most recently added episode.
-      latestEpisode: episodeOf(f.id),
+      // An announcement fiche isn't an episode: no "latest episode" line.
+      latestEpisode: toEpisodeKind(f.episodeKind) === "episode" ? episodeOf(f.id) : null,
       createdAt: f.createdAt,
     }));
 
@@ -2439,7 +2448,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
   return {
     filmCount: contentRepresentatives.length,
-    episodeCount: filmRows.filter((f) => f.seriesTitle).length,
+    episodeCount: filmRows.filter((f) => f.seriesTitle && toEpisodeKind(f.episodeKind) === "episode").length,
     artistCount: artistRows.length,
     studioCount: studioRows.length,
     userCount: userRows.length,
