@@ -300,6 +300,8 @@ export const trailers = sqliteTable("trailers", {
   title: text("title").notNull(),
   videoUrl: text("video_url").notNull(),
   position: integer("position").notNull().default(0),
+  // + "views" integer (migration 0041), read and incremented with raw SQL so
+  // that queries built from this schema keep working before the migration.
   createdAt: text("created_at")
     .notNull()
     .default(sql`(current_timestamp)`),

@@ -6,7 +6,7 @@ export type Artist = {
   isStudio: boolean;
 };
 
-export type Trailer = { id: string; title: string; videoUrl: string };
+export type Trailer = { id: string; title: string; videoUrl: string; views: number };
 
 export type Film = {
   id: string;

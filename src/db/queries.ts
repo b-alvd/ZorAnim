@@ -190,8 +190,9 @@ export async function getTrailers(seriesTitles: string[], filmIds: string[]): Pr
       .from(trailersTable)
       .where(conditions.length === 1 ? conditions[0] : or(...conditions))
       .orderBy(trailersTable.position, trailersTable.createdAt);
+    const views = await getTrailerViews(rows.map((r) => r.id));
     for (const r of rows) {
-      const trailer = { id: r.id, title: r.title, videoUrl: r.videoUrl };
+      const trailer = { id: r.id, title: r.title, videoUrl: r.videoUrl, views: views.get(r.id) ?? 0 };
       if (r.seriesTitle) lists.bySeries.set(r.seriesTitle, [...(lists.bySeries.get(r.seriesTitle) ?? []), trailer]);
       else if (r.filmId) lists.byFilm.set(r.filmId, [...(lists.byFilm.get(r.filmId) ?? []), trailer]);
     }
@@ -199,6 +200,39 @@ export async function getTrailers(seriesTitles: string[], filmIds: string[]): Pr
     if (!isMissingTable(e)) throw e;
   }
   return lists;
+}
+
+// Trailer plays are counted apart from the content's own views. The column
+// comes with migration 0041: until then every trailer reads as 0 views.
+function isMissingColumn(e: unknown): boolean {
+  const message = e instanceof Error ? `${e.message} ${e.cause instanceof Error ? e.cause.message : ""}` : String(e);
+  return /no such column/i.test(message);
+}
+
+async function getTrailerViews(ids: string[]): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (ids.length === 0) return map;
+  try {
+    const rows = await db.all<{ id: string; views: number }>(
+      sql`SELECT id, views FROM trailers WHERE id IN (${sql.join(
+        ids.map((id) => sql`${id}`),
+        sql`, `
+      )})`
+    );
+    for (const r of rows) map.set(r.id, r.views ?? 0);
+  } catch (e) {
+    if (!isMissingColumn(e) && !isMissingTable(e)) throw e;
+  }
+  return map;
+}
+
+export async function incrementTrailerView(id: string): Promise<void> {
+  if (id === LEGACY_TRAILER_ID) return;
+  try {
+    await db.run(sql`UPDATE trailers SET views = views + 1 WHERE id = ${id}`);
+  } catch (e) {
+    if (!isMissingColumn(e) && !isMissingTable(e)) throw e;
+  }
 }
 
 // Legacy single trailer of a film, used until it is moved to the trailers table.
@@ -210,7 +244,7 @@ function trailersFor(f: Film, lists: TrailerLists): Trailer[] {
   // Not migrated yet: a film's legacy single trailer, or the video of an
   // announcement fiche (formerly a teaser, its video is the trailer).
   const legacy = f.episodeKind === "announcement" ? f.teaserVideoUrl || f.videoUrl : f.seriesTitle ? null : f.teaserVideoUrl;
-  return legacy ? [{ id: LEGACY_TRAILER_ID, title: "Bande-annonce", videoUrl: legacy }] : [];
+  return legacy ? [{ id: LEGACY_TRAILER_ID, title: "Bande-annonce", videoUrl: legacy, views: 0 }] : [];
 }
 
 export type TrailerInput = { title: string; videoUrl: string };

@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getFilm, getSeriesEpisodes, getSuggestions, incrementGuestView, markWatched } from "@/db/queries";
+import {
+  getFilm,
+  getSeriesEpisodes,
+  getSuggestions,
+  incrementGuestView,
+  incrementTrailerView,
+  markWatched,
+} from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getPremiereStatus, getPremiereUnlockAt } from "@/lib/premiere";
 import VideoPlayer from "@/components/VideoPlayer/VideoPlayer";
@@ -46,6 +53,8 @@ export default async function WatchPage({
   const wantsTrailer = variant === "teaser" || film.episodeKind === "announcement";
   const trailer = wantsTrailer ? (film.trailers.find((t) => t.id === trailerId) ?? film.trailers[0] ?? null) : null;
   if (trailer) {
+    // Counted on the trailer itself, never as a view of the content.
+    await incrementTrailerView(trailer.id);
     const trailerFilm = { ...film, videoUrl: trailer.videoUrl, title: `${film.seriesTitle ?? film.title} · ${trailer.title}` };
     return (
       <main className={styles.page}>

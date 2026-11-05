@@ -444,8 +444,8 @@ function SeriesLines({
             <td>
               <span className={styles.muted}>Toujours visible</span>
             </td>
-            <td className={styles.num}>
-              <span className={styles.muted}>—</span>
+            <td className={styles.num} title="Lectures de la bande-annonce (comptées à part des vues du contenu)">
+              {t.views}
             </td>
             <td className={styles.num}>
               <span className={styles.muted}>—</span>
