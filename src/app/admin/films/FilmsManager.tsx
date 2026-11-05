@@ -220,6 +220,7 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
   const [category, setCategory] = useState(sample.category);
   const [rating, setRating] = useState(sample.rating);
   const [trailers, setTrailers] = useState<TrailerDraft[]>(() => toTrailerDrafts(sample.trailers));
+  const [synopsis, setSynopsis] = useState(sample.seriesSynopsis ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -234,6 +235,7 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
           setCategory(sample.category);
           setRating(sample.rating);
           setTrailers(toTrailerDrafts(sample.trailers));
+          setSynopsis(sample.seriesSynopsis ?? "");
           setError(null);
           setOpen(true);
         }}
@@ -252,23 +254,31 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
             e.preventDefault();
             setError(null);
             startTransition(async () => {
-              try {
-                await updateSeriesAction(title, {
-                  seriesTitle,
-                  category,
-                  rating,
-                  trailers: trailers.map(({ title, videoUrl }) => ({ title, videoUrl })),
-                });
-                setOpen(false);
-              } catch (err) {
-                setError(err instanceof Error ? err.message : "Une erreur est survenue.");
-              }
+              const result = await updateSeriesAction(title, {
+                seriesTitle,
+                category,
+                rating,
+                synopsis,
+                trailers: trailers.map(({ title, videoUrl }) => ({ title, videoUrl })),
+              });
+              if (result.error) setError(result.error);
+              else setOpen(false);
             });
           }}
         >
           <div className={shared.field}>
             <label htmlFor="series-title">Titre de la série</label>
             <input id="series-title" value={seriesTitle} onChange={(e) => setSeriesTitle(e.target.value)} required />
+          </div>
+          <div className={shared.field}>
+            <label htmlFor="series-synopsis">Synopsis de la série</label>
+            <textarea
+              id="series-synopsis"
+              rows={4}
+              value={synopsis}
+              onChange={(e) => setSynopsis(e.target.value)}
+              placeholder="Présentation générale, affichée en haut de la fiche. Chaque épisode garde son propre synopsis."
+            />
           </div>
           <div className={shared.field}>
             <label>Catégorie</label>

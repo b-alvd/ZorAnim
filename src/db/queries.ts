@@ -21,6 +21,7 @@ import {
   premiereViewers,
   sessions,
   trailers as trailersTable,
+  seriesMeta,
 } from "@/db/schema";
 import type { Film, Artist, Trailer } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
@@ -101,6 +102,7 @@ function mapFilm(row: FilmRow): Film {
     episodeKind: toEpisodeKind(row.episodeKind),
     teaserVideoUrl: row.teaserVideoUrl,
     trailers: [],
+    seriesSynopsis: null,
     premiereAt: row.premiereAt,
     premiereBanner: row.premiereBanner,
     releaseBanner: row.releaseBanner,
@@ -140,10 +142,13 @@ async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
     ])
   );
 
-  const trailerLists = await getTrailers(
-    seriesTitles,
-    filmsList.filter((f) => !f.seriesTitle).map((f) => f.id)
-  );
+  const [trailerLists, synopses] = await Promise.all([
+    getTrailers(
+      seriesTitles,
+      filmsList.filter((f) => !f.seriesTitle).map((f) => f.id)
+    ),
+    getSeriesSynopses(seriesTitles),
+  ]);
   return filmsList.map((f) => {
     const own = ownSummary(f.id);
     const content = f.seriesTitle ? seriesSummaries.get(f.seriesTitle) ?? null : own;
@@ -154,6 +159,7 @@ async function attachRatingSummaries(filmsList: Film[]): Promise<Film[]> {
       episodeAvgRating: own?.avg ?? null,
       episodeRatingCount: own?.count ?? 0,
       trailers: trailersFor(f, trailerLists),
+      seriesSynopsis: f.seriesTitle ? synopses.get(f.seriesTitle) ?? null : null,
     };
   });
 }
@@ -244,6 +250,39 @@ export async function setTrailers(owner: TrailerOwner, list: TrailerInput[]): Pr
   if ("filmId" in owner) await db.update(films).set({ teaserVideoUrl: null }).where(eq(films.id, owner.filmId));
 }
 
+// series_meta arrives with migration 0040: until then, reads find no series
+// synopsis (episodes' own synopses are shown instead).
+export async function getSeriesSynopses(seriesTitles: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (seriesTitles.length === 0) return map;
+  try {
+    const rows = await db
+      .select({ seriesTitle: seriesMeta.seriesTitle, synopsis: seriesMeta.synopsis })
+      .from(seriesMeta)
+      .where(inArray(seriesMeta.seriesTitle, seriesTitles));
+    for (const r of rows) if (r.synopsis?.trim()) map.set(r.seriesTitle, r.synopsis);
+  } catch (e) {
+    if (!isMissingTable(e)) throw e;
+  }
+  return map;
+}
+
+export async function setSeriesSynopsis(seriesTitle: string, synopsis: string): Promise<void> {
+  const value = synopsis.trim() || null;
+  try {
+    await db
+      .insert(seriesMeta)
+      .values({ seriesTitle, synopsis: value })
+      .onConflictDoUpdate({ target: seriesMeta.seriesTitle, set: { synopsis: value, updatedAt: new Date().toISOString() } });
+  } catch (e) {
+    if (isMissingTable(e)) {
+      if (!value) return;
+      throw new Error("La table series_meta n'existe pas encore : lance la migration 0040 (scripts/apply-0040.ts).");
+    }
+    throw e;
+  }
+}
+
 // Keeps series trailers attached when a series is renamed or deleted.
 async function renameSeriesTrailers(oldTitle: string, newTitle: string): Promise<void> {
   if (oldTitle === newTitle) return;
@@ -252,11 +291,21 @@ async function renameSeriesTrailers(oldTitle: string, newTitle: string): Promise
   } catch (e) {
     if (!isMissingTable(e)) throw e;
   }
+  try {
+    await db.update(seriesMeta).set({ seriesTitle: newTitle }).where(eq(seriesMeta.seriesTitle, oldTitle));
+  } catch (e) {
+    if (!isMissingTable(e)) throw e;
+  }
 }
 
 async function deleteSeriesTrailers(seriesTitle: string): Promise<void> {
   try {
     await db.delete(trailersTable).where(eq(trailersTable.seriesTitle, seriesTitle));
+  } catch (e) {
+    if (!isMissingTable(e)) throw e;
+  }
+  try {
+    await db.delete(seriesMeta).where(eq(seriesMeta.seriesTitle, seriesTitle));
   } catch (e) {
     if (!isMissingTable(e)) throw e;
   }

@@ -9,6 +9,7 @@ import {
   deleteSeries,
   launchPremiere,
   setFilmsNew,
+  setSeriesSynopsis,
   setTrailers,
   stopPremiere,
   updateFilm,
@@ -105,22 +106,29 @@ export async function setFilmsNewAction(ids: string[], isNew: boolean) {
   revalidatePath("/", "layout");
 }
 
+// Returned rather than thrown: Next.js hides thrown messages in production.
 export async function updateSeriesAction(
   oldSeriesTitle: string,
-  input: { seriesTitle: string; rating: string; category: string; trailers: TrailerInput[] }
-) {
+  input: { seriesTitle: string; rating: string; category: string; synopsis: string; trailers: TrailerInput[] }
+): Promise<{ error?: string }> {
   await requireAdmin();
   const seriesTitle = input.seriesTitle.trim();
-  if (!seriesTitle) throw new Error("Le titre de la série est requis.");
-  // Trailers are saved under the current title, then follow the rename.
-  await setTrailers({ seriesTitle: oldSeriesTitle }, input.trailers);
-  await adminUpdateSeries(oldSeriesTitle, {
-    seriesTitle,
-    rating: input.rating,
-    category: input.category,
-  });
+  if (!seriesTitle) return { error: "Le titre de la série est requis." };
+  try {
+    // Saved under the current title, then they follow the rename.
+    await setTrailers({ seriesTitle: oldSeriesTitle }, input.trailers);
+    await setSeriesSynopsis(oldSeriesTitle, input.synopsis);
+    await adminUpdateSeries(oldSeriesTitle, {
+      seriesTitle,
+      rating: input.rating,
+      category: input.category,
+    });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Enregistrement impossible." };
+  }
   revalidatePath("/admin/films");
   revalidatePath("/", "layout");
+  return {};
 }
 
 export async function deleteSeriesAction(seriesTitle: string) {
@@ -168,10 +176,11 @@ export async function createSeriesAction(input: {
   rating: string;
   category: string;
   isNew: boolean;
+  synopsis?: string;
   trailers?: TrailerInput[];
   episodes: SeriesEpisodeInput[];
   // Fiche shown in "Bientôt" while the series has no episode yet.
-  announcement?: { poster: string; synopsis: string; year: number } | null;
+  announcement?: { poster: string; year: number } | null;
 }) {
   await requireAdmin();
   const seriesTitle = input.seriesTitle.trim();
@@ -181,7 +190,7 @@ export async function createSeriesAction(input: {
   if (input.episodes.length === 0 && input.announcement) {
     await createFilm({
       title: seriesTitle,
-      synopsis: input.announcement.synopsis,
+      synopsis: input.synopsis ?? "",
       year: input.announcement.year,
       durationMinutes: 0,
       rating: input.rating,
@@ -225,5 +234,6 @@ export async function createSeriesAction(input: {
     });
   }
   if (input.trailers?.length) await setTrailers({ seriesTitle }, input.trailers);
+  if (input.synopsis?.trim()) await setSeriesSynopsis(seriesTitle, input.synopsis);
   revalidatePath("/admin/films");
 }

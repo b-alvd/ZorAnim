@@ -304,3 +304,13 @@ export const trailers = sqliteTable("trailers", {
     .notNull()
     .default(sql`(current_timestamp)`),
 });
+
+// Series-level texts. A series has no row of its own (its episodes share a
+// `series_title`), so this is keyed by that title.
+export const seriesMeta = sqliteTable("series_meta", {
+  seriesTitle: text("series_title").primaryKey(),
+  synopsis: text("synopsis"),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(current_timestamp)`),
+});

@@ -176,6 +176,9 @@ export default function FilmModal({
   // Not out yet (announcement, upcoming premiere, scheduled release): nothing
   // to rate or comment, and no plain "Lecture".
   const released = isReleased(activeFilm);
+  // An episode that can't be watched yet doesn't give away its details
+  // (title, duration): the fiche presents the series instead.
+  const hidesEpisode = !released && !!activeFilm.seriesTitle && activeFilm.episodeKind !== "announcement";
   const playReleased = playTarget ? isReleased(playTarget) : false;
   const playUnlockAt = playTarget && !playReleased ? getPremiereUnlockAt(playTarget) : null;
   const playIsPremiere =
@@ -213,10 +216,11 @@ export default function FilmModal({
           <div className={styles.bannerShade} />
         </div>
         <div className={styles.body}>
-          <h2 className={styles.title}>{activeFilm.title}</h2>
+          <h2 className={styles.title}>{hidesEpisode ? activeFilm.seriesTitle : activeFilm.title}</h2>
           {activeFilm.seriesTitle && (
             <p className={styles.seriesLabel}>
               {activeFilm.seriesTitle} · {formatEpisodeLabel(activeFilm)}
+              {hidesEpisode && " · à venir"}
             </p>
           )}
           <Link
@@ -228,7 +232,7 @@ export default function FilmModal({
           <div className={styles.badges}>
             {activeFilm.isNew && <span className={`${styles.badge} ${styles.newBadge}`}>Nouveau</span>}
             <span className={styles.badge}>{activeFilm.year}</span>
-            <span className={styles.badge}>{activeFilm.duration}</span>
+            {!hidesEpisode && <span className={styles.badge}>{activeFilm.duration}</span>}
             <span className={styles.badge}>{activeFilm.rating}</span>
           </div>
 
@@ -251,7 +255,9 @@ export default function FilmModal({
             </p>
           )}
 
-          <p className={styles.synopsis}>{activeFilm.synopsis}</p>
+          {/* A series is presented by its own synopsis when it has one; each
+              episode's synopsis then shows in the episode list. */}
+          <p className={styles.synopsis}>{activeFilm.seriesSynopsis ?? activeFilm.synopsis}</p>
 
           <div className={styles.actions}>
             {playTarget && playReleased && (
@@ -353,7 +359,12 @@ export default function FilmModal({
                     className={`${styles.episodeItem} ${ep.id === activeFilm.id ? styles.episodeItemActive : ""}`}
                   >
                     <span className={styles.episodeNumber}>{formatEpisodeTag(ep)}</span>
-                    <span className={styles.episodeTitle}>{ep.title}</span>
+                    <span className={styles.episodeText}>
+                      <span className={styles.episodeTitle}>{isReleased(ep) ? ep.title : "Épisode à venir"}</span>
+                      {isReleased(ep) && activeFilm.seriesSynopsis && ep.synopsis && (
+                        <span className={styles.episodeSynopsis}>{ep.synopsis}</span>
+                      )}
+                    </span>
                     {!isReleased(ep) && getPremiereStatus(ep) === "locked" && (
                       <span className={styles.episodeSoon}>{formatWhen(getPremiereUnlockAt(ep), true)}</span>
                     )}

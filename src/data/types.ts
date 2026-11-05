@@ -39,6 +39,8 @@ export type Film = {
   teaserVideoUrl: string | null;
   // Trailers to show: the series' for an episode, the film's own otherwise.
   trailers: Trailer[];
+  // Synopsis of the whole series (series_meta), null if none was written.
+  seriesSynopsis: string | null;
   premiereAt: string | null;
   premiereBanner: string | null;
   releaseBanner: string | null;

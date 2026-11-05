@@ -87,7 +87,8 @@ export default function AdminFilmSeriesForm({
   const [trailers, setTrailers] = useState<TrailerDraft[]>([]);
   // "announce": the series is presented in "Bientôt" before any episode.
   const [mode, setMode] = useState<"episodes" | "announce">("episodes");
-  const [announcement, setAnnouncement] = useState({ poster: "", synopsis: "", year: new Date().getFullYear() });
+  const [announcement, setAnnouncement] = useState({ poster: "", year: new Date().getFullYear() });
+  const [seriesSynopsis, setSeriesSynopsis] = useState("");
   const [episodes, setEpisodes] = useState<EpisodeDraft[]>(() => [emptyEpisode()]);
   const [openKey, setOpenKey] = useState<number | null>(episodes[0].key);
   const [isPending, startTransition] = useTransition();
@@ -111,7 +112,8 @@ export default function AdminFilmSeriesForm({
   };
   const removeEpisode = (key: number) => setEpisodes((prev) => prev.filter((ep) => ep.key !== key));
 
-  const announcementReady = !!announcement.poster && !!announcement.synopsis.trim() && announcement.year > 0;
+  // An announced series is presented by its synopsis: required then.
+  const announcementReady = !!announcement.poster && !!seriesSynopsis.trim() && announcement.year > 0;
   const seriesReady =
     !!seriesTitle.trim() &&
     !!selectedArtist &&
@@ -128,6 +130,7 @@ export default function AdminFilmSeriesForm({
         category,
         isNew,
         trailers: trailers.map(({ title, videoUrl }) => ({ title, videoUrl })),
+        synopsis: seriesSynopsis,
         announcement: mode === "announce" ? announcement : null,
         // Release dates are datetime-local strings: converted to ISO here, in
         // the browser, so they resolve against the admin's own local time.
@@ -184,6 +187,16 @@ export default function AdminFilmSeriesForm({
               <label htmlFor="seriesTitle">Titre de la série</label>
               <input id="seriesTitle" value={seriesTitle} onChange={(e) => setSeriesTitle(e.target.value)} required />
             </div>
+            <div className={adminStyles.field}>
+              <label htmlFor="seriesSynopsis">Synopsis de la série{mode === "announce" ? "" : " (facultatif)"}</label>
+              <textarea
+                id="seriesSynopsis"
+                rows={3}
+                value={seriesSynopsis}
+                onChange={(e) => setSeriesSynopsis(e.target.value)}
+                placeholder="Présentation générale, affichée en haut de la fiche."
+              />
+            </div>
             <div className={adminStyles.row2}>
               <div className={adminStyles.field}>
                 <label>Classification</label>
@@ -226,15 +239,6 @@ export default function AdminFilmSeriesForm({
                 La série apparaît dans « Bientôt sur ZorAnim » avec ses bandes-annonces. Au premier épisode ajouté, la
                 fiche s&apos;efface d&apos;elle-même (ses favoris passent sur l&apos;épisode).
               </p>
-              <div className={adminStyles.field}>
-                <label>Synopsis</label>
-                <textarea
-                  rows={3}
-                  value={announcement.synopsis}
-                  onChange={(e) => setAnnouncement((a) => ({ ...a, synopsis: e.target.value }))}
-                  required
-                />
-              </div>
               <div className={adminStyles.field}>
                 <label>Année</label>
                 <input
