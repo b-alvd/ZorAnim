@@ -44,7 +44,7 @@ function readFilmInput(formData: FormData): FilmInput {
     seriesTitle: seriesTitle || null,
     seasonNumber: seriesTitle && seasonNumber ? Number(seasonNumber) : null,
     episodeNumber: seriesTitle && episodeNumber ? Number(episodeNumber) : null,
-    episodeKind: formData.get("episodeKind") === "teaser" ? "teaser" : "episode",
+    episodeKind: formData.get("episodeKind") === "announcement" ? "announcement" : "episode",
     teaserVideoUrl: String(formData.get("teaserVideoUrl") ?? "") || null,
     premiereAt: readDateTimeLocal(formData, "premiereAt"),
     premiereBanner: String(formData.get("premiereBanner") ?? "") || null,
@@ -148,7 +148,6 @@ export type SeriesEpisodeInput = {
   synopsis: string;
   year: number;
   durationMinutes: number;
-  episodeKind: "episode" | "teaser";
   seasonNumber: number;
   episodeNumber: number;
   poster: string;
@@ -171,11 +170,33 @@ export async function createSeriesAction(input: {
   isNew: boolean;
   trailers?: TrailerInput[];
   episodes: SeriesEpisodeInput[];
+  // Fiche shown in "Bientôt" while the series has no episode yet.
+  announcement?: { poster: string; synopsis: string; year: number } | null;
 }) {
   await requireAdmin();
   const seriesTitle = input.seriesTitle.trim();
   if (!seriesTitle) throw new Error("Le titre de la série est requis.");
-  if (input.episodes.length === 0) throw new Error("Ajoute au moins un épisode.");
+  if (input.episodes.length === 0 && !input.announcement) throw new Error("Ajoute au moins un épisode.");
+
+  if (input.episodes.length === 0 && input.announcement) {
+    await createFilm({
+      title: seriesTitle,
+      synopsis: input.announcement.synopsis,
+      year: input.announcement.year,
+      durationMinutes: 0,
+      rating: input.rating,
+      category: input.category,
+      artistId: input.isStudio ? null : input.artistId,
+      studioId: input.isStudio ? input.artistId : null,
+      isNew: input.isNew,
+      poster: input.announcement.poster,
+      videoUrl: "",
+      seriesTitle,
+      seasonNumber: null,
+      episodeNumber: null,
+      episodeKind: "announcement",
+    });
+  }
 
   for (const episode of input.episodes) {
     await createFilm({
@@ -191,9 +212,9 @@ export async function createSeriesAction(input: {
       poster: episode.poster,
       videoUrl: episode.videoUrl,
       seriesTitle,
-      seasonNumber: episode.episodeKind === "teaser" ? null : episode.seasonNumber,
+      seasonNumber: episode.seasonNumber,
       episodeNumber: episode.episodeNumber,
-      episodeKind: episode.episodeKind,
+      episodeKind: "episode",
       premiereAt: episode.premiereAt ?? null,
       premiereBanner: episode.premiereBanner ?? null,
       releaseBanner: episode.releaseBanner ?? null,

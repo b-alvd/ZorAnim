@@ -31,7 +31,7 @@ export function summarizeContents(
     groups.set(key, [...(groups.get(key) ?? []), f]);
   }
   return [...groups.entries()].map(([key, films]) => {
-    const real = films.filter((f) => f.episodeKind !== "teaser");
+    const real = films.filter((f) => f.episodeKind !== "announcement");
     const cover = real[0] ?? films[0];
     return {
       key,

@@ -39,7 +39,7 @@ export default function Card({
         {premiereBadge ? (
           <span className={styles.seriesBadge}>{premiereBadge}</span>
         ) : comingSoon ? (
-          <span className={styles.seriesBadge}>Bientôt · Bande-annonce</span>
+          <span className={styles.seriesBadge}>Bientôt</span>
         ) : (
           isSeries && (
             <span className={styles.seriesBadge}>

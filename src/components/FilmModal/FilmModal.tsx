@@ -23,10 +23,8 @@ import styles from "./FilmModal.module.css";
 
 const ANIM_MS = 250;
 
-const TRAILERS_OPTION = "Bandes-annonces";
-
-function seasonOptionFor(ep: Pick<Film, "episodeKind" | "seasonNumber">): string {
-  return ep.episodeKind === "teaser" ? TRAILERS_OPTION : `Saison ${ep.seasonNumber ?? 1}`;
+function seasonOptionFor(ep: Pick<Film, "seasonNumber">): string {
+  return `Saison ${ep.seasonNumber ?? 1}`;
 }
 
 export default function FilmModal({
@@ -158,25 +156,14 @@ export default function FilmModal({
     });
   };
 
-  // A teaser episode whose video is already one of the trailers is reached
-  // through the "Bande-annonce" button: don't offer it a second time (e.g. a
-  // coming-soon series that only exists through its teaser episode).
-  const trailerUrls = new Set(activeFilm.trailers.map((t) => t.videoUrl));
-  const isTrailerEpisode = (ep: Film) => ep.episodeKind === "teaser" && trailerUrls.has(ep.videoUrl);
-  const listedEpisodes = episodes.filter((ep) => !isTrailerEpisode(ep));
-  // "Lecture" on such a teaser plays the first real episode, if there is one.
-  const playTarget = isTrailerEpisode(activeFilm)
-    ? (listedEpisodes.find((ep) => ep.episodeKind !== "teaser") ?? null)
-    : activeFilm;
+  // An announcement fiche has no video: it isn't listed as an episode, and
+  // "Lecture" plays the series' first episode if there is one (otherwise only
+  // the trailers are offered).
+  const listedEpisodes = episodes.filter((ep) => ep.episodeKind !== "announcement");
+  const playTarget = activeFilm.episodeKind === "announcement" ? (listedEpisodes[0] ?? null) : activeFilm;
 
-  const seasonNumbers = [
-    ...new Set(listedEpisodes.filter((ep) => ep.episodeKind !== "teaser").map((ep) => ep.seasonNumber ?? 1)),
-  ].sort((a, b) => a - b);
-  const hasTeaserEpisodes = listedEpisodes.some((ep) => ep.episodeKind === "teaser");
-  const seasonOptions = [
-    ...(hasTeaserEpisodes ? [TRAILERS_OPTION] : []),
-    ...seasonNumbers.map((n) => `Saison ${n}`),
-  ];
+  const seasonNumbers = [...new Set(listedEpisodes.map((ep) => ep.seasonNumber ?? 1))].sort((a, b) => a - b);
+  const seasonOptions = seasonNumbers.map((n) => `Saison ${n}`);
   const season = seasonOptions.includes(selectedSeason) ? selectedSeason : seasonOptions[0];
   const episodesForSeason = listedEpisodes.filter((ep) => seasonOptionFor(ep) === season);
 

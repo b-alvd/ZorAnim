@@ -10,7 +10,6 @@ import {
   OptionalToggle,
   ReleaseFields,
   TrailersEditor,
-  newTrailerDraft,
   toTrailerDrafts,
   minutesFromSeconds,
   toDatetimeLocal,
@@ -34,7 +33,7 @@ type FilmFormValues = {
   seriesTitle?: string | null;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
-  episodeKind?: "episode" | "teaser";
+  episodeKind?: "episode" | "announcement";
   teaserVideoUrl?: string | null;
   trailers?: { title: string; videoUrl: string }[];
   premiereAt?: string | null;
@@ -46,12 +45,7 @@ type FilmFormValues = {
   videoDurationSeconds?: number | null;
 };
 
-const SEASON_TYPE_OPTIONS = ["Teaser", "Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
-
-function seasonTypeLabel(episodeKind: string | undefined, seasonNumber: number | null | undefined): string {
-  if (episodeKind === "teaser") return "Teaser";
-  return `Saison ${seasonNumber ?? 1}`;
-}
+const SEASON_TYPE_OPTIONS = ["Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
 
 export default function FilmForm({
   onSubmit,
@@ -102,14 +96,12 @@ export default function FilmForm({
     premiereAdDurationSeconds: initial?.premiereAdDurationSeconds ?? null,
   });
   const [seriesTitleValue, setSeriesTitleValue] = useState(lockedSeriesTitle ?? initial?.seriesTitle ?? "");
-  const [seasonType, setSeasonType] = useState(
-    initial ? seasonTypeLabel(initial.episodeKind, initial.seasonNumber) : "Saison 1"
-  );
+  const [seasonType, setSeasonType] = useState(`Saison ${initial?.seasonNumber ?? 1}`);
   const isSeries = !!lockedSeriesTitle || !!seriesTitleValue.trim();
-  const isTeaser = seasonType === "Teaser";
-  const wasStandaloneTeaser = !isSeries && initial?.episodeKind === "teaser";
-  const [standaloneTeaser, setStandaloneTeaser] = useState(wasStandaloneTeaser);
-  const [teaserKept, setTeaserKept] = useState(false);
+  // Without a video, a film (or the fiche of an announced series) is an
+  // announcement: only its trailers are visible, in "Bientôt sur ZorAnim".
+  const allowAnnouncement = !isSeries || initial?.episodeKind === "announcement";
+  const isAnnouncement = allowAnnouncement && !videoUrl;
   const showSeriesTitleInput = allowSeries && !lockedSeriesTitle && (!initial || !!initial.seriesTitle);
   const [valid, setValid] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -125,7 +117,7 @@ export default function FilmForm({
   const updateValidity = () => setValid(formRef.current?.checkValidity() ?? false);
   useEffect(updateValidity, []);
   // Showing/hiding release fields changes which inputs are required.
-  useEffect(updateValidity, [release, isSeries, standaloneTeaser]);
+  useEffect(updateValidity, [release, isSeries, isAnnouncement]);
 
   return (
     <form
@@ -168,24 +160,24 @@ export default function FilmForm({
             <span className={formStyles.formHint}>Vider ce champ transforme l&apos;épisode en film.</span>
           </div>
         )}
-        {isSeries && (
+        <input type="hidden" name="episodeKind" value={isAnnouncement ? "announcement" : "episode"} />
+        {isSeries && !isAnnouncement && (
           <>
-            <input type="hidden" name="episodeKind" value={isTeaser ? "teaser" : "episode"} />
-            {!isTeaser && <input type="hidden" name="seasonNumber" value={seasonType.replace("Saison ", "")} />}
+            <input type="hidden" name="seasonNumber" value={seasonType.replace("Saison ", "")} />
             <div className={styles.row2}>
               <div className={styles.field}>
                 <label>Saison</label>
                 <Dropdown options={seasonOptions ?? SEASON_TYPE_OPTIONS} value={seasonType} onChange={setSeasonType} />
               </div>
               <div className={styles.field}>
-                <label htmlFor="episodeNumber">{isTeaser ? "Numéro du teaser" : "Numéro d'épisode"}</label>
+                <label htmlFor="episodeNumber">Numéro d&apos;épisode</label>
                 <input
                   id="episodeNumber"
                   name="episodeNumber"
                   type="number"
                   min={1}
                   defaultValue={initial?.episodeNumber ?? undefined}
-                  required={isSeries}
+                  required
                 />
               </div>
             </div>
@@ -216,13 +208,13 @@ export default function FilmForm({
               id="durationMinutes"
               name="durationMinutes"
               type="number"
-              min={1}
+              min={isAnnouncement ? 0 : 1}
               value={durationMinutes}
               onChange={(e) => {
                 setDurationMinutes(e.target.value === "" ? "" : Number(e.target.value));
                 setDurationDetected(false);
               }}
-              required
+              required={!isAnnouncement}
             />
             {durationDetected && <span className={formStyles.formHint}>Calculée depuis la vidéo.</span>}
           </div>
@@ -279,7 +271,7 @@ export default function FilmForm({
           />
         </div>
         <div className={styles.field}>
-          <label>{!isSeries && standaloneTeaser ? "Vidéo du teaser" : "Vidéo"}</label>
+          <label>{allowAnnouncement ? "Vidéo (facultatif)" : "Vidéo"}</label>
           <input type="hidden" name="videoDurationSeconds" value={videoDurationSeconds ?? ""} />
           <FileUpload
             allowUrl
@@ -298,45 +290,17 @@ export default function FilmForm({
             }}
             maxSizeMB={100}
           />
+          {allowAnnouncement && (
+            <span className={formStyles.formHint}>
+              {isAnnouncement
+                ? "Sans vidéo, c'est une annonce : seules les bandes-annonces sont visibles, dans « Bientôt sur ZorAnim »."
+                : "Pas encore sorti ? Programme la sortie dans « Diffusion » : il restera dans « Bientôt » jusque-là."}
+            </span>
+          )}
         </div>
         {!isSeries && (
           <>
-            <input type="hidden" name="episodeKind" value={standaloneTeaser ? "teaser" : "episode"} />
-            <label className={styles.customCheckbox}>
-              <input
-                type="checkbox"
-                checked={standaloneTeaser}
-                onChange={(e) => {
-                  const teaser = e.target.checked;
-                  setStandaloneTeaser(teaser);
-                  // The film is coming out: its teaser video becomes its
-                  // trailer, and the main video slot waits for the real film.
-                  if (!teaser && wasStandaloneTeaser && initial?.videoUrl && videoUrl === initial.videoUrl) {
-                    if (multiTrailers) setTrailers((list) => [newTrailerDraft(initial.videoUrl, "Teaser"), ...list]);
-                    else if (!teaserVideoUrl) setTeaserVideoUrl(initial.videoUrl);
-                    setVideoUrl("");
-                    setVideoDurationSeconds(null);
-                    setTeaserKept(true);
-                  }
-                  // Re-checked before saving: put things back as they were.
-                  if (teaser && teaserKept) {
-                    setVideoUrl(initial?.videoUrl ?? "");
-                    setVideoDurationSeconds(initial?.videoDurationSeconds ?? null);
-                    setTeaserVideoUrl(initial?.teaserVideoUrl ?? "");
-                    if (multiTrailers) setTrailers((list) => list.slice(1));
-                    setTeaserKept(false);
-                  }
-                }}
-              />
-              <span className={styles.checkboxBox} />
-              Pas encore sorti : la vidéo est un teaser (affiché dans « Bientôt sur ZorAnim »)
-            </label>
-            {teaserKept && (
-              <p className={formStyles.formHint}>
-                L&apos;ancienne vidéo du teaser est gardée comme bande-annonce. Ajoute la vidéo du film ci-dessus.
-              </p>
-            )}
-            {!standaloneTeaser && multiTrailers && (
+            {multiTrailers && (
               <div className={styles.field}>
                 <label>Bandes-annonces</label>
                 <input
@@ -347,7 +311,7 @@ export default function FilmForm({
                 <TrailersEditor value={trailers} onChange={setTrailers} />
               </div>
             )}
-            {!standaloneTeaser && !multiTrailers && (
+            {!multiTrailers && (
               <OptionalToggle
                 label="Ajouter une bande-annonce"
                 defaultOn={!!teaserVideoUrl}
@@ -380,7 +344,7 @@ export default function FilmForm({
         Afficher le badge « Nouveau » (7 jours)
       </label>
 
-      <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !poster || !videoUrl}>
+      <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !poster || (!videoUrl && !allowAnnouncement)}>
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>
     </form>

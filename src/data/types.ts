@@ -33,7 +33,9 @@ export type Film = {
   seriesTitle: string | null;
   seasonNumber: number | null;
   episodeNumber: number | null;
-  episodeKind: "episode" | "teaser";
+  // "announcement": a fiche without playable video (only its trailers are
+  // shown), used to announce a film or a series before it has any episode.
+  episodeKind: "episode" | "announcement";
   teaserVideoUrl: string | null;
   // Trailers to show: the series' for an episode, the film's own otherwise.
   trailers: Trailer[];

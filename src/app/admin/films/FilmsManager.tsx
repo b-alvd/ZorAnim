@@ -16,6 +16,7 @@ import shared from "../shared.module.css";
 import styles from "./films.module.css";
 
 export type FilmStatus =
+  | { kind: "announcement" }
   | { kind: "live" }
   | { kind: "premiere"; at: string; label: string }
   | { kind: "scheduled"; at: string; label: string }
@@ -41,6 +42,7 @@ const STATUS_OPTIONS = [
   "Avant-première programmée",
   "Sortie programmée",
   "Disponible",
+  "Annonce (sans vidéo)",
   "Marqué « Nouveau »",
 ];
 const SORT_OPTIONS = ["Ajout le plus récent", "Titre (A → Z)", "Plus vus", "Mieux notés", "Plus commentés"];
@@ -49,7 +51,7 @@ const ALL_CATEGORIES = "Toutes les catégories";
 function sortEpisodes(episodes: AdminFilm[]) {
   return [...episodes].sort(
     (a, b) =>
-      (a.episodeKind === "teaser" ? -1 : 0) - (b.episodeKind === "teaser" ? -1 : 0) ||
+      (a.episodeKind === "announcement" ? -1 : 0) - (b.episodeKind === "announcement" ? -1 : 0) ||
       (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) ||
       (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
   );
@@ -65,6 +67,8 @@ function matchesStatus(film: AdminFilm, status: string) {
       return film.status.kind === "scheduled";
     case "Disponible":
       return film.status.kind === "available";
+    case "Annonce (sans vidéo)":
+      return film.status.kind === "announcement";
     case "Marqué « Nouveau »":
       return film.isNew;
     default:
@@ -106,6 +110,15 @@ const latestOf = (g: Group) => filmsOf(g).reduce((max, f) => (f.createdAt > max 
 
 function StatusBadge({ status }: { status: FilmStatus }) {
   switch (status.kind) {
+    case "announcement":
+      return (
+        <span
+          className={`${styles.status} ${styles.statusScheduled}`}
+          title="Pas encore de vidéo : seules les bandes-annonces sont visibles, dans « Bientôt »."
+        >
+          Annonce
+        </span>
+      );
     case "live":
       return (
         <span className={`${styles.status} ${styles.statusLive}`}>
@@ -141,12 +154,12 @@ function seriesStatus(episodes: AdminFilm[]): React.ReactNode {
     return (
       <span className={styles.statusStack}>
         <StatusBadge status={upcoming.status} />
-        <span className={styles.statusNote}>{formatEpisodeTag(upcoming, "admin")}</span>
+        <span className={styles.statusNote}>{formatEpisodeTag(upcoming)}</span>
       </span>
     );
   }
-  if (episodes.every((e) => e.episodeKind === "teaser")) {
-    return <span className={`${styles.status} ${styles.statusScheduled}`}>Teasers uniquement</span>;
+  if (episodes.every((e) => e.episodeKind === "announcement")) {
+    return <StatusBadge status={{ kind: "announcement" }} />;
   }
   return <StatusBadge status={{ kind: "available" }} />;
 }
@@ -217,9 +230,14 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
         className={shared.iconBtn}
         onClick={(e) => {
           e.stopPropagation();
+          setSeriesTitle(title);
+          setCategory(sample.category);
+          setRating(sample.rating);
+          setTrailers(toTrailerDrafts(sample.trailers));
+          setError(null);
           setOpen(true);
         }}
-        title="Modifier la série (titre, catégorie, classification)"
+        title="Modifier la série (titre, catégorie, classification, bandes-annonces)"
         aria-label="Modifier la série"
       >
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
@@ -276,6 +294,18 @@ function EditSeriesButton({ title, sample, categories }: { title: string; sample
   );
 }
 
+function TrailerCount({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <span className={styles.trailerCount} title="Bandes-annonces">
+      <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor">
+        <path d="M8 5v14l11-7z" />
+      </svg>
+      {count} bande{count > 1 ? "s" : ""}-annonce{count > 1 ? "s" : ""}
+    </span>
+  );
+}
+
 function FilmLine({ film, artists, categories }: { film: AdminFilm; artists: Artist[]; categories: string[] }) {
   return (
     <tr className={styles.row}>
@@ -287,6 +317,7 @@ function FilmLine({ film, artists, categories }: { film: AdminFilm; artists: Art
             <span className={styles.contentMeta}>
               <span className={styles.kindTag}>Film</span>
               {film.category} · {film.year} · {film.duration}
+              <TrailerCount count={film.trailers.length} />
             </span>
           </div>
         </div>
@@ -330,9 +361,9 @@ function SeriesLines({
   const [expanded, setExpanded] = useState(false);
   const open = expanded || forceOpen;
   const sorted = sortEpisodes(episodes);
-  const cover = sorted.find((e) => e.episodeKind !== "teaser") ?? sorted[0];
-  const realCount = episodes.filter((e) => e.episodeKind !== "teaser").length;
-  const teaserCount = episodes.length - realCount;
+  const cover = sorted.find((e) => e.episodeKind !== "announcement") ?? sorted[0];
+  const realCount = episodes.filter((e) => e.episodeKind !== "announcement").length;
+  const announced = realCount < episodes.length;
   const allNew = episodes.every((e) => e.isNew);
 
   return (
@@ -358,7 +389,8 @@ function SeriesLines({
               <span className={styles.contentMeta}>
                 <span className={`${styles.kindTag} ${styles.kindTagSeries}`}>Série</span>
                 {realCount} épisode{realCount > 1 ? "s" : ""}
-                {teaserCount > 0 && ` + ${teaserCount} teaser${teaserCount > 1 ? "s" : ""}`} · {cover.category}
+                {announced && " · annoncée"} · {cover.category}
+                <TrailerCount count={cover.trailers.length} />
               </span>
             </div>
           </div>
@@ -385,13 +417,59 @@ function SeriesLines({
         </td>
       </tr>
       {open &&
+        !shownEpisodeIds &&
+        cover.trailers.map((t, index) => (
+          <tr key={`trailer-${t.id}`} className={`${styles.row} ${styles.episodeRow}`}>
+            <td>
+              <div className={`${styles.content} ${styles.episodeContent}`}>
+                <span className={`${styles.episodeTag} ${styles.trailerTag}`}>
+                  Bande-annonce{cover.trailers.length > 1 ? ` ${index + 1}` : ""}
+                </span>
+                <div className={styles.contentText}>
+                  <span className={styles.episodeTitle}>{t.title}</span>
+                  <span className={styles.contentMeta}>Modifiable via « Modifier la série »</span>
+                </div>
+              </div>
+            </td>
+            <td />
+            <td>
+              <span className={styles.muted}>Toujours visible</span>
+            </td>
+            <td className={styles.num}>
+              <span className={styles.muted}>—</span>
+            </td>
+            <td className={styles.num}>
+              <span className={styles.muted}>—</span>
+            </td>
+            <td className={styles.num}>
+              <span className={styles.muted}>—</span>
+            </td>
+            <td>
+              <div className={styles.actions}>
+                <a
+                  href={`/watch/${cover.id}?autoplay=1&variant=teaser&trailer=${t.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={styles.iconBtn}
+                  title="Voir la bande-annonce"
+                  aria-label="Voir la bande-annonce"
+                >
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                </a>
+              </div>
+            </td>
+          </tr>
+        ))}
+      {open &&
         sorted
           .filter((ep) => !shownEpisodeIds || shownEpisodeIds.has(ep.id))
           .map((ep) => (
             <tr key={ep.id} className={`${styles.row} ${styles.episodeRow}`}>
               <td>
                 <div className={`${styles.content} ${styles.episodeContent}`}>
-                  <span className={styles.episodeTag}>{formatEpisodeTag(ep, "admin")}</span>
+                  <span className={styles.episodeTag}>{formatEpisodeTag(ep)}</span>
                   <div className={styles.contentText}>
                     <span className={styles.episodeTitle}>{ep.title}</span>
                     <span className={styles.contentMeta}>{ep.duration}</span>

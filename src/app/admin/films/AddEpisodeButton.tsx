@@ -8,9 +8,9 @@ import type { Artist, Film } from "@/data/types";
 import sharedStyles from "../shared.module.css";
 
 // Figures out sensible defaults for the next episode of an existing series:
-// same season as the latest non-teaser episode, next episode number after it.
+// same season as the latest episode, next episode number after it.
 function nextEpisodeDefaults(episodes: Film[]): { seasonNumber: number; episodeNumber: number } {
-  const real = episodes.filter((e) => e.episodeKind !== "teaser");
+  const real = episodes.filter((e) => e.episodeKind !== "announcement");
   if (real.length === 0) return { seasonNumber: 1, episodeNumber: 1 };
   const sorted = [...real].sort(
     (a, b) => (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) || (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
@@ -20,16 +20,13 @@ function nextEpisodeDefaults(episodes: Film[]): { seasonNumber: number; episodeN
 }
 
 // Only offer the seasons this series actually has (plus the next one, to
-// allow starting a new season) -- the generic Teaser/Saison 1-6 list made no
-// sense for a series that, say, only has a single season and no teaser.
+// allow starting a new season).
 function seasonOptionsFor(episodes: Film[]): string[] {
-  const seasons = [...new Set(episodes.filter((e) => e.episodeKind !== "teaser").map((e) => e.seasonNumber ?? 1))].sort(
-    (a, b) => a - b
-  );
+  const seasons = [
+    ...new Set(episodes.filter((e) => e.episodeKind !== "announcement").map((e) => e.seasonNumber ?? 1)),
+  ].sort((a, b) => a - b);
   const nextSeason = (seasons[seasons.length - 1] ?? 0) + 1;
-  const options = [...seasons, nextSeason].map((n) => `Saison ${n}`);
-  const hasTeaser = episodes.some((e) => e.episodeKind === "teaser");
-  return hasTeaser ? ["Teaser", ...options] : options;
+  return [...seasons, nextSeason].map((n) => `Saison ${n}`);
 }
 
 export default function AddEpisodeButton({

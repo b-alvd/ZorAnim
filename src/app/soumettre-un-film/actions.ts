@@ -37,7 +37,6 @@ export type EpisodeInput = {
   synopsis: string;
   year: number;
   durationMinutes: number;
-  episodeKind: "episode" | "teaser";
   seasonNumber: number;
   episodeNumber: number;
   poster: string;
@@ -79,9 +78,9 @@ export async function submitSeriesAction(input: {
       poster: episode.poster,
       videoUrl: episode.videoUrl,
       seriesTitle,
-      seasonNumber: episode.episodeKind === "teaser" ? null : episode.seasonNumber,
+      seasonNumber: episode.seasonNumber,
       episodeNumber: episode.episodeNumber,
-      episodeKind: episode.episodeKind,
+      episodeKind: "episode",
     });
   }
 }

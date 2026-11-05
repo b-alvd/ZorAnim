@@ -26,6 +26,7 @@ function formatWhen(iso: string) {
 }
 
 function statusOf(film: Film): FilmStatus {
+  if (film.episodeKind === "announcement") return { kind: "announcement" };
   const status = getPremiereStatus(film);
   if (status === "preview") return { kind: "live" };
   if (status === "locked") {

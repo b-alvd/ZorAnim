@@ -66,7 +66,9 @@ function readFilmInput(formData: FormData, fallbackArtistId: string) {
     seriesTitle: seriesTitle || null,
     seasonNumber: seriesTitle && seasonNumber ? Number(seasonNumber) : null,
     episodeNumber: seriesTitle && episodeNumber ? Number(episodeNumber) : null,
-    episodeKind: (formData.get("episodeKind") === "teaser" ? "teaser" : "episode") as "episode" | "teaser",
+    episodeKind: (formData.get("episodeKind") === "announcement" ? "announcement" : "episode") as
+      | "episode"
+      | "announcement",
     teaserVideoUrl: String(formData.get("teaserVideoUrl") ?? "") || null,
   };
 }
@@ -204,7 +206,7 @@ function EpisodesManager({
       <div className={styles.episodesList}>
         {sorted.map((ep) => (
           <div key={ep.id} className={styles.episodeRow}>
-            <span className={styles.episodeTag}>{formatEpisodeTag(ep, "admin")}</span>
+            <span className={styles.episodeTag}>{formatEpisodeTag(ep)}</span>
             <div className={styles.episodeInfo}>
               <span className={styles.rowTitle}>{ep.title}</span>
             </div>
@@ -479,7 +481,7 @@ export default function IdentitySection({
               seriesTitle: addingEpisodeSeries,
               seasonNumber: lastEpisode?.seasonNumber ?? 1,
               episodeNumber: (lastEpisode?.episodeNumber ?? 0) + 1,
-              episodeKind: lastEpisode?.episodeKind ?? "episode",
+              episodeKind: "episode",
             }}
             pending={isPending}
             onSubmit={(formData) =>

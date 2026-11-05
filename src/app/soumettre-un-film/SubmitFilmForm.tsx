@@ -9,18 +9,13 @@ import type { Artist } from "@/data/types";
 import styles from "../devenir-artiste/community.module.css";
 import seriesStyles from "./series.module.css";
 
-const SEASON_TYPE_OPTIONS = ["Teaser", "Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
-
-function seasonTypeLabel(episodeKind: "episode" | "teaser", seasonNumber: number): string {
-  return episodeKind === "teaser" ? "Teaser" : `Saison ${seasonNumber}`;
-}
+const SEASON_OPTIONS = ["Saison 1", "Saison 2", "Saison 3", "Saison 4", "Saison 5", "Saison 6"];
 
 const emptyEpisode = (previous?: EpisodeInput): EpisodeInput => ({
   title: "",
   synopsis: "",
   year: previous?.year ?? new Date().getFullYear(),
   durationMinutes: 0,
-  episodeKind: previous?.episodeKind ?? "teaser",
   seasonNumber: previous?.seasonNumber ?? 1,
   episodeNumber: previous ? previous.episodeNumber + 1 : 1,
   poster: "",
@@ -71,7 +66,7 @@ export default function SubmitFilmForm({
         ep.synopsis.trim() &&
         ep.year > 0 &&
         ep.durationMinutes > 0 &&
-        (ep.episodeKind === "teaser" || ep.seasonNumber > 0) &&
+        ep.seasonNumber > 0 &&
         ep.episodeNumber > 0 &&
         ep.poster &&
         ep.videoUrl
@@ -229,9 +224,7 @@ export default function SubmitFilmForm({
               <div key={index} className={seriesStyles.episodeCard}>
                 <div className={seriesStyles.episodeHeader}>
                   <span className={seriesStyles.episodeNumber}>
-                    {episode.episodeKind === "teaser"
-                      ? `Teaser ${episode.episodeNumber || "?"}`
-                      : `Saison ${episode.seasonNumber || "?"} · Épisode ${episode.episodeNumber || "?"}`}
+                    {`Saison ${episode.seasonNumber || "?"} · Épisode ${episode.episodeNumber || "?"}`}
                   </span>
                   {episodes.length > 1 && (
                     <button
@@ -245,20 +238,11 @@ export default function SubmitFilmForm({
                 </div>
                 <div className={styles.fieldRow}>
                   <div className={styles.field}>
-                    <span className={styles.fieldLabel}>Type</span>
+                    <span className={styles.fieldLabel}>Saison</span>
                     <Dropdown
-                      options={SEASON_TYPE_OPTIONS}
-                      value={seasonTypeLabel(episode.episodeKind, episode.seasonNumber)}
-                      onChange={(label) => {
-                        if (label === "Teaser") {
-                          updateEpisode(index, { episodeKind: "teaser" });
-                        } else {
-                          updateEpisode(index, {
-                            episodeKind: "episode",
-                            seasonNumber: Number(label.replace("Saison ", "")),
-                          });
-                        }
-                      }}
+                      options={SEASON_OPTIONS}
+                      value={`Saison ${episode.seasonNumber}`}
+                      onChange={(label) => updateEpisode(index, { seasonNumber: Number(label.replace("Saison ", "")) })}
                     />
                   </div>
                   <label className={styles.field}>

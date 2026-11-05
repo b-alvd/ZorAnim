@@ -740,3 +740,21 @@
   outline: none;
   border-color: var(--accent, #e50914);
 }
+
+.trailerCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(168, 85, 247, 0.14);
+  color: #d0a8ff;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.trailerTag {
+  white-space: nowrap;
+  background: rgba(168, 85, 247, 0.16);
+  color: #d0a8ff;
+}

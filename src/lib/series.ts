@@ -1,20 +1,41 @@
 import type { Film } from "@/data/types";
+import { getPremiereStatus } from "@/lib/premiere";
 
 export type CollapsedFilm = Film & { episodeCount: number };
 
-// A film/série is "coming soon" (not yet released) if it has no episode that
-// isn't a teaser: a standalone teaser film, or a series with only teasers.
-export function splitComingSoon<T extends Pick<Film, "seriesTitle" | "episodeKind">>(
-  filmsList: T[]
-): { released: T[]; comingSoon: T[] } {
-  const seriesHasRealEpisode = new Set<string>();
+export function isAnnouncement(f: Pick<Film, "episodeKind">): boolean {
+  return f.episodeKind === "announcement";
+}
+
+type ReleaseFields = Pick<
+  Film,
+  | "seriesTitle"
+  | "episodeKind"
+  | "premiereAt"
+  | "releaseAt"
+  | "durationMinutes"
+  | "videoDurationSeconds"
+  | "premiereAdUrl"
+  | "premiereAdDurationSeconds"
+>;
+
+// Out for viewers: a real video, not locked before its premiere or release
+// (a premiere airing live counts as out).
+export function isReleased(f: ReleaseFields): boolean {
+  return !isAnnouncement(f) && getPremiereStatus(f) !== "locked";
+}
+
+// "Bientôt sur ZorAnim": a film that isn't out yet, or a series none of whose
+// episodes is out yet (announcement fiche, or episodes still scheduled).
+export function splitComingSoon<T extends ReleaseFields>(filmsList: T[]): { released: T[]; comingSoon: T[] } {
+  const seriesOut = new Set<string>();
   for (const f of filmsList) {
-    if (f.seriesTitle && f.episodeKind !== "teaser") seriesHasRealEpisode.add(f.seriesTitle);
+    if (f.seriesTitle && isReleased(f)) seriesOut.add(f.seriesTitle);
   }
   const released: T[] = [];
   const comingSoon: T[] = [];
   for (const f of filmsList) {
-    const isComingSoon = f.seriesTitle ? !seriesHasRealEpisode.has(f.seriesTitle) : f.episodeKind === "teaser";
+    const isComingSoon = f.seriesTitle ? !seriesOut.has(f.seriesTitle) : !isReleased(f);
     (isComingSoon ? comingSoon : released).push(f);
   }
   return { released, comingSoon };
@@ -43,35 +64,24 @@ export function collapseSeries(films: Film[], trueEpisodeCounts?: Map<string, nu
     const sorted = [...episodes].sort(
       (a, b) => (a.seasonNumber ?? 0) - (b.seasonNumber ?? 0) || (a.episodeNumber ?? 0) - (b.episodeNumber ?? 0)
     );
+    // The card stands for the first real episode; an announcement fiche only
+    // when the series has nothing else yet.
+    const cover = sorted.find((e) => !isAnnouncement(e)) ?? sorted[0];
+    const realCount = episodes.filter((e) => !isAnnouncement(e)).length;
     const index = placeholderIndex.get(seriesTitle)!;
-    result[index] = { ...sorted[0], episodeCount: trueEpisodeCounts?.get(seriesTitle) ?? episodes.length };
+    result[index] = { ...cover, episodeCount: trueEpisodeCounts?.get(seriesTitle) ?? realCount };
   }
 
   return result;
 }
 
-// Viewers see "Bande-annonce"; the back-office (admin, creator space) keeps
-// the shorter technical "Teaser".
-export type LabelAudience = "public" | "admin";
-
-function teaserLabel(film: Pick<Film, "episodeNumber">, audience: LabelAudience): string {
-  const word = audience === "admin" ? "Teaser" : "Bande-annonce";
-  return film.episodeNumber && film.episodeNumber > 1 ? `${word} ${film.episodeNumber}` : word;
-}
-
-export function formatEpisodeTag(
-  film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">,
-  audience: LabelAudience = "public"
-): string {
-  if (film.episodeKind === "teaser") return teaserLabel(film, audience);
+export function formatEpisodeTag(film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">): string {
+  if (isAnnouncement(film)) return "Annonce";
   return `S${film.seasonNumber ?? 1}E${film.episodeNumber ?? 1}`;
 }
 
-export function formatEpisodeLabel(
-  film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">,
-  audience: LabelAudience = "public"
-): string {
-  if (film.episodeKind === "teaser") return teaserLabel(film, audience);
+export function formatEpisodeLabel(film: Pick<Film, "episodeKind" | "seasonNumber" | "episodeNumber">): string {
+  if (isAnnouncement(film)) return "Bientôt sur ZorAnim";
   return `Saison ${film.seasonNumber ?? 1} · Épisode ${film.episodeNumber ?? 1}`;
 }
 

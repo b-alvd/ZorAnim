@@ -42,8 +42,9 @@ export default async function WatchPage({
 
   // A trailer is promotional: playable even while the content itself is
   // locked (premiere, scheduled release), and not counted as a view.
-  const trailer =
-    variant === "teaser" ? (film.trailers.find((t) => t.id === trailerId) ?? film.trailers[0] ?? null) : null;
+  // An announcement fiche has no video of its own: it plays its trailer.
+  const wantsTrailer = variant === "teaser" || film.episodeKind === "announcement";
+  const trailer = wantsTrailer ? (film.trailers.find((t) => t.id === trailerId) ?? film.trailers[0] ?? null) : null;
   if (trailer) {
     const trailerFilm = { ...film, videoUrl: trailer.videoUrl, title: `${film.seriesTitle ?? film.title} · ${trailer.title}` };
     return (
@@ -52,6 +53,8 @@ export default async function WatchPage({
       </main>
     );
   }
+
+  if (film.episodeKind === "announcement") notFound();
 
   if (getPremiereStatus(film) === "locked" && user?.role !== "admin") {
     const hasAired = !!film.premiereAt && new Date(film.premiereAt).getTime() <= Date.now();
@@ -75,7 +78,9 @@ export default async function WatchPage({
 
   const [suggestions, episodes] = await Promise.all([
     getSuggestions(film.id),
-    film.seriesTitle ? getSeriesEpisodes(film.seriesTitle) : Promise.resolve([]),
+    film.seriesTitle
+      ? getSeriesEpisodes(film.seriesTitle).then((list) => list.filter((ep) => ep.episodeKind !== "announcement"))
+      : Promise.resolve([]),
     user ? markWatched(user.id, film.id) : incrementGuestView(film.id),
   ]);
 

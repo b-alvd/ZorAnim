@@ -68,6 +68,12 @@ function filmsQuery() {
 
 type FilmRow = Awaited<ReturnType<typeof filmsQuery>>[number];
 
+// "teaser" is the former name of announcement fiches (teaser episodes and
+// "not out yet" teaser films): still read as such until migration 0038.
+function toEpisodeKind(value: string | null): Film["episodeKind"] {
+  return value === "announcement" || value === "teaser" ? "announcement" : "episode";
+}
+
 function mapFilm(row: FilmRow): Film {
   const isStudioAttribution = !!row.studioId;
   return {
@@ -92,7 +98,7 @@ function mapFilm(row: FilmRow): Film {
     seriesTitle: row.seriesTitle,
     seasonNumber: row.seasonNumber,
     episodeNumber: row.episodeNumber,
-    episodeKind: (row.episodeKind as "episode" | "teaser") ?? "episode",
+    episodeKind: toEpisodeKind(row.episodeKind),
     teaserVideoUrl: row.teaserVideoUrl,
     trailers: [],
     premiereAt: row.premiereAt,
@@ -193,12 +199,12 @@ export async function getTrailers(seriesTitles: string[], filmIds: string[]): Pr
 export const LEGACY_TRAILER_ID = "legacy";
 
 function trailersFor(f: Film, lists: TrailerLists): Trailer[] {
-  if (f.seriesTitle) return lists.bySeries.get(f.seriesTitle) ?? [];
-  const own = lists.byFilm.get(f.id);
+  const own = f.seriesTitle ? lists.bySeries.get(f.seriesTitle) : lists.byFilm.get(f.id);
   if (own?.length) return own;
-  return f.teaserVideoUrl && f.episodeKind !== "teaser"
-    ? [{ id: LEGACY_TRAILER_ID, title: "Bande-annonce", videoUrl: f.teaserVideoUrl }]
-    : [];
+  // Not migrated yet: a film's legacy single trailer, or the video of an
+  // announcement fiche (formerly a teaser, its video is the trailer).
+  const legacy = f.episodeKind === "announcement" ? f.teaserVideoUrl || f.videoUrl : f.seriesTitle ? null : f.teaserVideoUrl;
+  return legacy ? [{ id: LEGACY_TRAILER_ID, title: "Bande-annonce", videoUrl: legacy }] : [];
 }
 
 export type TrailerInput = { title: string; videoUrl: string };
@@ -322,11 +328,11 @@ export async function getSeriesEpisodeCounts(seriesTitles: string[]): Promise<Ma
   const map = new Map<string, number>();
   if (seriesTitles.length === 0) return map;
   const rows = await db
-    .select({ seriesTitle: films.seriesTitle })
+    .select({ seriesTitle: films.seriesTitle, episodeKind: films.episodeKind })
     .from(films)
     .where(inArray(films.seriesTitle, seriesTitles));
   for (const r of rows) {
-    if (!r.seriesTitle) continue;
+    if (!r.seriesTitle || toEpisodeKind(r.episodeKind) === "announcement") continue;
     map.set(r.seriesTitle, (map.get(r.seriesTitle) ?? 0) + 1);
   }
   return map;
@@ -403,7 +409,7 @@ export type FilmInput = {
   seriesTitle?: string | null;
   seasonNumber?: number | null;
   episodeNumber?: number | null;
-  episodeKind?: "episode" | "teaser";
+  episodeKind?: Film["episodeKind"];
   teaserVideoUrl?: string | null;
   premiereAt?: string | null;
   premiereBanner?: string | null;
@@ -458,7 +464,35 @@ export async function createFilm(input: FilmInput): Promise<string> {
   const id = randomUUID();
   const { isNew, ...rest } = input;
   await db.insert(films).values({ id, ...rest, markedNewAt: isNew ? new Date().toISOString() : null });
+  if (input.seriesTitle && (input.episodeKind ?? "episode") === "episode") {
+    await absorbSeriesAnnouncement(input.seriesTitle, id);
+  }
   return id;
+}
+
+// When an announced series gets its first real episode, the announcement
+// fiche goes away: its favorites, ratings and comments move to that episode
+// (its trailers already belong to the series).
+async function absorbSeriesAnnouncement(seriesTitle: string, episodeId: string): Promise<void> {
+  const fiches = await db
+    .select({ id: films.id })
+    .from(films)
+    .where(and(eq(films.seriesTitle, seriesTitle), inArray(films.episodeKind, ["announcement", "teaser"])));
+  for (const fiche of fiches) {
+    const favs = await db.select({ userId: favorites.userId }).from(favorites).where(eq(favorites.filmId, fiche.id));
+    for (const f of favs) {
+      await db.insert(favorites).values({ id: randomUUID(), userId: f.userId, filmId: episodeId }).onConflictDoNothing();
+    }
+    const ratings = await db.select().from(filmRatings).where(eq(filmRatings.filmId, fiche.id));
+    for (const r of ratings) {
+      await db
+        .insert(filmRatings)
+        .values({ id: randomUUID(), userId: r.userId, filmId: episodeId, value: r.value, createdAt: r.createdAt })
+        .onConflictDoNothing();
+    }
+    await db.update(comments).set({ filmId: episodeId }).where(eq(comments.filmId, fiche.id));
+    await db.delete(films).where(eq(films.id, fiche.id));
+  }
 }
 
 export async function updateFilm(id: string, input: FilmInput): Promise<void> {
@@ -918,7 +952,7 @@ export async function acceptFilmSubmission(id: string, identity?: { id: string; 
     seriesTitle: submission.seriesTitle,
     seasonNumber: submission.seasonNumber,
     episodeNumber: submission.episodeNumber,
-    episodeKind: submission.episodeKind as "episode" | "teaser",
+    episodeKind: toEpisodeKind(submission.episodeKind),
     teaserVideoUrl: submission.teaserVideoUrl,
   });
 
@@ -2084,7 +2118,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     return {
       id,
       seriesTitle: f.seriesTitle,
-      episodeTag: formatEpisodeTag({ ...f, episodeKind: f.episodeKind as "episode" | "teaser" }, "admin"),
+      episodeTag: formatEpisodeTag({ ...f, episodeKind: toEpisodeKind(f.episodeKind) }),
       episodeTitle: f.title,
       creator: creatorMap.get(creatorIdOf(f))?.name ?? "?",
     };
