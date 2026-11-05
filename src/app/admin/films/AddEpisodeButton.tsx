@@ -55,7 +55,11 @@ export default function AddEpisodeButton({
           e.stopPropagation();
           setOpen(true);
         }}
-        title="Ajouter un épisode"
+        title={
+          episodes.every((e) => e.episodeKind === "announcement")
+            ? "Ajouter le 1er épisode (remplace la fiche d'annonce)"
+            : "Ajouter un épisode"
+        }
         aria-label="Ajouter un épisode"
       >
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2">

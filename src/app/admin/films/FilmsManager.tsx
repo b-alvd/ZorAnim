@@ -363,7 +363,6 @@ function SeriesLines({
   const sorted = sortEpisodes(episodes);
   const cover = sorted.find((e) => e.episodeKind !== "announcement") ?? sorted[0];
   const realCount = episodes.filter((e) => e.episodeKind !== "announcement").length;
-  const announced = realCount < episodes.length;
   const allNew = episodes.every((e) => e.isNew);
 
   return (
@@ -388,8 +387,8 @@ function SeriesLines({
               <span className={styles.contentTitle}>{title}</span>
               <span className={styles.contentMeta}>
                 <span className={`${styles.kindTag} ${styles.kindTagSeries}`}>Série</span>
-                {realCount} épisode{realCount > 1 ? "s" : ""}
-                {announced && " · annoncée"} · {cover.category}
+                {realCount > 0 ? `${realCount} épisode${realCount > 1 ? "s" : ""}` : "Pas encore d'épisode"} ·{" "}
+                {cover.category}
                 <TrailerCount count={cover.trailers.length} />
               </span>
             </div>
@@ -469,10 +468,16 @@ function SeriesLines({
             <tr key={ep.id} className={`${styles.row} ${styles.episodeRow}`}>
               <td>
                 <div className={`${styles.content} ${styles.episodeContent}`}>
-                  <span className={styles.episodeTag}>{formatEpisodeTag(ep)}</span>
+                  <span className={`${styles.episodeTag} ${ep.episodeKind === "announcement" ? styles.ficheTag : ""}`}>
+                    {ep.episodeKind === "announcement" ? "Fiche d'annonce" : formatEpisodeTag(ep)}
+                  </span>
                   <div className={styles.contentText}>
                     <span className={styles.episodeTitle}>{ep.title}</span>
-                    <span className={styles.contentMeta}>{ep.duration}</span>
+                    <span className={styles.contentMeta}>
+                      {ep.episodeKind === "announcement"
+                        ? "Affiche et synopsis affichés dans « Bientôt ». Remplacée par le 1er épisode ajouté (+)."
+                        : ep.duration}
+                    </span>
                   </div>
                 </div>
               </td>

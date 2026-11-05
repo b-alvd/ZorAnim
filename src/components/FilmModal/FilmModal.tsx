@@ -160,6 +160,7 @@ export default function FilmModal({
   // "Lecture" plays the series' first episode if there is one (otherwise only
   // the trailers are offered).
   const listedEpisodes = episodes.filter((ep) => ep.episodeKind !== "announcement");
+  const isAnnouncement = activeFilm.episodeKind === "announcement";
   const playTarget = activeFilm.episodeKind === "announcement" ? (listedEpisodes[0] ?? null) : activeFilm;
 
   const seasonNumbers = [...new Set(listedEpisodes.map((ep) => ep.seasonNumber ?? 1))].sort((a, b) => a - b);
@@ -213,6 +214,7 @@ export default function FilmModal({
             <span className={styles.badge}>{activeFilm.rating}</span>
           </div>
 
+          {!isAnnouncement && (
           <div className={styles.ratingRow}>
             <StarRating value={activeFilm.episodeAvgRating ?? 0} readOnly />
             <span className={styles.ratingMeta}>
@@ -223,7 +225,8 @@ export default function FilmModal({
                   : "Aucune note pour l'instant"}
             </span>
           </div>
-          {activeFilm.seriesTitle && activeFilm.ratingCount > 0 && (
+          )}
+          {!isAnnouncement && activeFilm.seriesTitle && activeFilm.ratingCount > 0 && (
             <p className={styles.seriesRating}>
               Série : <strong>★ {activeFilm.avgRating!.toFixed(1)}</strong> en moyenne · {activeFilm.ratingCount}{" "}
               spectateur{activeFilm.ratingCount > 1 ? "s" : ""}
@@ -322,6 +325,12 @@ export default function FilmModal({
             </div>
           )}
 
+          {isAnnouncement ? (
+            <p className={`${styles.guestPrompt} ${styles.announcementNote}`}>
+              Pas encore sorti : les notes et commentaires ouvriront à la sortie.
+            </p>
+          ) : (
+          <>
           <div className={styles.myRating}>
             <div className={styles.myRatingRow}>
               <span className={styles.myRatingLabel}>{activeFilm.seriesTitle ? "Ta note pour cet épisode" : "Ta note"}</span>
@@ -377,6 +386,8 @@ export default function FilmModal({
               ))}
             </div>
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>

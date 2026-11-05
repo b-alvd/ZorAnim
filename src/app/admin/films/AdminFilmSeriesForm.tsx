@@ -224,7 +224,7 @@ export default function AdminFilmSeriesForm({
             <FormSection title="Fiche d'annonce">
               <p className={styles.formHint}>
                 La série apparaît dans « Bientôt sur ZorAnim » avec ses bandes-annonces. Au premier épisode ajouté, la
-                fiche s&apos;efface d&apos;elle-même (notes, commentaires et favoris passent sur l&apos;épisode).
+                fiche s&apos;efface d&apos;elle-même (ses favoris passent sur l&apos;épisode).
               </p>
               <div className={adminStyles.field}>
                 <label>Synopsis</label>

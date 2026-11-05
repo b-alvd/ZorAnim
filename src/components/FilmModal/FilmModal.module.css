@@ -734,3 +734,9 @@
   flex-shrink: 0;
   color: #b3b3b3;
 }
+
+.announcementNote {
+  margin-top: 1.25rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}

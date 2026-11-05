@@ -470,9 +470,15 @@ export async function createFilm(input: FilmInput): Promise<string> {
   return id;
 }
 
+// Announcements have nothing to watch: they can't be rated or commented.
+export async function isAnnouncementFilm(id: string): Promise<boolean> {
+  const [row] = await db.select({ episodeKind: films.episodeKind }).from(films).where(eq(films.id, id));
+  return !!row && toEpisodeKind(row.episodeKind) === "announcement";
+}
+
 // When an announced series gets its first real episode, the announcement
-// fiche goes away: its favorites, ratings and comments move to that episode
-// (its trailers already belong to the series).
+// fiche goes away and its favorites move to that episode (its trailers
+// already belong to the series). An announcement carries no reviews.
 async function absorbSeriesAnnouncement(seriesTitle: string, episodeId: string): Promise<void> {
   const fiches = await db
     .select({ id: films.id })
@@ -483,14 +489,6 @@ async function absorbSeriesAnnouncement(seriesTitle: string, episodeId: string):
     for (const f of favs) {
       await db.insert(favorites).values({ id: randomUUID(), userId: f.userId, filmId: episodeId }).onConflictDoNothing();
     }
-    const ratings = await db.select().from(filmRatings).where(eq(filmRatings.filmId, fiche.id));
-    for (const r of ratings) {
-      await db
-        .insert(filmRatings)
-        .values({ id: randomUUID(), userId: r.userId, filmId: episodeId, value: r.value, createdAt: r.createdAt })
-        .onConflictDoNothing();
-    }
-    await db.update(comments).set({ filmId: episodeId }).where(eq(comments.filmId, fiche.id));
     await db.delete(films).where(eq(films.id, fiche.id));
   }
 }

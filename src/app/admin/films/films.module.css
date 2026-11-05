@@ -758,3 +758,9 @@
   background: rgba(168, 85, 247, 0.16);
   color: #d0a8ff;
 }
+
+.ficheTag {
+  white-space: nowrap;
+  background: rgba(245, 197, 24, 0.12);
+  color: #f5d76e;
+}
