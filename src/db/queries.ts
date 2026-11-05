@@ -24,7 +24,7 @@ import {
 } from "@/db/schema";
 import type { Film, Artist, Trailer } from "@/data/types";
 import { formatDuration, isNewActive } from "@/lib/format";
-import { formatEpisodeTag, splitComingSoon } from "@/lib/series";
+import { formatEpisodeTag, isReleased, splitComingSoon } from "@/lib/series";
 import { placeholderAvatar } from "@/lib/placeholder";
 import { seriesRatingSummary } from "@/lib/series-rating";
 import { getPremiereStatus, liveSeconds } from "@/lib/premiere";
@@ -470,10 +470,11 @@ export async function createFilm(input: FilmInput): Promise<string> {
   return id;
 }
 
-// Announcements have nothing to watch: they can't be rated or commented.
-export async function isAnnouncementFilm(id: string): Promise<boolean> {
-  const [row] = await db.select({ episodeKind: films.episodeKind }).from(films).where(eq(films.id, id));
-  return !!row && toEpisodeKind(row.episodeKind) === "announcement";
+// Reviews open once the content is out: an announcement, an upcoming
+// premiere or a scheduled release can't be rated or commented yet.
+export async function isOpenForReviews(id: string): Promise<boolean> {
+  const film = await getFilm(id);
+  return !!film && isReleased(film);
 }
 
 // When an announced series gets its first real episode, the announcement

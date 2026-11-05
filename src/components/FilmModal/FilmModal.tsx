@@ -17,11 +17,23 @@ import {
 } from "@/lib/actions";
 import StarRating from "@/components/StarRating/StarRating";
 import Dropdown from "@/components/Dropdown/Dropdown";
-import { formatEpisodeLabel, formatEpisodeTag } from "@/lib/series";
+import { formatEpisodeLabel, formatEpisodeTag, isReleased } from "@/lib/series";
+import { getPremiereStatus, getPremiereUnlockAt } from "@/lib/premiere";
 import CommentItem from "./CommentItem";
 import styles from "./FilmModal.module.css";
 
 const ANIM_MS = 250;
+
+// Short local date for an upcoming premiere or release (the modal only
+// renders in the browser, so the viewer's own time zone is used).
+function formatWhen(iso: string | null, dayOnly = false): string {
+  if (!iso) return "bientôt";
+  return new Date(iso).toLocaleString("fr-FR", {
+    day: "numeric",
+    month: "short",
+    ...(dayOnly ? {} : { hour: "2-digit", minute: "2-digit" }),
+  });
+}
 
 function seasonOptionFor(ep: Pick<Film, "seasonNumber">): string {
   return `Saison ${ep.seasonNumber ?? 1}`;
@@ -160,8 +172,14 @@ export default function FilmModal({
   // "Lecture" plays the series' first episode if there is one (otherwise only
   // the trailers are offered).
   const listedEpisodes = episodes.filter((ep) => ep.episodeKind !== "announcement");
-  const isAnnouncement = activeFilm.episodeKind === "announcement";
   const playTarget = activeFilm.episodeKind === "announcement" ? (listedEpisodes[0] ?? null) : activeFilm;
+  // Not out yet (announcement, upcoming premiere, scheduled release): nothing
+  // to rate or comment, and no plain "Lecture".
+  const released = isReleased(activeFilm);
+  const playReleased = playTarget ? isReleased(playTarget) : false;
+  const playUnlockAt = playTarget && !playReleased ? getPremiereUnlockAt(playTarget) : null;
+  const playIsPremiere =
+    !!playTarget && !playReleased && !!playTarget.premiereAt && playUnlockAt === playTarget.premiereAt;
 
   const seasonNumbers = [...new Set(listedEpisodes.map((ep) => ep.seasonNumber ?? 1))].sort((a, b) => a - b);
   const seasonOptions = seasonNumbers.map((n) => `Saison ${n}`);
@@ -214,7 +232,7 @@ export default function FilmModal({
             <span className={styles.badge}>{activeFilm.rating}</span>
           </div>
 
-          {!isAnnouncement && (
+          {released && (
           <div className={styles.ratingRow}>
             <StarRating value={activeFilm.episodeAvgRating ?? 0} readOnly />
             <span className={styles.ratingMeta}>
@@ -226,7 +244,7 @@ export default function FilmModal({
             </span>
           </div>
           )}
-          {!isAnnouncement && activeFilm.seriesTitle && activeFilm.ratingCount > 0 && (
+          {released && activeFilm.seriesTitle && activeFilm.ratingCount > 0 && (
             <p className={styles.seriesRating}>
               Série : <strong>★ {activeFilm.avgRating!.toFixed(1)}</strong> en moyenne · {activeFilm.ratingCount}{" "}
               spectateur{activeFilm.ratingCount > 1 ? "s" : ""}
@@ -236,13 +254,31 @@ export default function FilmModal({
           <p className={styles.synopsis}>{activeFilm.synopsis}</p>
 
           <div className={styles.actions}>
-            {playTarget && (
+            {playTarget && playReleased && (
               <Link href={`/watch/${playTarget.id}?autoplay=1`} className={styles.playBtn}>
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                   <path d="M8 5v14l11-7z" />
                 </svg>
                 Lecture
               </Link>
+            )}
+            {playTarget && !playReleased && playIsPremiere && (
+              <Link href={`/watch/${playTarget.id}`} className={styles.playBtn} title="Ouvrir la salle d'attente">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v5l3 2" />
+                </svg>
+                Avant-première · {formatWhen(playUnlockAt)}
+              </Link>
+            )}
+            {playTarget && !playReleased && !playIsPremiere && playUnlockAt && (
+              <span className={styles.releaseInfo}>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="5" width="18" height="16" rx="2" />
+                  <path d="M3 10h18M8 3v4M16 3v4" />
+                </svg>
+                Sortie le {formatWhen(playUnlockAt)}
+              </span>
             )}
             {activeFilm.trailers.length > 0 && (
               <Link
@@ -318,6 +354,9 @@ export default function FilmModal({
                   >
                     <span className={styles.episodeNumber}>{formatEpisodeTag(ep)}</span>
                     <span className={styles.episodeTitle}>{ep.title}</span>
+                    {!isReleased(ep) && getPremiereStatus(ep) === "locked" && (
+                      <span className={styles.episodeSoon}>{formatWhen(getPremiereUnlockAt(ep), true)}</span>
+                    )}
                     {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
                   </button>
                 ))}
@@ -325,7 +364,7 @@ export default function FilmModal({
             </div>
           )}
 
-          {isAnnouncement ? (
+          {!released ? (
             <p className={`${styles.guestPrompt} ${styles.announcementNote}`}>
               Pas encore sorti : les notes et commentaires ouvriront à la sortie.
             </p>

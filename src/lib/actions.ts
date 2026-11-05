@@ -14,7 +14,7 @@ import {
   getUnreadNotificationCount,
   getUserRating,
   getWatchedFilmIds,
-  isAnnouncementFilm,
+  isOpenForReviews,
   isFilmFavorite,
   markAllNotificationsRead,
   toggleCommentReaction,
@@ -50,7 +50,7 @@ export async function rateFilmAction(filmId: string, value: number): Promise<voi
   if (isRateLimited(`rate:${user.id}`, 20, 5 * 60 * 1000)) {
     throw new Error("Trop de notes envoyées, réessaie dans quelques minutes.");
   }
-  if (await isAnnouncementFilm(filmId)) throw new Error("Pas encore sorti : les notes ouvriront à la sortie.");
+  if (!(await isOpenForReviews(filmId))) throw new Error("Pas encore sorti : les notes ouvriront à la sortie.");
 
   await upsertRating(user.id, filmId, value);
   revalidatePath("/", "layout");
@@ -89,7 +89,7 @@ export async function addCommentAction(filmId: string, body: string, parentId?: 
   if (isRateLimited(`comment:${user.id}`, 8, 5 * 60 * 1000)) {
     throw new Error("Trop de commentaires envoyés, réessaie dans quelques minutes.");
   }
-  if (await isAnnouncementFilm(filmId)) throw new Error("Pas encore sorti : les commentaires ouvriront à la sortie.");
+  if (!(await isOpenForReviews(filmId))) throw new Error("Pas encore sorti : les commentaires ouvriront à la sortie.");
 
   await addComment(user.id, filmId, body.trim(), parentId ?? null);
   return getFilmComments(filmId, user.id);
