@@ -5,6 +5,7 @@ import Image from "next/image";
 import ContentList, { ContentCounts, Rating, plural } from "../ContentList";
 import { contentStats, type ContentSummary } from "../content-summary";
 import Dropdown from "@/components/Dropdown/Dropdown";
+import AdminPager from "../AdminPager";
 import Modal from "@/components/Modal/Modal";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
 import ArtistForm, { type AccountOption } from "./ArtistForm";
@@ -18,7 +19,7 @@ export type AdminArtist = AdminArtistRow & { contents: ContentSummary[] };
 
 export type AccountChoice = AccountOption & { artistName: string | null };
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 6;
 const ACCOUNT_OPTIONS = ["Tous les comptes", "Avec compte", "À relier à un compte"];
 const CONTENT_OPTIONS = ["Avec ou sans contenu", "Avec contenu", "Sans contenu"];
 const STUDIO_OPTIONS = ["Studios : tous", "En studio", "Indépendant"];
@@ -359,24 +360,7 @@ export default function ArtistsManager({ artists, accounts }: { artists: AdminAr
         </table>
       </div>
 
-      {pageCount > 1 && (
-        <div className={styles.pager}>
-          <button type="button" className={shared.editLink} disabled={current === 0} onClick={() => setPage(current - 1)}>
-            Précédent
-          </button>
-          <span className={styles.pagerLabel}>
-            Page {current + 1} sur {pageCount}
-          </span>
-          <button
-            type="button"
-            className={shared.editLink}
-            disabled={current === pageCount - 1}
-            onClick={() => setPage(current + 1)}
-          >
-            Suivant
-          </button>
-        </div>
-      )}
+      <AdminPager page={current} pageCount={pageCount} onChange={setPage} />
     </div>
   );
 }

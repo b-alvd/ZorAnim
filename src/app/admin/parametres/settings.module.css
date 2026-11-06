@@ -1,0 +1,183 @@
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 760px;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px;
+  background: #0e0e0e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: border-color 0.2s;
+}
+
+.panelAlert {
+  border-color: rgba(255, 184, 77, 0.35);
+}
+
+.panelHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e5e5e5;
+}
+
+.panelTitles {
+  flex: 1;
+  min-width: 0;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.panelDesc {
+  margin: 3px 0 0;
+  font-size: 0.8rem;
+  color: #808080;
+}
+
+.pill {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.06);
+  color: #9a9a9a;
+}
+
+.pillOn {
+  background: rgba(74, 222, 128, 0.12);
+  color: #4ade80;
+}
+
+.pillWarn {
+  background: rgba(255, 184, 77, 0.14);
+  color: #ffb84d;
+}
+
+.switchRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+}
+
+.switchRow input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  transition: background 0.15s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+
+.switchRow input:checked + .switch {
+  background: var(--accent, #e50914);
+}
+
+.switchRow input:checked + .switch::after {
+  transform: translateX(14px);
+}
+
+.switchRow input:focus-visible + .switch {
+  outline: 2px solid var(--accent, #e50914);
+  outline-offset: 2px;
+}
+
+.switchText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.switchLabel {
+  color: #e5e5e5;
+  font-size: 0.88rem;
+}
+
+.switchHint {
+  color: #7a7a7a;
+  font-size: 0.76rem;
+}
+
+.warning {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #ffb84d;
+  background: rgba(255, 184, 77, 0.1);
+  border: 1px solid rgba(255, 184, 77, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.saved {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #4ade80;
+}
+
+.dirty {
+  font-size: 0.8rem;
+  color: #9a9a9a;
+}
+
+.error {
+  font-size: 0.8rem;
+  color: #f87171;
+}

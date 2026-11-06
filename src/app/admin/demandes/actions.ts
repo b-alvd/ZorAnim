@@ -35,17 +35,35 @@ export async function updateFilmSubmissionAction(id: string, formData: FormData)
   revalidatePath("/admin/demandes");
 }
 
-export async function acceptFilmSubmissionAction(id: string, identityId: string, isStudio: boolean) {
+// Returned rather than thrown: Next.js hides thrown messages in production.
+export type RequestActionResult = { error?: string };
+
+const errorOf = (e: unknown): RequestActionResult => ({
+  error: e instanceof Error ? e.message : "Une erreur est survenue.",
+});
+
+export async function acceptFilmSubmissionAction(
+  id: string,
+  identityId: string,
+  isStudio: boolean
+): Promise<RequestActionResult> {
   await requireAdmin();
-  await acceptFilmSubmission(id, { id: identityId, isStudio });
+  try {
+    await acceptFilmSubmission(id, { id: identityId, isStudio });
+  } catch (e) {
+    return errorOf(e);
+  }
   revalidatePath("/admin/demandes");
   revalidatePath("/admin/films");
+  revalidatePath("/admin", "layout");
+  return {};
 }
 
 export async function refuseFilmSubmissionAction(id: string) {
   await requireAdmin();
   await refuseFilmSubmission(id);
   revalidatePath("/admin/demandes");
+  revalidatePath("/admin", "layout");
 }
 
 function readArtistSubmissionInput(formData: FormData): ArtistSubmissionInput {
@@ -67,17 +85,24 @@ export async function updateArtistSubmissionAction(id: string, formData: FormDat
   revalidatePath("/admin/demandes");
 }
 
-export async function acceptArtistSubmissionAction(id: string) {
+export async function acceptArtistSubmissionAction(id: string): Promise<RequestActionResult> {
   await requireAdmin();
-  await acceptArtistSubmission(id);
+  try {
+    await acceptArtistSubmission(id);
+  } catch (e) {
+    return errorOf(e);
+  }
   revalidatePath("/admin/demandes");
   revalidatePath("/admin/artistes");
+  revalidatePath("/admin", "layout");
+  return {};
 }
 
 export async function refuseArtistSubmissionAction(id: string) {
   await requireAdmin();
   await refuseArtistSubmission(id);
   revalidatePath("/admin/demandes");
+  revalidatePath("/admin", "layout");
 }
 
 export async function acceptBanAppealAction(appealId: string) {
@@ -85,10 +110,12 @@ export async function acceptBanAppealAction(appealId: string) {
   await resolveBanAppeal(appealId, true);
   revalidatePath("/admin/demandes");
   revalidatePath("/admin/utilisateurs");
+  revalidatePath("/admin", "layout");
 }
 
 export async function rejectBanAppealAction(appealId: string) {
   await requireAdmin();
   await resolveBanAppeal(appealId, false);
   revalidatePath("/admin/demandes");
+  revalidatePath("/admin", "layout");
 }

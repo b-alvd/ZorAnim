@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Dropdown from "@/components/Dropdown/Dropdown";
+import AdminPager from "../AdminPager";
 import Modal from "@/components/Modal/Modal";
 import FileUpload from "@/components/FileUpload/FileUpload";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
@@ -34,7 +35,7 @@ type Group =
   | { type: "film"; key: string; film: AdminFilm }
   | { type: "series"; key: string; title: string; episodes: AdminFilm[] };
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 6;
 
 const TYPE_OPTIONS = ["Films et séries", "Films", "Séries"];
 const STATUS_OPTIONS = [
@@ -792,29 +793,7 @@ export default function FilmsManager({
         </table>
       </div>
 
-      {pageCount > 1 && (
-        <div className={styles.pager}>
-          <button
-            type="button"
-            className={shared.editLink}
-            disabled={current === 0}
-            onClick={() => setPage(current - 1)}
-          >
-            Précédent
-          </button>
-          <span className={styles.pagerLabel}>
-            Page {current + 1} sur {pageCount}
-          </span>
-          <button
-            type="button"
-            className={shared.editLink}
-            disabled={current === pageCount - 1}
-            onClick={() => setPage(current + 1)}
-          >
-            Suivant
-          </button>
-        </div>
-      )}
+      <AdminPager page={current} pageCount={pageCount} onChange={setPage} />
     </div>
   );
 }

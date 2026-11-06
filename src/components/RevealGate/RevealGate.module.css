@@ -47,11 +47,6 @@
   }
 }
 
-.revealing .floaters {
-  transition: opacity 0.6s ease;
-  opacity: 0;
-}
-
 .frame {
   position: absolute;
   inset: 18px;
@@ -122,44 +117,6 @@
   background: var(--accent, #e50914);
 }
 
-.timer {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-}
-
-.unit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.3rem;
-  min-width: 60px;
-}
-
-.digits {
-  font-family: var(--font-montserrat), monospace;
-  font-size: clamp(2.2rem, 6.5vw, 3.4rem);
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  color: #fff;
-}
-
-.label {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.colon {
-  font-size: clamp(1.6rem, 4vw, 2.4rem);
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.2);
-  margin-top: -0.9rem;
-}
-
 .soon {
   font-size: 1.3rem;
   font-weight: 700;
@@ -171,90 +128,3 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-.burst {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--accent, #e50914);
-  box-shadow: 0 0 40px 20px rgba(229, 9, 20, 0.8);
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.revealing .content {
-  opacity: 0;
-  transform: scale(1.08) translateY(-6px);
-  transition: opacity 0.4s ease 0.15s, transform 0.7s ease 0.15s;
-}
-
-.revealing .frame,
-.revealing .beam {
-  transition: opacity 0.5s ease;
-  opacity: 0;
-}
-
-.revealing .burst {
-  animation: burstOut 1s ease-out forwards;
-}
-
-.gag {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 180px;
-  height: 180px;
-  object-fit: contain;
-  transform: translate(-50%, -50%) scale(0);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 2;
-  animation: gagPop 1s ease-out forwards;
-}
-
-@keyframes gagPop {
-  0% {
-    transform: translate(-50%, -50%) scale(0) rotate(-15deg);
-    opacity: 0;
-  }
-  30% {
-    transform: translate(-50%, -50%) scale(1.15) rotate(4deg);
-    opacity: 1;
-  }
-  45% {
-    transform: translate(-50%, -50%) scale(1) rotate(0deg);
-    opacity: 1;
-  }
-  78% {
-    transform: translate(-50%, -50%) scale(1) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(0.8) rotate(6deg);
-    opacity: 0;
-  }
-}
-
-@keyframes burstOut {
-  0% {
-    transform: translate(-50%, -50%) scale(0);
-    opacity: 1;
-  }
-  60% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(220);
-    opacity: 0;
-  }
-}
-
-@media (max-width: 480px) {
-  .unit {
-    min-width: 48px;
-  }
-}

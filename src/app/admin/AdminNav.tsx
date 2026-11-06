@@ -59,20 +59,12 @@ const icons = {
       <path d="M3 12h18" />
     </svg>
   ),
-  reveal: (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 3" />
-    </svg>
-  ),
-  maintenance: (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M14.7 6.3a1 1 0 0 0 1.4 0l1.6-1.6a5 5 0 0 1-6.6 6.6l-6.6 6.6a2 2 0 0 1-2.8-2.8l6.6-6.6a5 5 0 0 1 6.6-6.6l-1.6 1.6a1 1 0 0 0 0 1.4z" />
-    </svg>
-  ),
-  nouveautes: (
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M13 2 3 14h7l-1 8 11-14h-7l0-6z" />
+  parametres: (
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" />
+      <circle cx="15" cy="6" r="2" />
+      <circle cx="9" cy="12" r="2" />
+      <circle cx="17" cy="18" r="2" />
     </svg>
   ),
 };
@@ -108,9 +100,7 @@ export default function AdminNav({ demandesCount, messagesCount }: { demandesCou
     {
       title: "Site",
       items: [
-        { href: "/admin/reveal", label: "Compte à rebours", icon: icons.reveal },
-        { href: "/admin/maintenance", label: "Maintenance", icon: icons.maintenance },
-        { href: "/admin/nouveautes", label: "Nouveautés", icon: icons.nouveautes },
+        { href: "/admin/parametres", label: "Paramètres", icon: icons.parametres },
       ],
     },
   ];

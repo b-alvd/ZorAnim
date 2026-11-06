@@ -18,7 +18,7 @@ import {
 import StarRating from "@/components/StarRating/StarRating";
 import Dropdown from "@/components/Dropdown/Dropdown";
 import { formatEpisodeLabel, formatEpisodeTag, isReleased } from "@/lib/series";
-import { getPremiereStatus, getPremiereUnlockAt } from "@/lib/premiere";
+import { getPremiereUnlockAt } from "@/lib/premiere";
 import CommentItem from "./CommentItem";
 import styles from "./FilmModal.module.css";
 
@@ -351,27 +351,54 @@ export default function FilmModal({
             <div className={styles.episodesSection}>
               <h3 className={styles.episodesTitle}>Épisodes de {film.seriesTitle}</h3>
               <Dropdown options={seasonOptions} value={season} onChange={setSelectedSeason} />
-              <div className={styles.episodesList}>
-                {episodesForSeason.map((ep) => (
-                  <button
-                    key={ep.id}
-                    type="button"
-                    onClick={() => setActiveFilm(ep)}
-                    className={`${styles.episodeItem} ${ep.id === activeFilm.id ? styles.episodeItemActive : ""}`}
-                  >
-                    <span className={styles.episodeNumber}>{formatEpisodeTag(ep)}</span>
-                    <span className={styles.episodeText}>
-                      <span className={styles.episodeTitle}>{isReleased(ep) ? ep.title : "Épisode à venir"}</span>
-                      {isReleased(ep) && activeFilm.seriesSynopsis && ep.synopsis && (
-                        <span className={styles.episodeSynopsis}>{ep.synopsis}</span>
-                      )}
-                    </span>
-                    {!isReleased(ep) && getPremiereStatus(ep) === "locked" && (
-                      <span className={styles.episodeSoon}>{formatWhen(getPremiereUnlockAt(ep), true)}</span>
-                    )}
-                    {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
-                  </button>
-                ))}
+              <div className={styles.epList}>
+                {episodesForSeason.map((ep) => {
+                  const out = isReleased(ep);
+                  const watched = watchedEpisodeIds.has(ep.id);
+                  return (
+                    <button
+                      key={ep.id}
+                      type="button"
+                      onClick={() => setActiveFilm(ep)}
+                      className={`${styles.epCard} ${ep.id === activeFilm.id ? styles.epCardActive : ""}`}
+                      aria-current={ep.id === activeFilm.id}
+                    >
+                      <span className={`${styles.epThumb} ${out ? "" : styles.epThumbLocked}`}>
+                        <Image src={ep.poster} alt="" fill sizes="160px" className={styles.epThumbImg} unoptimized />
+                        <span className={styles.epThumbIcon}>
+                          {out ? (
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                              <path d="M8 5v14l11-7z" />
+                            </svg>
+                          ) : (
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2">
+                              <rect x="5" y="11" width="14" height="10" rx="2" />
+                              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                            </svg>
+                          )}
+                        </span>
+                        {watched && (
+                          <span className={styles.epWatched}>
+                            <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="3.5">
+                              <path d="M20 6L9 17l-5-5" />
+                            </svg>
+                            Vu
+                          </span>
+                        )}
+                      </span>
+                      <span className={styles.epBody}>
+                        <span className={styles.epHead}>
+                          <span className={styles.epCode}>{formatEpisodeTag(ep)}</span>
+                          <span className={styles.epName}>{out ? ep.title : "Épisode à venir"}</span>
+                        </span>
+                        <span className={styles.epMeta}>
+                          {out ? ep.duration : `Disponible le ${formatWhen(getPremiereUnlockAt(ep), true)}`}
+                        </span>
+                        {out && ep.synopsis && <span className={styles.epSynopsis}>{ep.synopsis}</span>}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

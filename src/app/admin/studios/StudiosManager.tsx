@@ -3,6 +3,7 @@
 import { useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Dropdown from "@/components/Dropdown/Dropdown";
+import AdminPager from "../AdminPager";
 import Modal from "@/components/Modal/Modal";
 import ConfirmDeleteButton from "../ConfirmDeleteButton";
 import ConfirmActionButton from "../ConfirmActionButton";
@@ -25,7 +26,7 @@ import own from "./studios.module.css";
 
 export type AdminStudioItem = AdminStudioRow & { contents: ContentSummary[] };
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 6;
 const PENDING_OPTIONS = ["Toutes les demandes", "Avec demandes en attente", "Sans demande"];
 const CONTENT_OPTIONS = ["Avec ou sans contenu", "Avec contenu", "Sans contenu"];
 const SORT_OPTIONS = ["Nom (A → Z)", "Plus de membres", "Plus de contenus", "Plus vus", "Mieux notés", "Plus récents"];
@@ -454,24 +455,7 @@ export default function StudiosManager({ studios, accounts }: { studios: AdminSt
         </table>
       </div>
 
-      {pageCount > 1 && (
-        <div className={styles.pager}>
-          <button type="button" className={shared.editLink} disabled={current === 0} onClick={() => setPage(current - 1)}>
-            Précédent
-          </button>
-          <span className={styles.pagerLabel}>
-            Page {current + 1} sur {pageCount}
-          </span>
-          <button
-            type="button"
-            className={shared.editLink}
-            disabled={current === pageCount - 1}
-            onClick={() => setPage(current + 1)}
-          >
-            Suivant
-          </button>
-        </div>
-      )}
+      <AdminPager page={current} pageCount={pageCount} onChange={setPage} />
     </div>
   );
 }

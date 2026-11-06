@@ -20,7 +20,9 @@ export default function MyMessagesCard({ messages }: { messages: ContactMessage[
         <div key={m.id} className={styles.item}>
           <div className={styles.itemHeader}>
             <span className={styles.itemTitle}>{m.subject}</span>
-            <span className={styles.badge}>{m.status === "replied" ? "Répondu" : "En attente"}</span>
+            <span className={styles.badge}>
+              {m.status === "replied" ? "Répondu" : m.status === "closed" ? "Traité" : "En attente"}
+            </span>
           </div>
           <span className={styles.meta}>Envoyé le {formatDate(m.createdAt)}</span>
           <p className={styles.meta}>{m.message}</p>

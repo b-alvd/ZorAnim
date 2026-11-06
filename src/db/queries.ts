@@ -989,6 +989,57 @@ export async function getPendingBanAppeals(): Promise<PendingBanAppeal[]> {
   return rows as PendingBanAppeal[];
 }
 
+export type AdminFilmRequest = FilmSubmission & { accountName: string | null; accountEmail: string | null };
+export type AdminArtistRequest = ArtistSubmission & { accountName: string | null; accountEmail: string | null };
+export type AdminBanAppeal = BanAppeal & {
+  userName: string;
+  userEmail: string;
+  banReason: string | null;
+  stillBanned: boolean;
+};
+
+// Every request (pending and already handled), newest first, with the
+// account that sent it.
+export async function getAdminRequests(): Promise<{
+  films: AdminFilmRequest[];
+  artists: AdminArtistRequest[];
+  appeals: AdminBanAppeal[];
+}> {
+  const [filmRows, artistRows, appealRows] = await Promise.all([
+    db
+      .select({ s: filmSubmissions, accountName: users.name, accountEmail: users.email })
+      .from(filmSubmissions)
+      .leftJoin(users, eq(filmSubmissions.userId, users.id))
+      .orderBy(desc(filmSubmissions.createdAt)),
+    db
+      .select({ s: artistSubmissions, accountName: users.name, accountEmail: users.email })
+      .from(artistSubmissions)
+      .leftJoin(users, eq(artistSubmissions.userId, users.id))
+      .orderBy(desc(artistSubmissions.createdAt)),
+    db
+      .select({
+        id: banAppeals.id,
+        userId: banAppeals.userId,
+        message: banAppeals.message,
+        status: banAppeals.status,
+        createdAt: banAppeals.createdAt,
+        reviewedAt: banAppeals.reviewedAt,
+        userName: users.name,
+        userEmail: users.email,
+        banReason: users.banReason,
+        stillBanned: users.banned,
+      })
+      .from(banAppeals)
+      .innerJoin(users, eq(banAppeals.userId, users.id))
+      .orderBy(desc(banAppeals.createdAt)),
+  ]);
+  return {
+    films: filmRows.map((r) => ({ ...r.s, accountName: r.accountName, accountEmail: r.accountEmail })),
+    artists: artistRows.map((r) => ({ ...r.s, accountName: r.accountName, accountEmail: r.accountEmail })),
+    appeals: appealRows as AdminBanAppeal[],
+  };
+}
+
 export async function resolveBanAppeal(appealId: string, accept: boolean): Promise<void> {
   const [appeal] = await db.select({ userId: banAppeals.userId }).from(banAppeals).where(eq(banAppeals.id, appealId));
   if (!appeal) return;
@@ -1265,6 +1316,11 @@ export async function getContactMessagesByUser(userId: string): Promise<ContactM
     .from(contactMessages)
     .where(eq(contactMessages.userId, userId))
     .orderBy(desc(contactMessages.createdAt));
+}
+
+// Marks a message as handled (or opens it again) without sending a reply.
+export async function setContactMessageStatus(id: string, status: "open" | "closed"): Promise<void> {
+  await db.update(contactMessages).set({ status }).where(eq(contactMessages.id, id));
 }
 
 export async function replyToContactMessage(id: string, reply: string): Promise<void> {
@@ -1713,10 +1769,16 @@ export type AdminComment = {
   id: string;
   userId: string;
   userName: string;
+  userAvatarUrl: string | null;
   body: string;
   createdAt: string;
   parentId: string | null;
+  filmId: string;
+  // The film's title, or the series' for an episode.
   filmTitle: string;
+  // "S1E2" and the episode's own title, for a series episode.
+  episodeTag: string | null;
+  episodeTitle: string | null;
   upCount: number;
   downCount: number;
 };
@@ -1727,10 +1789,16 @@ export async function getAllCommentsWithStats(): Promise<AdminComment[]> {
       id: comments.id,
       userId: comments.userId,
       userName: users.name,
+      userAvatarUrl: users.avatarUrl,
       body: comments.body,
       createdAt: comments.createdAt,
       parentId: comments.parentId,
-      filmTitle: films.title,
+      filmId: comments.filmId,
+      title: films.title,
+      seriesTitle: films.seriesTitle,
+      seasonNumber: films.seasonNumber,
+      episodeNumber: films.episodeNumber,
+      episodeKind: films.episodeKind,
     })
     .from(comments)
     .innerJoin(users, eq(comments.userId, users.id))
@@ -1753,9 +1821,17 @@ export async function getAllCommentsWithStats(): Promise<AdminComment[]> {
     counts.set(r.commentId, entry);
   }
 
-  return rows.map((r) => {
+  return rows.map(({ title, seriesTitle, seasonNumber, episodeNumber, episodeKind, ...r }) => {
     const c = counts.get(r.id) ?? { up: 0, down: 0 };
-    return { ...r, upCount: c.up, downCount: c.down };
+    const isEpisode = !!seriesTitle && toEpisodeKind(episodeKind) === "episode";
+    return {
+      ...r,
+      filmTitle: seriesTitle ?? title,
+      episodeTag: isEpisode ? formatEpisodeTag({ episodeKind: "episode", seasonNumber, episodeNumber }) : null,
+      episodeTitle: isEpisode ? title : null,
+      upCount: c.up,
+      downCount: c.down,
+    };
   });
 }
 
@@ -2504,9 +2580,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 
 const SITE_SETTINGS_ID = "main";
 
+// The countdown columns (reveal_enabled, reveal_at) stay in the table but are no longer used.
 export type SiteSettings = {
-  revealEnabled: boolean;
-  revealAt: string | null;
   maintenanceEnabled: boolean;
   patchNoteEnabled: boolean;
   patchNoteTitle: string | null;
@@ -2517,8 +2592,6 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   const [row] = await db.select().from(siteSettings).where(eq(siteSettings.id, SITE_SETTINGS_ID));
   if (!row) {
     return {
-      revealEnabled: false,
-      revealAt: null,
       maintenanceEnabled: false,
       patchNoteEnabled: false,
       patchNoteTitle: null,
@@ -2526,8 +2599,6 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     };
   }
   return {
-    revealEnabled: row.revealEnabled,
-    revealAt: row.revealAt,
     maintenanceEnabled: row.maintenanceEnabled,
     patchNoteEnabled: row.patchNoteEnabled,
     patchNoteTitle: row.patchNoteTitle,
@@ -2542,8 +2613,6 @@ export async function updateSiteSettings(input: Partial<SiteSettings>): Promise<
   } else {
     await db.insert(siteSettings).values({
       id: SITE_SETTINGS_ID,
-      revealEnabled: false,
-      revealAt: null,
       maintenanceEnabled: false,
       patchNoteEnabled: false,
       patchNoteTitle: null,

@@ -1,130 +1,40 @@
-import {
-  getArtists,
-  getCategories,
-  getPendingArtistSubmissions,
-  getPendingBanAppeals,
-  getPendingFilmSubmissions,
-  getStudios,
-} from "@/db/queries";
+import { getAdminRequests, getArtists, getCategories, getStudios } from "@/db/queries";
 import { mergeCategories } from "@/lib/categories";
-import FilmSubmissionRowActions from "./FilmSubmissionRowActions";
-import ArtistSubmissionRowActions from "./ArtistSubmissionRowActions";
-import BanAppealActions from "./BanAppealActions";
+import RequestsManager from "./RequestsManager";
 import styles from "../shared.module.css";
 
-export default async function AdminDemandesPage() {
-  const [filmSubmissions, artistSubmissions, banAppeals, artists, studios, existingCategories] = await Promise.all([
-    getPendingFilmSubmissions(),
-    getPendingArtistSubmissions(),
-    getPendingBanAppeals(),
+async function loadRequests() {
+  const [requests, artists, studios, existingCategories] = await Promise.all([
+    getAdminRequests(),
     getArtists(),
     getStudios(),
     getCategories(),
   ]);
-  const categories = mergeCategories(existingCategories);
-  const identities = [...artists, ...studios];
+  return {
+    ...requests,
+    identities: [...artists, ...studios],
+    categories: mergeCategories(existingCategories),
+    // Reference time for relative dates, so server and browser render alike.
+    loadedAt: Date.now(),
+  };
+}
+
+export default async function AdminDemandesPage() {
+  const { films, artists, appeals, identities, categories, loadedAt } = await loadRequests();
 
   return (
     <main>
       <div className={styles.header}>
-        <h1 className={styles.title}>Demandes de films et séries</h1>
+        <h1 className={styles.title}>Demandes</h1>
       </div>
-      {filmSubmissions.length === 0 ? (
-        <p className={styles.confirmText}>Aucune demande de film ou série en attente.</p>
-      ) : (
-        <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Titre</th>
-              <th>Nom / studio</th>
-              <th>Contact</th>
-              <th>Catégorie</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filmSubmissions.map((s) => (
-              <tr key={s.id}>
-                <td>{s.title}</td>
-                <td>{s.artistName}</td>
-                <td>{s.contactEmail}</td>
-                <td>{s.category}</td>
-                <td>
-                  <FilmSubmissionRowActions submission={s} categories={categories} artists={identities} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-      )}
-
-      <div className={styles.header} style={{ marginTop: 40 }}>
-        <h1 className={styles.title}>Demandes d&apos;artistes</h1>
-      </div>
-      {artistSubmissions.length === 0 ? (
-        <p className={styles.confirmText}>Aucune demande d&apos;artiste en attente.</p>
-      ) : (
-        <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Nom</th>
-              <th>Contact</th>
-              <th>Bio</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {artistSubmissions.map((s) => (
-              <tr key={s.id}>
-                <td>{s.name}</td>
-                <td>{s.contactEmail}</td>
-                <td>{s.bio.length > 80 ? `${s.bio.slice(0, 80)}…` : s.bio}</td>
-                <td>
-                  <ArtistSubmissionRowActions submission={s} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-      )}
-
-      <div className={styles.header} style={{ marginTop: 40 }}>
-        <h1 className={styles.title}>Demandes de déban</h1>
-      </div>
-      {banAppeals.length === 0 ? (
-        <p className={styles.confirmText}>Aucune demande de déban en attente.</p>
-      ) : (
-        <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Nom</th>
-              <th>Email</th>
-              <th>Raison du ban</th>
-              <th>Message</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {banAppeals.map((a) => (
-              <tr key={a.id}>
-                <td>{a.userName}</td>
-                <td>{a.userEmail}</td>
-                <td>{a.banReason ?? "—"}</td>
-                <td>{a.message}</td>
-                <td>
-                  <BanAppealActions appealId={a.id} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-      )}
+      <RequestsManager
+        films={films}
+        artists={artists}
+        appeals={appeals}
+        identities={identities}
+        categories={categories}
+        now={loadedAt}
+      />
     </main>
   );
 }

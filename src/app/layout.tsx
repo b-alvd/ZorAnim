@@ -3,7 +3,6 @@ import { Montserrat } from "next/font/google";
 import Navbar from "@/components/Navbar/Navbar";
 import Footer from "@/components/Footer/Footer";
 import CookieConsent from "@/components/CookieConsent/CookieConsent";
-import RevealOverlay from "@/components/RevealGate/RevealOverlay";
 import MaintenanceOverlay from "@/components/RevealGate/MaintenanceOverlay";
 import BanGate from "@/components/BanGate/BanGate";
 import BanWatcher from "@/components/BanWatcher/BanWatcher";
@@ -66,13 +65,6 @@ export default async function RootLayout({
         <Footer />
         <CookieConsent />
         <MaintenanceOverlay enabled={settings.maintenanceEnabled} isAdmin={user?.role === "admin"} />
-        {!settings.maintenanceEnabled && (
-          <RevealOverlay
-            initialEnabled={settings.revealEnabled}
-            revealAt={settings.revealAt}
-            isAdmin={user?.role === "admin"}
-          />
-        )}
       </body>
     </html>
   );
