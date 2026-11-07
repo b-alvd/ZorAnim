@@ -1253,27 +1253,50 @@ export async function getPendingArtistSubmissionsByUser(userId: string): Promise
     .where(and(eq(artistSubmissions.userId, userId), eq(artistSubmissions.status, "pending")));
 }
 
+// A series goes into the list as a whole: whichever episode was added, every
+// episode of that series counts as in the list.
+async function seriesFilmIds(filmId: string): Promise<string[]> {
+  const [row] = await db.select({ seriesTitle: films.seriesTitle }).from(films).where(eq(films.id, filmId));
+  if (!row?.seriesTitle) return [filmId];
+  const rows = await db.select({ id: films.id }).from(films).where(eq(films.seriesTitle, row.seriesTitle));
+  return rows.length ? rows.map((r) => r.id) : [filmId];
+}
+
 export async function getFavoriteFilmIds(userId: string): Promise<Set<string>> {
-  const rows = await db.select({ filmId: favorites.filmId }).from(favorites).where(eq(favorites.userId, userId));
-  return new Set(rows.map((r) => r.filmId));
+  const rows = await db
+    .select({ filmId: favorites.filmId, seriesTitle: films.seriesTitle })
+    .from(favorites)
+    .innerJoin(films, eq(films.id, favorites.filmId))
+    .where(eq(favorites.userId, userId));
+  const ids = new Set(rows.map((r) => r.filmId));
+  const titles = [...new Set(rows.map((r) => r.seriesTitle).filter((t): t is string => !!t))];
+  if (titles.length) {
+    const episodes = await db.select({ id: films.id }).from(films).where(inArray(films.seriesTitle, titles));
+    for (const e of episodes) ids.add(e.id);
+  }
+  return ids;
 }
 
 export async function isFilmFavorite(userId: string, filmId: string): Promise<boolean> {
+  const ids = await seriesFilmIds(filmId);
   const [row] = await db
     .select({ id: favorites.id })
     .from(favorites)
-    .where(and(eq(favorites.userId, userId), eq(favorites.filmId, filmId)));
+    .where(and(eq(favorites.userId, userId), inArray(favorites.filmId, ids)));
   return !!row;
 }
 
+// For a series, removing takes out every episode that was added (older lists
+// could hold several), and adding stores a single row for the whole series.
 export async function toggleFavorite(userId: string, filmId: string): Promise<boolean> {
-  const [existing] = await db
+  const ids = await seriesFilmIds(filmId);
+  const existing = await db
     .select({ id: favorites.id })
     .from(favorites)
-    .where(and(eq(favorites.userId, userId), eq(favorites.filmId, filmId)));
+    .where(and(eq(favorites.userId, userId), inArray(favorites.filmId, ids)));
 
-  if (existing) {
-    await db.delete(favorites).where(eq(favorites.id, existing.id));
+  if (existing.length) {
+    await db.delete(favorites).where(inArray(favorites.id, existing.map((e) => e.id)));
     return false;
   }
 
@@ -2721,7 +2744,11 @@ export async function getUserProfileStats(userId: string): Promise<UserProfileSt
       .from(watchHistory)
       .innerJoin(films, eq(films.id, watchHistory.filmId))
       .where(eq(watchHistory.userId, userId)),
-    db.select({ count: sql<number>`count(*)` }).from(favorites).where(eq(favorites.userId, userId)),
+    db
+      .select({ count: sql<number>`count(distinct coalesce(${films.seriesTitle}, ${films.id}))` })
+      .from(favorites)
+      .innerJoin(films, eq(films.id, favorites.filmId))
+      .where(eq(favorites.userId, userId)),
     db.select({ count: sql<number>`count(*)` }).from(comments).where(eq(comments.userId, userId)),
     db
       .select({ count: sql<number>`count(*)`, avg: sql<number | null>`avg(${filmRatings.value})` })

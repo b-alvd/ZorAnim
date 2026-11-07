@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import type { Film } from "@/data/types";
@@ -184,10 +185,18 @@ export default function FilmModal({
   const playIsPremiere =
     !!playTarget && !playReleased && !!playTarget.premiereAt && playUnlockAt === playTarget.premiereAt;
 
-  const seasonNumbers = [...new Set(listedEpisodes.map((ep) => ep.seasonNumber ?? 1))].sort((a, b) => a - b);
+  // Only episodes that are out are listed; the next one to come is announced
+  // under the list.
+  const outEpisodes = listedEpisodes.filter((ep) => isReleased(ep));
+  const nextEpisode =
+    listedEpisodes
+      .filter((ep) => !isReleased(ep))
+      .sort((a, b) => (getPremiereUnlockAt(a) ?? "9999").localeCompare(getPremiereUnlockAt(b) ?? "9999"))[0] ?? null;
+
+  const seasonNumbers = [...new Set(outEpisodes.map((ep) => ep.seasonNumber ?? 1))].sort((a, b) => a - b);
   const seasonOptions = seasonNumbers.map((n) => `Saison ${n}`);
   const season = seasonOptions.includes(selectedSeason) ? selectedSeason : seasonOptions[0];
-  const episodesForSeason = listedEpisodes.filter((ep) => seasonOptionFor(ep) === season);
+  const episodesForSeason = outEpisodes.filter((ep) => seasonOptionFor(ep) === season);
 
   const topLevelComments = comments.filter((c) => !c.parentId);
   const repliesByParent = new Map<string, Comment[]>();
@@ -202,7 +211,9 @@ export default function FilmModal({
     arr.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
 
-  return (
+  // Rendered at the root of the page: inside a card, a parent's stacking
+  // context would keep it under the navbar.
+  return createPortal(
     <div className={`${styles.overlay} ${shown ? styles.shown : ""}`} onClick={requestClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <button className={styles.close} onClick={requestClose} aria-label="Fermer">
@@ -347,13 +358,12 @@ export default function FilmModal({
           )}
 
           {/* No episode out yet (coming soon): the list stays hidden. */}
-          {listedEpisodes.some((ep) => isReleased(ep)) && film.seriesTitle && (
+          {outEpisodes.length > 0 && film.seriesTitle && (
             <div className={styles.episodesSection}>
               <h3 className={styles.episodesTitle}>Épisodes de {film.seriesTitle}</h3>
               <Dropdown options={seasonOptions} value={season} onChange={setSelectedSeason} />
               <div className={styles.epList}>
                 {episodesForSeason.map((ep) => {
-                  const out = isReleased(ep);
                   const watched = watchedEpisodeIds.has(ep.id);
                   return (
                     <button
@@ -363,19 +373,12 @@ export default function FilmModal({
                       className={`${styles.epCard} ${ep.id === activeFilm.id ? styles.epCardActive : ""}`}
                       aria-current={ep.id === activeFilm.id}
                     >
-                      <span className={`${styles.epThumb} ${out ? "" : styles.epThumbLocked}`}>
+                      <span className={styles.epThumb}>
                         <Image src={ep.poster} alt="" fill sizes="160px" className={styles.epThumbImg} unoptimized />
                         <span className={styles.epThumbIcon}>
-                          {out ? (
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                              <path d="M8 5v14l11-7z" />
-                            </svg>
-                          ) : (
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2">
-                              <rect x="5" y="11" width="14" height="10" rx="2" />
-                              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-                            </svg>
-                          )}
+                          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
                         </span>
                         {watched && (
                           <span className={styles.epWatched}>
@@ -389,17 +392,38 @@ export default function FilmModal({
                       <span className={styles.epBody}>
                         <span className={styles.epHead}>
                           <span className={styles.epCode}>{formatEpisodeTag(ep)}</span>
-                          <span className={styles.epName}>{out ? ep.title : "Épisode à venir"}</span>
+                          <span className={styles.epName}>{ep.title}</span>
                         </span>
-                        <span className={styles.epMeta}>
-                          {out ? ep.duration : `Disponible le ${formatWhen(getPremiereUnlockAt(ep), true)}`}
-                        </span>
-                        {out && ep.synopsis && <span className={styles.epSynopsis}>{ep.synopsis}</span>}
+                        <span className={styles.epMeta}>{ep.duration}</span>
+                        {ep.synopsis && <span className={styles.epSynopsis}>{ep.synopsis}</span>}
                       </span>
                     </button>
                   );
                 })}
               </div>
+              {nextEpisode && (
+                <button
+                  type="button"
+                  onClick={() => setActiveFilm(nextEpisode)}
+                  className={`${styles.nextEp} ${nextEpisode.id === activeFilm.id ? styles.nextEpActive : ""}`}
+                >
+                  <span className={styles.nextEpIcon} aria-hidden>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="3" y="5" width="18" height="16" rx="2" />
+                      <path d="M3 10h18M8 3v4M16 3v4" />
+                    </svg>
+                  </span>
+                  <span className={styles.nextEpBody}>
+                    <span className={styles.nextEpKicker}>Prochain épisode</span>
+                    <span className={styles.nextEpText}>
+                      {formatEpisodeTag(nextEpisode)} ·{" "}
+                      {getPremiereUnlockAt(nextEpisode)
+                        ? `le ${formatWhen(getPremiereUnlockAt(nextEpisode))}`
+                        : "bientôt"}
+                    </span>
+                  </span>
+                </button>
+              )}
             </div>
           )}
 
@@ -468,6 +492,7 @@ export default function FilmModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
