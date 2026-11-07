@@ -118,3 +118,10 @@ export function computeEffectiveWatchedIds(
   }
   return result;
 }
+
+// Episode title without the series name when it repeats it
+// ("Les Veilleurs, Ép. 3 : L'Éveil" → "Ép. 3 : L'Éveil"), whatever the separator.
+export function episodeName(title: string, seriesTitle: string): string {
+  if (!title.toLowerCase().startsWith(seriesTitle.toLowerCase())) return title;
+  return title.slice(seriesTitle.length).replace(/^\s*[—–:|·-]\s*/, "").trim() || title;
+}

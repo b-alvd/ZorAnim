@@ -8,7 +8,12 @@ import BanGate from "@/components/BanGate/BanGate";
 import BanWatcher from "@/components/BanWatcher/BanWatcher";
 import PasswordChangeGate from "@/components/PasswordChangeGate/PasswordChangeGate";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { getLatestBanAppeal, getNotifications, getSiteSettings, getUnreadNotificationCount } from "@/db/queries";
+import {
+  getLatestBanAppeal,
+  getNotifications,
+  getSiteSettings,
+  getUnreadNotificationCount,
+} from "@/db/queries";
 import "./globals.css";
 
 const montserrat = Montserrat({

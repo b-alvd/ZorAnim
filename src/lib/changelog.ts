@@ -7,6 +7,20 @@ export type ChangelogEntry = {
 // Newest first. Keep entries short and user-facing, not commit-by-commit.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.9.0",
+    date: "7 novembre 2026",
+    changes: [
+      "Nouvelle navigation : Accueil, Catalogue (qui regroupe désormais les catégories), Nouveautés, Créateurs et Ma liste, avec un menu de compte.",
+      "Refonte de l'accueil, des Nouveautés et de Ma liste.",
+      "La section « Reprendre » reprend chaque film ou épisode là où tu l'avais laissé, et propose directement l'épisode suivant quand tu as fini le précédent.",
+      "Lecteur revu : nouvel écran de pause, nouvel écran de fin, infos du programme à côté du bouton retour, son à 50 % par défaut.",
+      "Nouvelles pages artiste et studio, avec la possibilité d'ajouter une bannière.",
+      "Profil et Espace créateur entièrement repensés.",
+      "Les créateurs proposent leurs contenus depuis l'Espace créateur, en choisissant leur sortie : tout de suite, à une date, en avant-première ou sous forme d'annonce. L'équipe valide chaque demande.",
+      "Nouveau centre d'aide : FAQ avec recherche, page Contact, conditions et confidentialité mises à jour.",
+    ],
+  },
+  {
     version: "0.8.0",
     date: "6 septembre 2026",
     changes: [

@@ -11,3 +11,28 @@
   font-size: 1rem;
   text-align: center;
 }
+
+.home {
+  padding-bottom: 3rem;
+}
+
+/* The first shelves slightly overlap the bottom of the hero. */
+.shelves {
+  position: relative;
+  z-index: 2;
+  margin-top: -2.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Not over the avant-première banner: its progress bar runs along the bottom
+   edge and must stay visible. */
+.shelves.shelvesAfterBanner {
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .shelves {
+    margin-top: 0;
+  }
+}

@@ -1,9 +1,10 @@
 /* Top-left, just right of the back arrow and vertically centred on it
-   (arrow: 40px tall at 1.25rem from the top). */
+   (arrow: 44px tall at 1.75rem from the top). When the arrow hides with the
+   controls, the tag slides to the edge, mirroring the viewer counter. */
 .liveTag {
   position: absolute;
-  top: calc(1.25rem + 20px);
-  left: calc(1.25rem + 40px + 0.75rem);
+  top: calc(1.75rem + 22px);
+  left: calc(1.75rem + 44px + 0.75rem);
   transform: translateY(-50%);
   z-index: 2;
   display: flex;
@@ -20,19 +21,28 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  transition: left 0.3s ease;
 }
 
-/* Mobile: the shared player shrinks the arrow to 34px at 0.75rem. */
+.liveTagAlone {
+  left: 1.75rem;
+}
+
+/* Mobile: the shared player shrinks the arrow to 34px at 1.1rem. */
 @media (max-width: 640px) {
   .liveTag {
-    top: calc(0.75rem + 17px);
-    left: calc(0.75rem + 34px + 0.5rem);
-    max-width: calc(100% - 0.75rem - 34px - 0.5rem - 10rem);
+    top: calc(1.1rem + 17px);
+    left: calc(1.1rem + 34px + 0.5rem);
+    max-width: calc(100% - 1.1rem - 34px - 0.5rem - 10rem);
     height: 20px;
     padding: 0 8px;
     font-size: 0.6rem;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .liveTagAlone {
+    left: 1.1rem;
   }
 }
 

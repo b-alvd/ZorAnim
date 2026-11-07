@@ -1,63 +1,126 @@
-import InfoPage from "@/components/InfoPage/InfoPage";
+import Link from "next/link";
+import HelpCenter, { LegalSection, Summary } from "@/components/HelpCenter/HelpCenter";
+
+export const metadata = {
+  title: "Confidentialité | ZorAnim",
+};
+
+const SECTIONS = [
+  { id: "donnees", label: "Données collectées" },
+  { id: "utilisation", label: "Utilisation" },
+  { id: "visibilite", label: "Ce qui est public" },
+  { id: "hebergement", label: "Hébergement" },
+  { id: "cookies", label: "Cookies et stockage local" },
+  { id: "conservation", label: "Conservation" },
+  { id: "droits", label: "Tes droits" },
+  { id: "evolution", label: "Évolution" },
+];
 
 export default function ConfidentialitePage() {
   return (
-    <InfoPage
+    <HelpCenter
+      active="confidentialite"
       title="Confidentialité"
-      subtitle="Comment ZorAnim traite tes données personnelles."
-      updated="28 juillet 2026"
+      subtitle="Quelles données ZorAnim conserve, pourquoi, et comment garder la main dessus."
+      updated="7 novembre 2026"
+      toc={SECTIONS}
     >
-      <h2>Données collectées</h2>
-      <p>
-        Pour créer un compte, ZorAnim collecte ton pseudo, ton adresse email et un mot de passe
-        (stocké de façon chiffrée, jamais en clair). Si tu ajoutes une photo de profil, deviens
-        artiste, crées un studio ou soumets un film ou une série, les informations correspondantes (bio,
-        avatar, fichiers envoyés) sont également conservées. Les messages envoyés via la page
-        Contact sont stockés avec la réponse de l&apos;équipe.
-      </p>
+      <Summary
+        items={[
+          "Seules les données utiles au fonctionnement du site sont conservées.",
+          "Rien n'est revendu ni partagé à des fins publicitaires.",
+          "Un seul cookie : celui qui te garde connecté.",
+          "Ton compte et ses données se suppriment à tout moment depuis ton profil.",
+        ]}
+      />
 
-      <h2>Utilisation des données</h2>
-      <p>
-        Ces informations servent uniquement au fonctionnement du site : afficher ton profil,
-        gérer tes favoris et ton historique de visionnage, traiter tes candidatures et
-        soumissions, et te répondre si tu nous contactes. Elles ne sont ni revendues, ni
-        partagées avec des tiers à des fins commerciales.
-      </p>
+      <LegalSection id="donnees" number={1} title="Données collectées">
+        <p>Selon ce que tu utilises sur le site, ZorAnim conserve :</p>
+        <ul>
+          <li>
+            <strong>Ton compte</strong> : pseudo, adresse email et mot de passe (chiffré, jamais stocké
+            en clair), photo de profil si tu en ajoutes une.
+          </li>
+          <li>
+            <strong>Ton activité</strong> : ta liste, ton historique, ta position de lecture dans chaque
+            film ou épisode (pour la section « Reprendre »), tes notes, réactions et commentaires.
+          </li>
+          <li>
+            <strong>Ton profil créateur</strong> : bio, avatar, bannière, studios, ainsi que les
+            contenus que tu proposes et leurs demandes de sortie (date, avant-première, annonce, note
+            pour l&apos;équipe).
+          </li>
+          <li>
+            <strong>Tes échanges avec l&apos;équipe</strong> : messages envoyés via la page Contact et
+            leurs réponses, candidatures et éventuelles demandes de déban.
+          </li>
+        </ul>
+      </LegalSection>
 
-      <h2>Hébergement et prestataires techniques</h2>
-      <p>
-        ZorAnim utilise des prestataires tiers pour fonctionner : Turso pour la base de données,
-        et Cloudinary pour l&apos;hébergement des images et vidéos que tu envoies (posters, films,
-        avatars). Ces prestataires traitent les données uniquement pour le compte de ZorAnim et
-        dans ce cadre technique.
-      </p>
+      <LegalSection id="utilisation" number={2} title="Utilisation">
+        <p>
+          Ces informations servent uniquement au fonctionnement du site : afficher ton profil, te
+          permettre de reprendre un programme, gérer ta liste, traiter tes candidatures et
+          propositions, t&apos;envoyer des notifications sur le site et te répondre. Elles ne sont ni
+          revendues, ni partagées avec des tiers à des fins commerciales ou publicitaires.
+        </p>
+      </LegalSection>
 
-      <h2>Cookies</h2>
-      <p>
-        ZorAnim utilise un cookie de session, strictement nécessaire pour te garder connecté à
-        ton compte. Aucun cookie de suivi publicitaire n&apos;est utilisé.
-      </p>
+      <LegalSection id="visibilite" number={3} title="Ce qui est public">
+        <p>
+          Ton pseudo et ta photo de profil sont visibles à côté de tes commentaires. Si tu es
+          créateur, ta page publique affiche ton nom, ton avatar, ta bannière, ta bio, tes studios et
+          tes contenus publiés. Ton adresse email, ton historique et ta liste ne sont jamais affichés
+          publiquement.
+        </p>
+      </LegalSection>
 
-      <h2>Tes droits</h2>
-      <ul>
-        <li>Accéder aux données de ton compte, modifiables directement depuis ton profil.</li>
-        <li>Demander la rectification ou la suppression de tes données.</li>
-        <li>Supprimer ton compte à tout moment depuis la « Zone de danger » de ton profil.</li>
-        <li>T&apos;opposer au traitement de tes données à tout moment.</li>
-      </ul>
-      <p>
-        Pour exercer ces droits, contacte-nous via la{" "}
-        <a href="/contact" style={{ color: "var(--accent, #e50914)", textDecoration: "underline" }}>
-          page Contact
-        </a>
-        .
-      </p>
+      <LegalSection id="hebergement" number={4} title="Hébergement">
+        <p>
+          ZorAnim s&apos;appuie sur des prestataires techniques : Turso pour la base de données, et
+          Cloudinary pour les images et vidéos envoyées (posters, bannières, avatars, films). Ils
+          traitent ces données uniquement pour le compte de ZorAnim et dans ce cadre technique.
+        </p>
+      </LegalSection>
 
-      <h2>Évolution de cette politique</h2>
-      <p>
-        Cette politique de confidentialité pourra être amenée à évoluer avec le développement du
-        site ; la date de dernière mise à jour est indiquée en haut de cette page.
-      </p>
-    </InfoPage>
+      <LegalSection id="cookies" number={5} title="Cookies et stockage local">
+        <p>
+          ZorAnim utilise un seul cookie, strictement nécessaire : celui qui te garde connecté.
+          Aucun cookie de suivi ni de publicité n&apos;est utilisé.
+        </p>
+        <p>
+          Ton navigateur garde aussi en local ton choix sur le bandeau cookies, ainsi que des marques
+          temporaires effacées à la fermeture de l&apos;onglet (par exemple pour rafraîchir la section
+          « Reprendre » quand tu quittes le lecteur). Elles restent sur ton appareil.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="conservation" number={6} title="Conservation">
+        <p>
+          Les données sont conservées tant que ton compte existe. Quand tu supprimes ton compte, ton
+          profil, ton activité et tes messages sont effacés. Si ton compte porte une page artiste ou a
+          fondé un studio, contacte d&apos;abord l&apos;équipe pour retirer la page ou transférer le studio.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="droits" number={7} title="Tes droits">
+        <ul>
+          <li>Consulter et modifier les informations de ton compte directement depuis ton profil.</li>
+          <li>Demander la rectification ou la suppression de tes données.</li>
+          <li>Supprimer ton compte à tout moment depuis la zone de danger de ton profil.</li>
+          <li>T&apos;opposer au traitement de tes données.</li>
+        </ul>
+        <p>
+          Pour exercer ces droits, écris-nous depuis la <Link href="/contact">page Contact</Link>.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="evolution" number={8} title="Évolution">
+        <p>
+          Cette politique pourra évoluer avec le développement du site ; la date de dernière mise à
+          jour est indiquée en haut de cette page.
+        </p>
+      </LegalSection>
+    </HelpCenter>
   );
 }

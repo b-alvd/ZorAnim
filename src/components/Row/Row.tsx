@@ -1,107 +1,44 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Card from "@/components/Card/Card";
 import type { Film } from "@/data/types";
-import styles from "./Row.module.css";
+import Shelf from "./Shelf";
 
+// A shelf of content cards.
 export default function Row({
   title,
+  subtitle,
   films,
-  cardWidth,
   favoriteIds,
   watchedIds,
   comingSoon = false,
+  href,
 }: {
   title: string;
+  subtitle?: string;
   films: (Film & { episodeCount?: number })[];
-  cardWidth?: number;
   favoriteIds?: string[];
   watchedIds?: string[];
   comingSoon?: boolean;
+  // "Tout voir" link shown next to the title.
+  href?: string;
 }) {
   const favoriteSet = new Set(favoriteIds);
   const watchedSet = new Set(watchedIds);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const indexRef = useRef(0);
-  const [atStart, setAtStart] = useState(true);
-  const [atEnd, setAtEnd] = useState(false);
-
-  const updateEdges = () => {
-    const el = trackRef.current;
-    if (!el) return;
-    setAtStart(el.scrollLeft <= 0);
-    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 1);
-    const firstSlot = el.firstElementChild as HTMLElement | null;
-    if (firstSlot) {
-      const gap = parseFloat(getComputedStyle(el).columnGap || "0");
-      const step = firstSlot.getBoundingClientRect().width + gap;
-      if (step > 0) indexRef.current = Math.round(el.scrollLeft / step);
-    }
-  };
-
-  useEffect(() => {
-    updateEdges();
-    const el = trackRef.current;
-    if (!el) return;
-    el.addEventListener("scroll", updateEdges);
-    window.addEventListener("resize", updateEdges);
-    return () => {
-      el.removeEventListener("scroll", updateEdges);
-      window.removeEventListener("resize", updateEdges);
-    };
-  }, []);
-
-  const scroll = (dir: 1 | -1) => {
-    const el = trackRef.current;
-    if (!el) return;
-    const firstSlot = el.firstElementChild as HTMLElement | null;
-    if (!firstSlot) return;
-    const gap = parseFloat(getComputedStyle(el).columnGap || "0");
-    const step = firstSlot.getBoundingClientRect().width + gap;
-    const maxIndex = films.length - 1;
-    const nextIndex = Math.min(Math.max(indexRef.current + dir, 0), maxIndex);
-    indexRef.current = nextIndex;
-    const maxScroll = el.scrollWidth - el.clientWidth;
-    el.scrollTo({ left: Math.min(nextIndex * step, maxScroll), behavior: "smooth" });
-  };
+  if (films.length === 0) return null;
 
   return (
-    <section className={styles.row}>
-      <h2 className={styles.heading}>{title}</h2>
-      <div className={styles.wrap}>
-        {!atStart && (
-          <button className={`${styles.arrow} ${styles.left}`} onClick={() => scroll(-1)} aria-label="Précédent">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 6l-6 6 6 6" />
-            </svg>
-          </button>
-        )}
-        <div className={styles.track} ref={trackRef}>
-          {films.map((f) => (
-            <div
-              key={f.id}
-              className={`${styles.slot} ${cardWidth ? styles.slotFixed : ""}`}
-              style={cardWidth ? { ["--card-width" as string]: `${cardWidth}px` } : undefined}
-            >
-              <Card
-                film={f}
-                isFavorite={favoriteSet.has(f.id)}
-                isWatched={watchedSet.has(f.id)}
-                episodeCount={f.episodeCount}
-                comingSoon={comingSoon}
-              />
-            </div>
-          ))}
-        </div>
-        {!atEnd && (
-          <button className={`${styles.arrow} ${styles.right}`} onClick={() => scroll(1)} aria-label="Suivant">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 6l6 6-6 6" />
-            </svg>
-          </button>
-        )}
-      </div>
-    </section>
+    <Shelf title={title} subtitle={subtitle} href={href}>
+      {films.map((f) => (
+        <Card
+          key={f.id}
+          film={f}
+          isFavorite={favoriteSet.has(f.id)}
+          isWatched={watchedSet.has(f.id)}
+          episodeCount={f.episodeCount}
+          comingSoon={comingSoon}
+        />
+      ))}
+    </Shelf>
   );
 }

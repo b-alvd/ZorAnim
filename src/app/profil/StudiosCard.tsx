@@ -12,6 +12,7 @@ import {
   removeStudioMembershipAction,
   respondToJoinRequestAction,
   respondToStudioInviteAction,
+  type StudioActionResult,
 } from "./studioActions";
 import styles from "./StudiosCard.module.css";
 
@@ -19,88 +20,158 @@ type OwnedStudio = Artist & { members: StudioMemberInfo[] };
 type PendingInvite = StudioMember & { studioName: string };
 type JoinRequest = StudioMember & { studioName: string; requesterName: string };
 
-function InviteForm({ studioId, invitable, onDone }: { studioId: string; invitable: Artist[]; onDone: () => void }) {
-  const [artistId, setArtistId] = useState(invitable[0]?.id ?? "");
+// Runs a studio action and keeps its error message for display.
+function useStudioAction() {
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const run = (action: () => Promise<StudioActionResult>, onSuccess?: () => void) => {
+    setError(null);
+    startTransition(async () => {
+      const result = await action();
+      if (result.error) setError(result.error);
+      else onSuccess?.();
+    });
+  };
+  return { error, isPending, run };
+}
 
-  if (invitable.length === 0) {
-    return <p className={styles.empty}>Aucun autre artiste disponible à inviter pour l&apos;instant.</p>;
-  }
-
-  const names = invitable.map((a) => a.name);
-  const selectedName = invitable.find((a) => a.id === artistId)?.name ?? names[0];
-
+function Avatar({ src, name, size = 32 }: { src?: string | null; name: string; size?: number }) {
   return (
-    <div className={styles.form}>
-      <div className={styles.field}>
-        <label>Artiste à inviter</label>
-        <Dropdown
-          options={names}
-          value={selectedName}
-          onChange={(name) => {
-            const found = invitable.find((a) => a.name === name);
-            if (found) setArtistId(found.id);
-          }}
-        />
-      </div>
-      <button
-        type="button"
-        className={styles.submitBtn}
-        disabled={isPending || !artistId}
-        onClick={() =>
-          startTransition(async () => {
-            await inviteToStudioAction(studioId, artistId);
-            onDone();
-          })
-        }
-      >
-        {isPending ? "Envoi…" : "Inviter"}
-      </button>
-    </div>
+    <span className={styles.avatar} style={{ width: size, height: size, fontSize: size * 0.42 }}>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" />
+      ) : (
+        name.charAt(0).toUpperCase()
+      )}
+    </span>
   );
 }
 
-function DeleteStudioConfirm({
-  studioName,
-  studioId,
-  onDone,
-  onError,
+const CheckIcon = (
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <path d="M5 12l5 5L20 7" />
+  </svg>
+);
+
+const CrossIcon = (
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <path d="M6 6l12 12M18 6L6 18" />
+  </svg>
+);
+
+function ConfirmDialog({
+  open,
+  onClose,
+  title,
+  text,
+  confirmLabel,
+  action,
 }: {
-  studioName: string;
-  studioId: string;
-  onDone: () => void;
-  onError: (message: string) => void;
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  text: React.ReactNode;
+  confirmLabel: string;
+  action: () => Promise<StudioActionResult>;
 }) {
-  const [isPending, startTransition] = useTransition();
+  const { error, isPending, run } = useStudioAction();
+  return (
+    <Modal open={open} onClose={onClose} title={title}>
+      <div className={styles.dialog}>
+        <p className={styles.dialogText}>{text}</p>
+        {error && <p className={styles.error}>{error}</p>}
+        <div className={styles.dialogActions}>
+          <button type="button" className={styles.ghostBtn} onClick={onClose}>
+            Annuler
+          </button>
+          <button type="button" className={styles.dangerBtn} disabled={isPending} onClick={() => run(action, onClose)}>
+            {isPending ? "…" : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function InviteDialog({
+  open,
+  onClose,
+  studio,
+  invitable,
+}: {
+  open: boolean;
+  onClose: () => void;
+  studio: OwnedStudio;
+  invitable: Artist[];
+}) {
+  const [artistId, setArtistId] = useState(invitable[0]?.id ?? "");
+  const { error, isPending, run } = useStudioAction();
+  const selectedName = invitable.find((a) => a.id === artistId)?.name ?? invitable[0]?.name ?? "";
 
   return (
-    <div className={styles.form}>
-      <p className={styles.empty}>
-        Supprimer <strong>{studioName}</strong> ? Cette action est irréversible. Impossible si le studio a des
-        films au catalogue.
-      </p>
-      <button
-        type="button"
-        className={styles.refuseBtn}
-        disabled={isPending}
-        onClick={() =>
-          startTransition(async () => {
-            try {
-              await deleteStudioAction(studioId);
-              onDone();
-            } catch (err) {
-              onError(err instanceof Error ? err.message : "Échec de la suppression.");
-            }
-          })
-        }
-      >
-        {isPending ? "Suppression…" : "Confirmer la suppression"}
-      </button>
+    <Modal open={open} onClose={onClose} title={`Inviter dans « ${studio.name} »`}>
+      <div className={styles.dialog}>
+        {invitable.length === 0 ? (
+          <p className={styles.dialogText}>Aucun autre artiste disponible à inviter pour l&apos;instant.</p>
+        ) : (
+          <>
+            <p className={styles.dialogText}>
+              L&apos;artiste recevra une invitation qu&apos;il pourra accepter depuis son profil.
+            </p>
+            <Dropdown
+              options={invitable.map((a) => a.name)}
+              value={selectedName}
+              onChange={(name) => {
+                const found = invitable.find((a) => a.name === name);
+                if (found) setArtistId(found.id);
+              }}
+            />
+          </>
+        )}
+        {error && <p className={styles.error}>{error}</p>}
+        <div className={styles.dialogActions}>
+          <button type="button" className={styles.ghostBtn} onClick={onClose}>
+            Annuler
+          </button>
+          {invitable.length > 0 && (
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              disabled={isPending || !artistId}
+              onClick={() => run(() => inviteToStudioAction(studio.id, artistId), onClose)}
+            >
+              {isPending ? "Envoi…" : "Envoyer l'invitation"}
+            </button>
+          )}
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+function StudioHead({ studio, role }: { studio: Artist; role: "owner" | "member" }) {
+  return (
+    <div className={styles.head}>
+      <Avatar src={studio.avatar} name={studio.name} size={44} />
+      <div className={styles.headText}>
+        <Link href={`/studios/${studio.id}`} className={styles.studioName}>
+          {studio.name}
+        </Link>
+        <span className={`${styles.role} ${role === "owner" ? styles.roleOwner : ""}`}>
+          {role === "owner" ? "Fondateur" : "Membre"}
+        </span>
+      </div>
+      <Link href={`/studios/${studio.id}`} className={styles.iconLink} aria-label="Voir la page du studio">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+        </svg>
+      </Link>
     </div>
   );
 }
 
-function OwnedStudioItem({
+function OwnedStudioCard({
   studio,
   invitable,
   joinRequests,
@@ -111,183 +182,220 @@ function OwnedStudioItem({
 }) {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [removing, setRemoving] = useState<StudioMemberInfo | null>(null);
+  const { error, isPending, run } = useStudioAction();
+
+  // "requested" rows are listed in the requests block, not as members.
+  const members = studio.members.filter((m) => m.status !== "requested");
+  const activeCount = members.filter((m) => m.status === "active").length;
 
   return (
-    <div className={styles.item}>
-      <div className={styles.itemHeader}>
-        <span className={styles.itemTitle}>{studio.name}</span>
-        <span className={styles.badge}>Studio (toi)</span>
-      </div>
+    <article className={styles.card}>
+      <StudioHead studio={studio} role="owner" />
+
       {joinRequests.length > 0 && (
-        <>
-          <span className={styles.subLabel}>Demandes pour rejoindre</span>
-          <div className={styles.members}>
-            {joinRequests.map((req) => (
-              <span key={req.id} className={styles.member}>
-                {req.requesterName}
-                <button
-                  type="button"
-                  className={styles.acceptBtn}
-                  disabled={isPending}
-                  onClick={() => startTransition(() => respondToJoinRequestAction(req.id, true))}
-                >
-                  Accepter
-                </button>
-                <button
-                  type="button"
-                  className={styles.refuseBtn}
-                  disabled={isPending}
-                  onClick={() => startTransition(() => respondToJoinRequestAction(req.id, false))}
-                >
-                  Refuser
-                </button>
-              </span>
-            ))}
-          </div>
-        </>
+        <div className={styles.requests}>
+          <span className={styles.blockLabel}>
+            Demandes pour rejoindre <span className={styles.count}>{joinRequests.length}</span>
+          </span>
+          {joinRequests.map((req) => (
+            <div key={req.id} className={styles.person}>
+              <Avatar name={req.requesterName} />
+              <span className={styles.personName}>{req.requesterName}</span>
+              <button
+                type="button"
+                className={`${styles.roundBtn} ${styles.roundAccept}`}
+                disabled={isPending}
+                onClick={() => run(() => respondToJoinRequestAction(req.id, true))}
+                aria-label={`Accepter ${req.requesterName}`}
+                title="Accepter"
+              >
+                {CheckIcon}
+              </button>
+              <button
+                type="button"
+                className={styles.roundBtn}
+                disabled={isPending}
+                onClick={() => run(() => respondToJoinRequestAction(req.id, false))}
+                aria-label={`Refuser ${req.requesterName}`}
+                title="Refuser"
+              >
+                {CrossIcon}
+              </button>
+            </div>
+          ))}
+        </div>
       )}
-      {/* "requested" rows are shown above, in the review section -- listing
-          them here too, without a clear badge, made a pending request look
-          like an already-accepted member. */}
-      {studio.members.filter((m) => m.status !== "requested").length > 0 && (
-        <>
-          <span className={styles.subLabel}>Membres</span>
-          <div className={styles.members}>
-            {studio.members
-              .filter((m) => m.status !== "requested")
-              .map((m) => (
-                <span key={m.id} className={styles.member}>
-                  {m.name}
-                  {m.status === "invited" && <span className={styles.badge}>Invitation en attente</span>}
-                  <button
-                    type="button"
-                    className={styles.removeBtn}
-                    disabled={isPending}
-                    onClick={() => startTransition(() => removeStudioMembershipAction(m.id))}
-                  >
-                    Retirer
-                  </button>
-                </span>
-              ))}
-          </div>
-        </>
-      )}
-      <div className={styles.itemActions}>
-        <button type="button" className={styles.linkBtn} onClick={() => setInviteOpen(true)}>
-          Inviter un artiste
+
+      <div className={styles.block}>
+        <span className={styles.blockLabel}>
+          Membres <span className={styles.count}>{activeCount}</span>
+        </span>
+        {members.length === 0 ? (
+          <p className={styles.muted}>Aucun membre pour l&apos;instant. Invite des artistes à te rejoindre.</p>
+        ) : (
+          members.map((m) => (
+            <div key={m.id} className={styles.person}>
+              <Avatar src={m.avatar} name={m.name} />
+              <span className={styles.personName}>{m.name}</span>
+              {m.status === "invited" && <span className={styles.pending}>Invitation envoyée</span>}
+              <button
+                type="button"
+                className={styles.roundBtn}
+                disabled={isPending}
+                onClick={() => setRemoving(m)}
+                aria-label={m.status === "invited" ? `Annuler l'invitation de ${m.name}` : `Retirer ${m.name}`}
+                title={m.status === "invited" ? "Annuler l'invitation" : "Retirer du studio"}
+              >
+                {CrossIcon}
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+
+      {error && <p className={styles.error}>{error}</p>}
+
+      <div className={styles.footer}>
+        <button type="button" className={styles.primaryBtn} onClick={() => setInviteOpen(true)}>
+          + Inviter un artiste
         </button>
-        <button type="button" className={styles.refuseBtn} onClick={() => setDeleteOpen(true)}>
+        <button type="button" className={styles.textDanger} onClick={() => setDeleteOpen(true)}>
           Supprimer le studio
         </button>
       </div>
-      {deleteError && <p className={styles.errorText}>{deleteError}</p>}
-      <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} title={`Inviter dans ${studio.name}`}>
-        <InviteForm studioId={studio.id} invitable={invitable} onDone={() => setInviteOpen(false)} />
-      </Modal>
-      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Supprimer le studio">
-        <DeleteStudioConfirm
-          studioName={studio.name}
-          studioId={studio.id}
-          onDone={() => setDeleteOpen(false)}
-          onError={setDeleteError}
-        />
-      </Modal>
+
+      {inviteOpen && (
+        <InviteDialog open onClose={() => setInviteOpen(false)} studio={studio} invitable={invitable} />
+      )}
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        title="Supprimer le studio"
+        text={
+          <>
+            Supprimer « {studio.name} » ? Cette action est irréversible. Impossible si le studio a des films ou séries
+            au catalogue.
+          </>
+        }
+        confirmLabel="Supprimer"
+        action={() => deleteStudioAction(studio.id)}
+      />
+      <ConfirmDialog
+        open={!!removing}
+        onClose={() => setRemoving(null)}
+        title={removing?.status === "invited" ? "Annuler l'invitation" : "Retirer le membre"}
+        text={
+          removing?.status === "invited"
+            ? `Annuler l'invitation envoyée à ${removing?.name} ?`
+            : `Retirer ${removing?.name} de « ${studio.name} » ?`
+        }
+        confirmLabel={removing?.status === "invited" ? "Annuler l'invitation" : "Retirer"}
+        action={() => removeStudioMembershipAction(removing!.id, studio.id)}
+      />
+    </article>
+  );
+}
+
+function MemberStudioCard({ membership }: { membership: StudioMembership }) {
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const { studio, membershipId } = membership;
+
+  return (
+    <article className={styles.card}>
+      <StudioHead studio={studio} role="member" />
+      {studio.bio && <p className={styles.bio}>{studio.bio}</p>}
+      <div className={styles.footer}>
+        <Link href={`/studios/${studio.id}`} className={styles.ghostBtn}>
+          Voir le studio
+        </Link>
+        <button type="button" className={styles.textDanger} onClick={() => setLeaveOpen(true)}>
+          Quitter le studio
+        </button>
+      </div>
+      <ConfirmDialog
+        open={leaveOpen}
+        onClose={() => setLeaveOpen(false)}
+        title="Quitter le studio"
+        text={`Quitter « ${studio.name} » ? Tu devras être réinvité pour le rejoindre à nouveau.`}
+        confirmLabel="Quitter"
+        action={() => removeStudioMembershipAction(membershipId, studio.id)}
+      />
+    </article>
+  );
+}
+
+function InviteBanner({ invite }: { invite: PendingInvite }) {
+  const { error, isPending, run } = useStudioAction();
+  return (
+    <div className={styles.invite}>
+      <Avatar name={invite.studioName} size={38} />
+      <div className={styles.inviteText}>
+        <strong>« {invite.studioName} »</strong> t&apos;invite à rejoindre son studio.
+        {error && <span className={styles.error}>{error}</span>}
+      </div>
+      <div className={styles.inviteActions}>
+        <button
+          type="button"
+          className={styles.ghostBtn}
+          disabled={isPending}
+          onClick={() => run(() => respondToStudioInviteAction(invite.id, false))}
+        >
+          Refuser
+        </button>
+        <button
+          type="button"
+          className={styles.primaryBtn}
+          disabled={isPending}
+          onClick={() => run(() => respondToStudioInviteAction(invite.id, true))}
+        >
+          Accepter
+        </button>
+      </div>
     </div>
   );
 }
 
 export default function StudiosCard({
-  personalArtist,
   ownedStudios,
   memberStudios,
   pendingInvites,
   joinRequests,
   invitableArtists,
 }: {
-  personalArtist: Artist | null;
   ownedStudios: OwnedStudio[];
   memberStudios: StudioMembership[];
   pendingInvites: PendingInvite[];
   joinRequests: JoinRequest[];
   invitableArtists: Artist[];
 }) {
-  const [isPending, startTransition] = useTransition();
-
-  if (!personalArtist) {
-    return (
-      <p className={styles.empty}>
-        Tu dois être artiste pour créer ou rejoindre un studio.{" "}
-        <Link href="/devenir-artiste">Devenir artiste</Link>
-      </p>
-    );
-  }
+  const empty = ownedStudios.length === 0 && memberStudios.length === 0;
 
   return (
-    <div>
-      {pendingInvites.length > 0 && (
-        <>
-          <p className={styles.sectionTitle}>Invitations reçues</p>
-          <div className={styles.list}>
-            {pendingInvites.map((invite) => (
-              <div key={invite.id} className={styles.item}>
-                <div className={styles.itemHeader}>
-                  <span className={styles.itemTitle}>{invite.studioName}</span>
-                </div>
-                <div className={styles.inviteActions}>
-                  <button
-                    type="button"
-                    className={styles.acceptBtn}
-                    disabled={isPending}
-                    onClick={() => startTransition(() => respondToStudioInviteAction(invite.id, true))}
-                  >
-                    Accepter
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.refuseBtn}
-                    disabled={isPending}
-                    onClick={() => startTransition(() => respondToStudioInviteAction(invite.id, false))}
-                  >
-                    Refuser
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+    <div className={styles.wrap}>
+      {pendingInvites.map((invite) => (
+        <InviteBanner key={invite.id} invite={invite} />
+      ))}
 
-      <p className={styles.sectionTitle}>Mes studios</p>
-
-      {ownedStudios.length === 0 && memberStudios.length === 0 ? (
-        <p className={styles.empty}>Tu ne fais partie d&apos;aucun studio.</p>
+      {empty ? (
+        <div className={styles.empty}>
+          <p>Tu ne fais partie d&apos;aucun studio. Crée le tien ou attends qu&apos;un studio t&apos;invite.</p>
+          <Link href="/creer-un-studio" className={styles.primaryBtn}>
+            Créer un studio
+          </Link>
+        </div>
       ) : (
-        <div className={styles.list}>
+        <div className={styles.grid}>
           {ownedStudios.map((studio) => (
-            <OwnedStudioItem
+            <OwnedStudioCard
               key={studio.id}
               studio={studio}
               invitable={invitableArtists.filter((a) => !studio.members.some((m) => m.name === a.name))}
               joinRequests={joinRequests.filter((r) => r.studioId === studio.id)}
             />
           ))}
-          {memberStudios.map(({ membershipId, studio }) => (
-            <div key={membershipId} className={styles.item}>
-              <div className={styles.itemHeader}>
-                <span className={styles.itemTitle}>{studio.name}</span>
-                <span className={`${styles.badge} ${styles.badgeActive}`}>Membre</span>
-              </div>
-              <button
-                type="button"
-                className={styles.linkBtn}
-                disabled={isPending}
-                onClick={() => startTransition(() => removeStudioMembershipAction(membershipId))}
-              >
-                Quitter le studio
-              </button>
-            </div>
+          {memberStudios.map((m) => (
+            <MemberStudioCard key={m.membershipId} membership={m} />
           ))}
         </div>
       )}

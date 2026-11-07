@@ -2,12 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
 import type { Film } from "@/data/types";
-import { getWatchedEpisodeIdsAction } from "@/lib/actions";
-import { formatEpisodeTag } from "@/lib/series";
+import EndScreen from "./EndScreen";
+import PauseScreen from "./PauseScreen";
+import { episodeName, formatEpisodeTag } from "@/lib/series";
+import { isFinished, MIN_RESUME_SECONDS } from "@/lib/watch-progress";
+import { markProgressChanged } from "@/components/RefreshOnReturn/RefreshOnReturn";
 import styles from "./VideoPlayer.module.css";
+
+const DEFAULT_VOLUME = 0.5;
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds)) return "0:00";
@@ -24,11 +27,23 @@ export default function VideoPlayer({
   suggestions,
   episodes = [],
   autoplay = false,
+  resumeAt = 0,
+  trackProgress = false,
+  episodeProgress = {},
+  lockedEpisodeIds = [],
 }: {
   film: Film;
-  suggestions: Film[];
+  suggestions: (Film & { episodeCount?: number })[];
   episodes?: Film[];
   autoplay?: boolean;
+  // Where the user stopped last time (seconds); 0 to start from the beginning.
+  resumeAt?: number;
+  // Saves the playback position for "Reprendre" (signed-in users only).
+  trackProgress?: boolean;
+  // Per episode: absent = not watched, 0 = finished, > 0 = stopped there.
+  episodeProgress?: Record<string, number>;
+  // Episodes not released yet (premiere, scheduled release).
+  lockedEpisodeIds?: string[];
 }) {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -39,45 +54,131 @@ export default function VideoPlayer({
   const [ended, setEnded] = useState(false);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
-  // Browsers only ever allow autoplay unconditionally when muted -- setting
-  // this on the very first render (rather than reacting to a failed
-  // unmuted play() attempt) means the <video muted> DOM attribute is
-  // correct from the start instead of racing a play()/catch/retry.
-  const [muted, setMuted] = useState(() => autoplay);
-  const [volume, setVolume] = useState(1);
+  // Sound on at half volume by default. If the browser refuses to autoplay
+  // with sound, playback starts muted and a button offers to turn it on.
+  const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(DEFAULT_VOLUME);
+  const [mutedByBrowser, setMutedByBrowser] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [watchedEpisodeIds, setWatchedEpisodeIds] = useState<Set<string>>(new Set());
   const [controlsVisible, setControlsVisible] = useState(true);
   const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Position the playback was resumed from, shown for a few seconds.
+  const [resumedFrom, setResumedFrom] = useState<number | null>(null);
+
+  // ----- Playback position (Reprendre) -----
+  // Only saved once the video has actually played, so opening a page and
+  // leaving right away never wipes the previous stopping point.
+  const playedRef = useRef(false);
+  // Position sent by the last save (-1: nothing sent yet).
+  const lastSavedRef = useRef(-1);
+  // `ifChanged`: used when leaving, so an already saved state (e.g. a
+  // finished episode) isn't sent again, which would wrongly make it the
+  // latest activity in "Reprendre".
+  const saveProgress = (opts: { ended?: boolean; beacon?: boolean; ifChanged?: boolean } = {}) => {
+    const video = videoRef.current;
+    if (!trackProgress || !video || !playedRef.current) return;
+    if (opts.ifChanged && Math.abs(video.currentTime - lastSavedRef.current) < 1) return;
+    lastSavedRef.current = video.currentTime;
+    markProgressChanged();
+    const url = `/api/watch/${film.id}/progress`;
+    const body = JSON.stringify({
+      position: opts.ended ? video.duration || video.currentTime : video.currentTime,
+      duration: Number.isFinite(video.duration) ? video.duration : 0,
+      ended: !!opts.ended,
+    });
+    if (opts.beacon && typeof navigator.sendBeacon === "function") {
+      navigator.sendBeacon(url, new Blob([body], { type: "text/plain" }));
+    } else {
+      fetch(url, { method: "POST", body, keepalive: true }).catch(() => {});
+    }
+  };
+  const saveRef = useRef(saveProgress);
+  useEffect(() => {
+    saveRef.current = saveProgress;
+  });
+
+  // Saves when the page is hidden or left, and when this player goes away
+  // (e.g. going to the next episode).
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === "hidden") saveRef.current({ beacon: true, ifChanged: true });
+    };
+    const onPageHide = () => saveRef.current({ beacon: true, ifChanged: true });
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onPageHide);
+      saveRef.current({ beacon: true, ifChanged: true });
+    };
+  }, []);
+
+  // Jumps to the saved position once the video length is known.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || resumeAt < MIN_RESUME_SECONDS) return;
+    const apply = () => {
+      if (isFinished(resumeAt, video.duration)) return;
+      video.currentTime = resumeAt;
+      lastSavedRef.current = resumeAt;
+      setResumedFrom(resumeAt);
+    };
+    if (video.readyState >= 1) apply();
+    else video.addEventListener("loadedmetadata", apply, { once: true });
+    return () => video.removeEventListener("loadedmetadata", apply);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    if (!film.seriesTitle) {
-      setWatchedEpisodeIds(new Set());
-      return;
-    }
-    getWatchedEpisodeIdsAction(film.seriesTitle).then((ids) => setWatchedEpisodeIds(new Set(ids)));
-  }, [film.seriesTitle]);
+    if (resumedFrom === null) return;
+    const id = setTimeout(() => setResumedFrom(null), 8000);
+    return () => clearTimeout(id);
+  }, [resumedFrom]);
+
+  const restartFromBeginning = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.currentTime = 0;
+    setResumedFrom(null);
+    video.play().catch(() => {});
+  };
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    const onTime = () => setCurrent(video.currentTime);
+    const onTime = () => {
+      setCurrent(video.currentTime);
+      // Saved every 15 s of playback.
+      if (!video.paused && Math.abs(video.currentTime - lastSavedRef.current) >= 15) saveRef.current();
+    };
     const onLoaded = () => setDuration(video.duration);
     const onPlay = () => {
+      playedRef.current = true;
       setPlaying(true);
       setStarted(true);
       setEnded(false);
     };
-    const onPause = () => setPlaying(false);
+    const onPause = () => {
+      setPlaying(false);
+      if (!video.ended) saveRef.current();
+    };
     const onEnded = () => {
       setPlaying(false);
       setEnded(true);
+      saveRef.current({ ended: true });
     };
     video.addEventListener("timeupdate", onTime);
     video.addEventListener("loadedmetadata", onLoaded);
     video.addEventListener("play", onPlay);
     video.addEventListener("pause", onPause);
     video.addEventListener("ended", onEnded);
+    // With autoplay, the video can load and start before these listeners
+    // exist: catch up on what was missed.
+    if (video.readyState >= 1) onLoaded();
+    if (video.ended) {
+      playedRef.current = true;
+      onEnded();
+    } else if (!video.paused) onPlay();
     return () => {
       video.removeEventListener("timeupdate", onTime);
       video.removeEventListener("loadedmetadata", onLoaded);
@@ -94,10 +195,29 @@ export default function VideoPlayer({
   }, []);
 
   useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = DEFAULT_VOLUME;
     if (!autoplay) return;
-    videoRef.current?.play().catch(() => {});
+    video.play().catch(() => {
+      // Autoplay with sound blocked: start muted rather than not at all.
+      video.muted = true;
+      setMuted(true);
+      setMutedByBrowser(true);
+      video.play().catch(() => {});
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const enableSound = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = false;
+    if (video.volume === 0) video.volume = DEFAULT_VOLUME;
+    setMuted(false);
+    setVolume(video.volume);
+    setMutedByBrowser(false);
+  };
 
   const wakeControls = () => {
     setControlsVisible(true);
@@ -106,17 +226,17 @@ export default function VideoPlayer({
   };
 
   useEffect(() => {
+    // While paused the controls stay visible (see showControls).
     if (!playing) {
-      setControlsVisible(true);
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
       return;
     }
-    wakeControls();
+    hideTimeoutRef.current = setTimeout(() => setControlsVisible(false), 3000);
     return () => {
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playing]);
+  const showControls = controlsVisible || !playing;
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -150,7 +270,10 @@ export default function VideoPlayer({
     const video = videoRef.current;
     if (!video) return;
     video.muted = !video.muted;
+    if (!video.muted && video.volume === 0) video.volume = DEFAULT_VOLUME;
     setMuted(video.muted);
+    setVolume(video.volume);
+    setMutedByBrowser(false);
   };
 
   const changeVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,6 +284,7 @@ export default function VideoPlayer({
     video.muted = v === 0;
     setVolume(v);
     setMuted(v === 0);
+    setMutedByBrowser(false);
   };
 
   const toggleFullscreen = () => {
@@ -181,140 +305,98 @@ export default function VideoPlayer({
 
   const progressPct = duration ? (current / duration) * 100 : 0;
   const isPaused = !playing && !ended;
-  const currentEpisodeIndex = episodes.findIndex((e) => e.id === film.id);
-  const nextEpisode = currentEpisodeIndex >= 0 ? episodes[currentEpisodeIndex + 1] : undefined;
 
   return (
-    <div className={styles.player} ref={containerRef} onMouseMove={wakeControls}>
+    <div
+      className={`${styles.player} ${!showControls ? styles.idle : ""}`}
+      ref={containerRef}
+      onMouseMove={wakeControls}
+      onTouchStart={wakeControls}
+    >
       <video
         ref={videoRef}
         src={film.videoUrl}
         poster={film.poster}
         className={styles.video}
         onClick={togglePlay}
-        autoPlay={autoplay}
         muted={muted}
         playsInline
       />
 
-      <button className={styles.backBtn} onClick={() => router.back()} aria-label="Retour">
+      <button
+        className={`${styles.backBtn} ${!showControls ? styles.controlsHidden : ""}`}
+        onClick={() => {
+          // Sent before leaving so the page we go back to is up to date.
+          saveProgress({ ifChanged: true });
+          router.back();
+        }}
+        aria-label="Retour"
+      >
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M19 12H5" />
           <path d="M12 19l-7-7 7-7" />
         </svg>
       </button>
 
-      {isPaused && (
-        <div className={styles.pauseOverlay}>
-          <div className={styles.pauseShade} />
-          <div className={styles.pauseInfo}>
-            <div className={styles.posterWrap}>
-              <Image src={film.poster} alt="" fill sizes="520px" className={styles.posterImg} unoptimized />
-            </div>
-            <h1 className={styles.pauseTitle}>{film.title}</h1>
-            <Link
-              href={film.isStudioAttribution ? `/studios/${film.artistId}` : `/artistes/${film.artistId}`}
-              className={styles.pauseArtist}
-            >
-              Par {film.artistName}
-            </Link>
-            <div className={styles.pauseBadges}>
-              {film.isNew && <span className={`${styles.badge} ${styles.newBadge}`}>Nouveau</span>}
-              <span className={styles.badge}>{film.year}</span>
-              <span className={styles.badge}>{film.duration}</span>
-              <span className={styles.badge}>{film.rating}</span>
-            </div>
-            <p className={styles.pauseSynopsis}>{film.synopsis}</p>
-            {episodes.length >= 1 && film.seriesTitle && (
-              <div className={styles.episodesSection}>
-                <span className={styles.episodesLabel}>Épisodes</span>
-                <div className={styles.episodesList}>
-                  {episodes.map((ep) => (
-                    <Link
-                      key={ep.id}
-                      href={`/watch/${ep.id}?autoplay=1`}
-                      className={`${styles.episodeItem} ${ep.id === film.id ? styles.episodeItemActive : ""}`}
-                    >
-                      <span className={styles.episodeNumber}>{formatEpisodeTag(ep)}</span>
-                      <span className={styles.episodeTitle}>{ep.title}</span>
-                      {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-            <button className={styles.resumeBtn} onClick={togglePlay}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-              {started ? "Reprendre la lecture" : "Démarrer la lecture"}
-            </button>
+      {/* What is playing, next to the back arrow (the pause screen shows it otherwise). */}
+      {!isPaused && !ended && (
+        <>
+          <div className={`${styles.topShade} ${!showControls ? styles.controlsHidden : ""}`} aria-hidden="true" />
+          <div className={`${styles.nowPlaying} ${!showControls ? styles.controlsHidden : ""}`}>
+            <span className={styles.nowPlayingTitle}>{film.seriesTitle ?? film.title}</span>
+            <span className={styles.nowPlayingMeta}>
+              {film.seriesTitle ? `${formatEpisodeTag(film)} · ${episodeName(film.title, film.seriesTitle)}` : `${film.year} · ${film.duration}`}
+            </span>
           </div>
+        </>
+      )}
+
+      {mutedByBrowser && !ended && (
+        <button type="button" className={styles.soundNotice} onClick={enableSound}>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3z" />
+            <path d="M16.5 12A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4z" />
+          </svg>
+          Activer le son
+        </button>
+      )}
+
+      {resumedFrom !== null && !ended && (
+        <div className={styles.resumeNotice} role="status">
+          <span>Reprise à {formatTime(resumedFrom)}</span>
+          <button type="button" className={styles.resumeNoticeBtn} onClick={restartFromBeginning}>
+            Reprendre du début
+          </button>
         </div>
+      )}
+
+      {isPaused && (
+        <PauseScreen
+          film={film}
+          episodes={episodes}
+          episodeProgress={episodeProgress}
+          lockedEpisodeIds={lockedEpisodeIds}
+          current={current}
+          duration={duration}
+          started={started}
+          onResume={togglePlay}
+          onRestart={replay}
+        />
       )}
 
       {ended && (
-        <div className={styles.endedOverlay}>
-          <div className={styles.endedTop}>
-            <h2 className={styles.endedTitle}>Lecture terminée</h2>
-            <button className={styles.replayBtn} onClick={replay}>
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 12a8 8 0 1 0 2.34-5.66" />
-                <path d="M4 4v5h5" />
-              </svg>
-              Revoir
-            </button>
-            {nextEpisode && (
-              <Link href={`/watch/${nextEpisode.id}?autoplay=1`} className={styles.nextEpisodeBtn}>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-                {formatEpisodeTag(nextEpisode)} : {nextEpisode.title}
-              </Link>
-            )}
-          </div>
-          {episodes.length >= 1 && film.seriesTitle ? (
-            <>
-              <p className={styles.endedSubtitle}>Épisodes de {film.seriesTitle}</p>
-              <div className={styles.episodesList}>
-                {episodes.map((ep) => (
-                  <Link
-                    key={ep.id}
-                    href={`/watch/${ep.id}?autoplay=1`}
-                    className={`${styles.episodeItem} ${ep.id === film.id ? styles.episodeItemActive : ""}`}
-                  >
-                    <span className={styles.episodeNumber}>S{ep.seasonNumber ?? 1}E{ep.episodeNumber}</span>
-                    <span className={styles.episodeTitle}>{ep.title}</span>
-                    {watchedEpisodeIds.has(ep.id) && <span className={styles.episodeWatched}>Vu</span>}
-                  </Link>
-                ))}
-              </div>
-            </>
-          ) : (
-            <>
-              <p className={styles.endedSubtitle}>Quelques suggestions pour toi</p>
-              <div className={styles.suggestions}>
-                {suggestions.map((s) => (
-                  <Link key={s.id} href={`/watch/${s.id}`} className={styles.suggestionCard}>
-                    <div className={styles.suggestionPoster}>
-                      <Image src={s.poster} alt={s.title} fill sizes="240px" unoptimized />
-                    </div>
-                    <span className={styles.suggestionTitle}>{s.title}</span>
-                    <div className={styles.suggestionBadges}>
-                      <span className={styles.badge}>{s.year}</span>
-                      <span className={styles.badge}>{s.duration}</span>
-                      <span className={styles.badge}>{s.rating}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        <EndScreen
+          film={film}
+          episodes={episodes}
+          episodeProgress={episodeProgress}
+          lockedEpisodeIds={lockedEpisodeIds}
+          suggestions={suggestions}
+          onReplay={replay}
+        />
       )}
 
       {!isPaused && !ended && (
-        <div className={`${styles.controls} ${!controlsVisible ? styles.controlsHidden : ""}`}>
+        <div className={`${styles.controls} ${!showControls ? styles.controlsHidden : ""}`}>
           <div className={styles.progressWrap}>
             <input
               type="range"

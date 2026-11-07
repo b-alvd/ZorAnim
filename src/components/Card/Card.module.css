@@ -3,6 +3,9 @@
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
+  border-radius: 8px;
+  /* Keeps the corners clipped while the image zooms on hover (Safari). */
+  isolation: isolate;
   border: none;
   padding: 0;
   background: none;

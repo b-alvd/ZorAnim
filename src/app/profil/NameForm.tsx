@@ -73,7 +73,6 @@ export default function NameForm({
         className={styles.input}
         disabled={locked}
       />
-      <p className={styles.caption}>Visible sur ton profil et par les autres membres de ZorAnim.</p>
       <div className={`${styles.status} ${locked ? styles.statusLocked : styles.statusOk}`}>
         <span className={styles.statusDot} />
         {locked

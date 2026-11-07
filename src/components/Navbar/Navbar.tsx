@@ -6,19 +6,22 @@ import Link from "next/link";
 import Logo from "@/components/Logo/Logo";
 import NavSearch from "./NavSearch";
 import NotificationBell from "./NotificationBell";
+import { NAV_ICONS } from "./navIcons";
+import UserMenu, { UserAvatar } from "./UserMenu";
 import type { Notification } from "@/db/queries";
 import styles from "./Navbar.module.css";
 
-const links = [
-  { href: "/", label: "Accueil" },
-  { href: "/catalogue", label: "Catalogue" },
-  { href: "/nouveautes", label: "Nouveautés" },
-  { href: "/categories", label: "Catégories" },
-  { href: "/artistes", label: "Artistes" },
-  { href: "/studios", label: "Studios" },
+// "match" lists the other paths that belong to a tab (e.g. an artist page
+// belongs to Créateurs).
+const baseLinks = [
+  { href: "/", label: "Accueil", match: [] as string[] },
+  { href: "/catalogue", label: "Catalogue", match: [] },
+  { href: "/nouveautes", label: "Nouveautés", match: [] },
+  { href: "/createurs", label: "Créateurs", match: ["/artistes", "/studios"] },
 ];
+const myListLink = { href: "/ma-liste", label: "Ma liste", match: [] as string[] };
 
-type NavbarUser = { id: string; email: string; name: string; role?: string } | null;
+type NavbarUser = { id: string; email: string; name: string; role?: string; avatarUrl?: string | null } | null;
 
 export default function Navbar({
   user,
@@ -41,9 +44,13 @@ export default function Navbar({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
+  // Closes the mobile menu after navigating (state adjusted during render
+  // rather than in an effect).
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (menuPath !== pathname) {
+    setMenuPath(pathname);
     setMenuOpen(false);
-  }, [pathname]);
+  }
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -62,7 +69,10 @@ export default function Navbar({
     };
   }, [menuOpen]);
 
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`));
+  const under = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (l: { href: string; match: string[] }) =>
+    l.href === "/" ? pathname === "/" : under(l.href) || l.match.some(under);
+  const links = user ? [...baseLinks, myListLink] : baseLinks;
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -84,8 +94,9 @@ export default function Navbar({
             <Link
               key={l.href}
               href={l.href}
-              className={`${styles.link} ${isActive(l.href) ? styles.active : ""}`}
+              className={`${styles.link} ${isActive(l) ? styles.active : ""}`}
             >
+              <span className={styles.linkIcon}>{NAV_ICONS[l.href]}</span>
               {l.label}
             </Link>
           ))}
@@ -95,21 +106,7 @@ export default function Navbar({
           {user ? (
             <>
               <NotificationBell initialNotifications={notifications} initialUnreadCount={unreadCount} />
-              {user.role === "admin" && (
-                <Link href="/admin" className={styles.adminLink}>
-                  Admin
-                </Link>
-              )}
-              <Link href="/profil" className={styles.userName}>
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" className={styles.userIcon}>
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                </svg>
-                {user.name}
-              </Link>
-              <button className={styles.logoutBtn} onClick={handleLogout}>
-                Déconnexion
-              </button>
+              <UserMenu user={user} onLogout={handleLogout} />
             </>
           ) : (
             <>
@@ -138,47 +135,68 @@ export default function Navbar({
       </div>
 
       <div className={styles.backdrop} data-open={menuOpen} onClick={() => setMenuOpen(false)} aria-hidden="true" />
-      <nav className={styles.mobileMenu} data-open={menuOpen}>
+      <nav className={styles.mobileMenu} data-open={menuOpen} aria-label="Menu principal">
         <NavSearch mobile onNavigate={() => setMenuOpen(false)} />
-        {links.map((l) => (
-          <Link
-            key={l.href}
-            href={l.href}
-            className={`${styles.mobileLink} ${isActive(l.href) ? styles.mobileActive : ""}`}
-          >
-            {l.label}
-          </Link>
-        ))}
-        <div className={styles.mobileAccount}>
-          {user ? (
-            <>
-              {user.role === "admin" && (
-                <Link href="/admin" className={styles.adminLink}>
-                  Admin
+
+        <div className={styles.mobileLinks}>
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className={`${styles.mobileLink} ${isActive(l) ? styles.mobileActive : ""}`}
+            >
+              <span className={styles.mobileIcon}>{NAV_ICONS[l.href]}</span>
+              {l.label}
+            </Link>
+          ))}
+        </div>
+
+        {user ? (
+          <div className={styles.mobileAccount}>
+            <Link href="/profil" className={styles.mobileWho}>
+              <UserAvatar user={user} size={42} />
+              <span className={styles.mobileWhoText}>
+                <span className={styles.dropdownName}>{user.name}</span>
+                <span className={styles.mobileWhoHint}>Voir mon profil</span>
+              </span>
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M9 6l6 6-6 6" />
+              </svg>
+            </Link>
+            <div className={styles.mobileTiles}>
+              {[
+                { href: "/historique", label: "Historique" },
+                { href: "/mon-espace", label: "Espace créateur" },
+                ...(user.role === "admin" ? [{ href: "/admin", label: "Administration" }] : []),
+              ].map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={`${styles.mobileTile} ${under(l.href) ? styles.mobileTileActive : ""}`}
+                >
+                  {NAV_ICONS[l.href]}
+                  {l.label}
                 </Link>
-              )}
-              <Link href="/profil" className={styles.userName}>
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" className={styles.userIcon}>
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-                </svg>
-                {user.name}
-              </Link>
-              <button className={styles.logoutBtn} onClick={handleLogout}>
-                Déconnexion
-              </button>
-            </>
-          ) : (
-            <>
-              <Link href="/connexion" className={styles.mobileLink}>
+              ))}
+            </div>
+            <button type="button" className={styles.mobileLogout} onClick={handleLogout}>
+              {NAV_ICONS.logout}
+              Se déconnecter
+            </button>
+          </div>
+        ) : (
+          <div className={styles.mobileGuest}>
+            <p>Connecte-toi pour reprendre tes programmes et garder ta liste.</p>
+            <div className={styles.mobileGuestBtns}>
+              <Link href="/connexion" className={styles.loginLink}>
                 Connexion
               </Link>
-              <Link href="/inscription" className={styles.mobileLink}>
+              <Link href="/inscription" className={styles.signupLink}>
                 Inscription
               </Link>
-            </>
-          )}
-        </div>
+            </div>
+          </div>
+        )}
       </nav>
     </header>
   );

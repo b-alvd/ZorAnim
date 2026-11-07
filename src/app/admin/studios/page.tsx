@@ -28,7 +28,7 @@ export default async function AdminStudiosPage() {
   const accounts = users
     .map((u) => {
       const artistName = artistByUser.get(u.id);
-      return { id: u.id, label: artistName ? `${artistName} (artiste) — ${u.email}` : `${u.name} — ${u.email}` };
+      return { id: u.id, label: artistName ? `${artistName} (artiste) · ${u.email}` : `${u.name} · ${u.email}` };
     })
     .sort((a, b) => a.label.localeCompare(b.label, "fr"));
 

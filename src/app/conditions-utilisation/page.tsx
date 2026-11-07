@@ -1,81 +1,141 @@
-import InfoPage from "@/components/InfoPage/InfoPage";
+import Link from "next/link";
+import HelpCenter, { LegalSection, Summary } from "@/components/HelpCenter/HelpCenter";
+
+export const metadata = {
+  title: "Conditions d'utilisation | ZorAnim",
+};
+
+const SECTIONS = [
+  { id: "objet", label: "Objet" },
+  { id: "acces", label: "Accès et compte" },
+  { id: "createurs", label: "Artistes et studios" },
+  { id: "propositions", label: "Proposer un contenu" },
+  { id: "propriete", label: "Propriété intellectuelle" },
+  { id: "comportement", label: "Comportement" },
+  { id: "moderation", label: "Modération" },
+  { id: "disponibilite", label: "Disponibilité" },
+  { id: "evolution", label: "Évolution des conditions" },
+  { id: "contact", label: "Contact" },
+];
 
 export default function ConditionsPage() {
   return (
-    <InfoPage
+    <HelpCenter
+      active="conditions"
       title="Conditions d'utilisation"
-      subtitle="Les règles qui encadrent l'utilisation de ZorAnim."
-      updated="28 juillet 2026"
+      subtitle="Les règles qui encadrent l'utilisation de ZorAnim, pour les spectateurs comme pour les créateurs."
+      updated="7 novembre 2026"
+      toc={SECTIONS}
     >
-      <h2>1. Objet</h2>
-      <p>
-        ZorAnim est une plateforme de streaming dédiée aux courts-métrages et séries
-        d&apos;animation 2D et 3D réalisés par des artistes indépendants. L&apos;utilisation du site implique
-        l&apos;acceptation pleine et entière des présentes conditions.
-      </p>
+      <Summary
+        items={[
+          "ZorAnim est gratuit et le catalogue se regarde sans compte.",
+          "Un compte permet de suivre sa progression, garder une liste, noter et commenter.",
+          "Chaque contenu proposé est vérifié par l'équipe avant d'être publié.",
+          "Les œuvres restent la propriété de leurs artistes et studios.",
+          "Le respect des autres est obligatoire : l'équipe peut bannir un compte.",
+        ]}
+      />
 
-      <h2>2. Compte et accès au service</h2>
-      <p>
-        La création d&apos;un compte est obligatoire pour parcourir le catalogue et regarder les
-        films et séries : seule la page d&apos;accueil est visible sans compte. Le service est gratuit
-        et ne demande aucune information de paiement. Tu es responsable de la confidentialité de ton
-        mot de passe et de l&apos;activité effectuée depuis ton compte.
-      </p>
+      <LegalSection id="objet" number={1} title="Objet">
+        <p>
+          ZorAnim est une plateforme de streaming dédiée aux films et séries d&apos;animation 2D et 3D
+          réalisés par des artistes et studios indépendants. Utiliser le site implique
+          d&apos;accepter les présentes conditions.
+        </p>
+      </LegalSection>
 
-      <h2>3. Devenir artiste et studios</h2>
-      <p>
-        Tout utilisateur peut candidater pour devenir artiste via la page « Devenir artiste ». Une
-        fois accepté par l&apos;équipe, un artiste peut soumettre des films ou des séries et créer un
-        studio regroupant plusieurs artistes. Le propriétaire d&apos;un studio est responsable des
-        invitations qu&apos;il envoie et du contenu soumis au nom du studio.
-      </p>
+      <LegalSection id="acces" number={2} title="Accès et compte">
+        <p>
+          Le service est gratuit et ne demande aucune information de paiement. Le catalogue peut être
+          parcouru et regardé sans compte. Créer un compte permet en plus de reprendre un programme là
+          où tu l&apos;as laissé, de gérer ta liste, de noter, de commenter, de nous écrire et de
+          devenir créateur.
+        </p>
+        <p>
+          Tu es responsable de la confidentialité de ton mot de passe et de l&apos;activité effectuée
+          depuis ton compte. Tu peux supprimer ton compte à tout moment depuis ton profil.
+        </p>
+      </LegalSection>
 
-      <h2>4. Soumission de contenu</h2>
-      <p>
-        Toute personne soumettant un film, une série ou une candidature d&apos;artiste garantit
-        détenir les droits nécessaires sur les fichiers envoyés (vidéo, poster, avatar) et
-        s&apos;engage à ne transmettre aucun contenu illicite, protégé par des droits de tiers non
-        autorisés, ou contraire aux présentes conditions. Chaque soumission est examinée par
-        l&apos;équipe avant publication et peut être refusée sans obligation de justification
-        détaillée.
-      </p>
+      <LegalSection id="createurs" number={3} title="Artistes et studios">
+        <p>
+          Tout utilisateur peut candidater pour devenir artiste. Une fois accepté par l&apos;équipe,
+          un artiste dispose d&apos;un Espace créateur pour gérer sa page (avatar, bannière, bio) et
+          proposer des contenus. Il peut aussi créer un studio ou en rejoindre un.
+        </p>
+        <p>
+          Le propriétaire d&apos;un studio est responsable des invitations qu&apos;il envoie, des
+          demandes qu&apos;il accepte et des contenus proposés au nom du studio.
+        </p>
+      </LegalSection>
 
-      <h2>5. Contenu et propriété intellectuelle</h2>
-      <p>
-        Chaque film ou série reste la propriété exclusive de son artiste ou studio. Toute
-        reproduction, diffusion ou réutilisation en dehors de ZorAnim nécessite l&apos;accord
-        préalable de l&apos;ayant droit concerné.
-      </p>
+      <LegalSection id="propositions" number={4} title="Proposer un contenu">
+        <p>
+          En proposant un film, une série, un épisode ou une annonce, tu garantis détenir les droits
+          nécessaires sur tout ce que tu envoies (vidéo, poster, bannière, bandes-annonces) et
+          n&apos;y inclure aucun contenu illicite ou portant atteinte aux droits d&apos;un tiers.
+        </p>
+        <p>
+          Tu peux indiquer comment tu souhaites que ton contenu sorte : tout de suite, à une date
+          précise, en avant-première ou sous forme d&apos;annonce. Il s&apos;agit d&apos;une demande :
+          l&apos;équipe examine chaque proposition et peut l&apos;accepter, ajuster ses paramètres de
+          sortie ou la refuser. Une annonce ne publie que la fiche ; la vidéo ajoutée ensuite passe
+          elle aussi par une validation.
+        </p>
+      </LegalSection>
 
-      <h2>6. Comportement des utilisateurs</h2>
-      <ul>
-        <li>Respecter les artistes et les autres visiteurs du site.</li>
-        <li>Ne pas tenter de contourner les protections techniques du contenu ou les limites d&apos;envoi.</li>
-        <li>Ne pas utiliser le site à des fins commerciales non autorisées.</li>
-        <li>Ne pas usurper l&apos;identité d&apos;un autre artiste ou d&apos;un studio.</li>
-      </ul>
+      <LegalSection id="propriete" number={5} title="Propriété intellectuelle">
+        <p>
+          Chaque film ou série reste la propriété exclusive de son artiste ou studio. En le proposant,
+          tu autorises ZorAnim à le diffuser sur le site et à utiliser ses visuels pour le mettre en
+          avant (accueil, nouveautés, avant-premières). Tu peux demander son retrait à tout moment.
+        </p>
+        <p>
+          Toute reproduction, diffusion ou réutilisation en dehors de ZorAnim nécessite l&apos;accord
+          préalable de l&apos;ayant droit.
+        </p>
+      </LegalSection>
 
-      <h2>7. Disponibilité du service</h2>
-      <p>
-        ZorAnim est fourni « en l&apos;état ». Le site étant en développement actif, certaines
-        fonctionnalités peuvent évoluer, être temporairement indisponibles ou modifiées sans
-        préavis.
-      </p>
+      <LegalSection id="comportement" number={6} title="Comportement">
+        <ul>
+          <li>Respecter les artistes et les autres spectateurs, notamment dans les commentaires.</li>
+          <li>Ne pas publier de propos haineux, harcelants, ou de spoils sans prévenir.</li>
+          <li>Ne pas tenter de contourner les protections techniques du site ou les limites d&apos;envoi.</li>
+          <li>Ne pas usurper l&apos;identité d&apos;un autre artiste, d&apos;un studio ou de l&apos;équipe.</li>
+          <li>Ne pas utiliser le site à des fins commerciales non autorisées.</li>
+        </ul>
+      </LegalSection>
 
-      <h2>8. Modification des conditions</h2>
-      <p>
-        Ces conditions peuvent être mises à jour à tout moment ; la date de dernière mise à jour
-        est indiquée en haut de cette page.
-      </p>
+      <LegalSection id="moderation" number={7} title="Modération">
+        <p>
+          L&apos;équipe peut supprimer un commentaire, retirer un contenu ou bannir un compte qui ne
+          respecte pas ces conditions. Un compte banni peut envoyer une demande de déban pour expliquer
+          sa situation.
+        </p>
+      </LegalSection>
 
-      <h2>9. Contact</h2>
-      <p>
-        Pour toute question relative à ces conditions, contacte-nous via la{" "}
-        <a href="/contact" style={{ color: "var(--accent, #e50914)", textDecoration: "underline" }}>
-          page Contact
-        </a>
-        .
-      </p>
-    </InfoPage>
+      <LegalSection id="disponibilite" number={8} title="Disponibilité">
+        <p>
+          ZorAnim est fourni « en l&apos;état ». Le site étant en développement actif, certaines
+          fonctionnalités peuvent évoluer, être temporairement indisponibles (maintenance) ou modifiées
+          sans préavis. Les changements notables sont listés sur la page{" "}
+          <Link href="/mises-a-jour">Mises à jour</Link>.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="evolution" number={9} title="Évolution des conditions">
+        <p>
+          Ces conditions peuvent être mises à jour à tout moment ; la date de dernière mise à jour est
+          indiquée en haut de cette page.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="contact" number={10} title="Contact">
+        <p>
+          Une question sur ces conditions ? Écris-nous depuis la <Link href="/contact">page Contact</Link>.
+        </p>
+      </LegalSection>
+    </HelpCenter>
   );
 }

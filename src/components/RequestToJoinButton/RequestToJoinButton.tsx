@@ -37,7 +37,7 @@ export default function RequestToJoinButton({
   if (membershipStatus === "invited") {
     return (
       <p className={styles.hint}>
-        Ce studio t&apos;a invité·e à le rejoindre — réponds depuis <Link href="/profil">ton profil</Link>.
+        Ce studio t&apos;a invité·e à le rejoindre. Réponds depuis <Link href="/profil">ton profil</Link>.
       </p>
     );
   }

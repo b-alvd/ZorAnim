@@ -1,33 +1,40 @@
+/* Waiting room: the poster, blurred, as a backdrop, and everything centred,
+   in the site's style (red kicker, big title, "·" info line, countdown in
+   boxes like the avant-première banner). */
 .wrap {
   position: relative;
   width: 100vw;
   height: 100vh;
   height: 100dvh;
-  background: #000;
+  background: #070707;
   overflow: hidden;
 }
 
 .bg {
   object-fit: cover;
-  filter: blur(6px) brightness(0.4);
+  filter: blur(14px) brightness(0.45) saturate(1.1);
+  transform: scale(1.08);
 }
 
 .shadow {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.85) 100%);
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 50%, rgba(7, 7, 7, 0.25) 0%, rgba(7, 7, 7, 0.85) 100%),
+    linear-gradient(0deg, rgba(7, 7, 7, 0.7) 0%, rgba(7, 7, 7, 0) 35%);
 }
 
 .backBtn {
   position: absolute;
   top: 1.25rem;
-  left: 1.25rem;
-  z-index: 2;
-  width: 40px;
-  height: 40px;
+  left: clamp(1rem, 4vw, 3.5rem);
+  z-index: 4;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
   color: #fff;
   cursor: pointer;
   display: flex;
@@ -47,80 +54,223 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
   height: 100%;
-  padding: 24px;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 4.5rem clamp(1rem, 4vw, 2rem) 2.5rem;
   text-align: center;
   color: #fff;
+  transition: opacity 0.6s ease, transform 0.6s ease, filter 0.6s ease;
 }
 
-.tag {
-  padding: 4px 14px;
-  border-radius: 999px;
-  background: var(--accent, #e50914);
+.content > * {
+  opacity: 0;
+  animation: riseIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.content > :nth-child(1) {
+  animation-delay: 0.1s;
+}
+.content > :nth-child(2) {
+  animation-delay: 0.2s;
+}
+.content > :nth-child(3) {
+  animation-delay: 0.3s;
+}
+.content > :nth-child(4) {
+  animation-delay: 0.4s;
+}
+.content > :nth-child(5) {
+  animation-delay: 0.5s;
+}
+.content > :nth-child(6) {
+  animation-delay: 0.6s;
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The regular countdown fades out entirely, leaving the final one alone. */
+.contentAway {
+  opacity: 0;
+  transform: scale(0.94);
+  filter: blur(4px);
+}
+
+.kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
   font-size: 0.75rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
   text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #ff7a80;
+}
+
+/* Slow pulse: something is about to happen. */
+.waitDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff7a80;
+  animation: waitPulse 2s ease-out infinite;
+}
+
+@keyframes waitPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 122, 128, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 0 9px rgba(255, 122, 128, 0);
+  }
 }
 
 .title {
-  font-size: clamp(1.5rem, 4vw, 2.4rem);
-  font-weight: 800;
-  margin: 4px 0 0;
+  margin: 0 0 0.9rem;
+  font-size: clamp(2.2rem, 6vw, 4.2rem);
+  font-weight: 900;
+  line-height: 1.05;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.sub {
-  color: rgba(255, 255, 255, 0.75);
-  margin: 0 0 12px;
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  color: #d5d5d5;
+}
+
+.metaItem:first-child {
+  color: #fff;
+  font-weight: 700;
+}
+
+.metaItem:first-child::first-letter {
+  text-transform: uppercase;
+}
+
+.metaItem + .metaItem::before {
+  content: "·";
+  margin: 0 0.55rem;
+  color: #7a7a7a;
+}
+
+.synopsis {
+  max-width: 600px;
+  margin: 0 0 2rem;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #cfcfcf;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.countdownBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1.5rem;
+}
+
+.countdownLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .timer {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
+  gap: 0.65rem;
 }
 
 .unit {
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 56px;
+  min-width: 5.4rem;
+  padding: 0.9rem 0.7rem 0.7rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(10, 10, 10, 0.55);
+  backdrop-filter: blur(8px);
 }
 
+/* Odometer-style digits, as on the home page banner: a one-line window over
+   a two-line column (new value on top, previous below). Each change starts
+   the column shifted up so the old value shows, then eases it down into
+   place; the mask softens both edges. */
 .digits {
-  font-size: clamp(1.8rem, 5vw, 3rem);
+  display: block;
+  height: 1em;
+  overflow: hidden;
+  font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 800;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 82%, transparent 100%);
+}
+
+.roll {
+  display: flex;
+  flex-direction: column;
+  animation: roll 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.roll > span {
+  display: block;
+  height: 1em;
+}
+
+@keyframes roll {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 .label {
-  font-size: 0.7rem;
+  margin-top: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 600;
   color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
-.colon {
-  font-size: clamp(1.4rem, 4vw, 2.2rem);
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.4);
-  align-self: flex-start;
-  margin-top: 6px;
+.note {
+  max-width: 460px;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #9a9a9a;
 }
 
 /* ---- Final countdown & launch ---------------------------------------- */
-
-.content {
-  transition: opacity 0.6s ease, transform 0.6s ease, filter 0.6s ease;
-}
-
-/* The regular countdown fades out entirely, leaving the big numbers alone. */
-.contentAway {
-  opacity: 0;
-  transform: scale(0.94);
-  filter: blur(4px);
-}
 
 .final {
   position: absolute;
@@ -132,120 +282,144 @@
   pointer-events: none;
 }
 
-.finalTick {
+.finalCount {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: riseIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.finalCount .kicker {
+  margin-bottom: 1.5rem;
+}
+
+/* A ring that empties over each second around the number. */
+.finalDial {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.finalNumber {
-  color: #fff;
-  font-size: clamp(6rem, 22vw, 14rem);
-  font-weight: 800;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 40px rgba(229, 9, 20, 0.65);
-  animation: tickPop 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-@keyframes tickPop {
-  0% {
-    opacity: 0;
-    transform: scale(1.6);
-    filter: blur(8px);
-  }
-  25% {
-    opacity: 1;
-    transform: scale(1);
-    filter: blur(0);
-  }
-  80% {
-    opacity: 1;
-    transform: scale(0.96);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.9);
-  }
+  width: clamp(11rem, 32vw, 17rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(10, 10, 10, 0.5);
+  backdrop-filter: blur(8px);
 }
 
 .finalRing {
   position: absolute;
-  width: clamp(9rem, 30vw, 20rem);
-  aspect-ratio: 1;
-  border: 3px solid var(--accent, #e50914);
-  border-radius: 50%;
-  animation: ringOut 1s ease-out forwards;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
 }
 
-@keyframes ringOut {
+.finalTrack {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 2.5;
+}
+
+.finalArc {
+  fill: none;
+  stroke: var(--accent, #e50914);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+  animation: arcEmpty 1s linear forwards;
+}
+
+@keyframes arcEmpty {
+  to {
+    stroke-dashoffset: 100;
+  }
+}
+
+.finalNumber {
+  color: #fff;
+  font-size: clamp(4.5rem, 14vw, 8rem);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  animation: tickIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tickIn {
   from {
-    opacity: 0.9;
-    transform: scale(0.6);
+    opacity: 0;
+    transform: scale(1.25);
   }
   to {
-    opacity: 0;
-    transform: scale(1.5);
+    opacity: 1;
+    transform: none;
   }
+}
+
+.finalFilm {
+  margin-top: 1.5rem;
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  font-weight: 800;
+  color: #fff;
 }
 
 .finalLaunch {
   position: absolute;
   inset: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.9rem;
+}
+
+.finalLaunchKicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: var(--accent, #e50914);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  animation: launchTitle 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  animation: waitPulse 1.2s ease-out infinite;
 }
 
 .finalTitle {
-  position: relative;
-  z-index: 1;
   color: #fff;
-  font-size: clamp(2.5rem, 8vw, 5.5rem);
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  text-shadow: 0 0 50px rgba(229, 9, 20, 0.8);
+  font-size: clamp(2.8rem, 8vw, 5.5rem);
+  font-weight: 900;
+  line-height: 1;
   animation: launchTitle 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @keyframes launchTitle {
   0% {
     opacity: 0;
-    transform: scale(0.7);
+    transform: scale(0.85);
   }
   30% {
     opacity: 1;
-    transform: scale(1.05);
+    transform: none;
   }
-  65% {
+  70% {
     opacity: 1;
-    transform: scale(1);
+    transform: none;
   }
   100% {
     opacity: 0;
-    transform: scale(1.15);
-  }
-}
-
-/* Red light bursting out from the centre. */
-.finalBurst {
-  position: absolute;
-  width: 40vmax;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(229, 9, 20, 0.55) 0%, rgba(229, 9, 20, 0) 65%);
-  animation: burst 1.4s ease-out forwards;
-}
-
-@keyframes burst {
-  from {
-    opacity: 1;
-    transform: scale(0.2);
-  }
-  to {
-    opacity: 0;
-    transform: scale(3);
+    transform: scale(1.06);
   }
 }
 
@@ -266,18 +440,38 @@
   }
 }
 
+@media (max-width: 640px) {
+  .synopsis {
+    font-size: 0.92rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .timer {
+    gap: 0.45rem;
+  }
+
+  .unit {
+    min-width: 4rem;
+    padding: 0.65rem 0.45rem 0.5rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .content,
+  .content > *,
+  .roll,
+  .waitDot,
+  .liveDot,
+  .finalCount,
+  .finalArc,
   .finalNumber,
-  .finalRing,
   .finalTitle,
-  .finalBurst {
+  .finalLaunchKicker {
     animation: none;
     transition: none;
   }
 
-  .finalRing,
-  .finalBurst {
-    display: none;
+  .content > * {
+    opacity: 1;
   }
 }

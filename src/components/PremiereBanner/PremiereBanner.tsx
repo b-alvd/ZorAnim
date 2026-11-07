@@ -18,40 +18,57 @@ function formatFull(seconds: number) {
   return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 
-const noopSubscribe = () => () => {};
+// Clock ticking every second, shared by all banners. Its server snapshot is
+// null: the countdown depends on the current second, which the server and the
+// browser never agree on, so it only renders on the client (no hydration
+// mismatch). Ticking also lets the banner pick up premiere start/end live.
+let clockNow = 0;
+const clockListeners = new Set<() => void>();
+let clockTimer: ReturnType<typeof setInterval> | null = null;
 
-export default function PremiereBanner({ films }: { films: Film[] }) {
-  // The countdown depends on the current second, which the server and the
-  // browser never agree on -- render it only once on the client, otherwise
-  // hydration fails on the mismatched digits.
-  const isClient = useSyncExternalStore(noopSubscribe, () => true, () => false);
-  // Ticks every second so the banner picks up premiere start/end transitions
-  // live, without a page reload -- the server only supplies the raw film
-  // dates, the phase (upcoming/live/waiting) is derived fresh every tick.
-  const [, forceTick] = useState(0);
-  const [viewerCount, setViewerCount] = useState<number | null>(null);
+function subscribeClock(listener: () => void) {
+  clockListeners.add(listener);
+  if (!clockTimer) {
+    clockNow = Date.now();
+    clockTimer = setInterval(() => {
+      clockNow = Date.now();
+      clockListeners.forEach((l) => l());
+    }, 1000);
+  }
+  return () => {
+    clockListeners.delete(listener);
+    if (clockListeners.size === 0 && clockTimer) {
+      clearInterval(clockTimer);
+      clockTimer = null;
+    }
+  };
+}
+
+// `hero`: shown at the very top of the home page, in place of the carousel,
+// at full height.
+export default function PremiereBanner({ films, hero = false }: { films: Film[]; hero?: boolean }) {
+  const now = useSyncExternalStore(subscribeClock, () => clockNow, () => null);
+  const isClient = now !== null;
+  // Viewer count of the live premiere, tagged with its film so a count from
+  // a previous live never shows on another one.
+  const [viewers, setViewers] = useState<{ filmId: string; count: number } | null>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const id = setInterval(() => forceTick((n) => n + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-
+  // Only one h1 per page: the banner is the page title on the home page only.
+  const TitleTag = hero ? "h1" : "h2";
   const featured = pickFeaturedPremiere(films);
   const filmId = featured?.phase === "live" ? featured.film.id : null;
+  const viewerCount = viewers && viewers.filmId === filmId ? viewers.count : null;
 
   useEffect(() => {
-    if (!filmId) {
-      setViewerCount(null);
-      return;
-    }
+    if (!filmId) return;
     let cancelled = false;
     const poll = async () => {
       try {
         const res = await fetch(`/api/watch/${filmId}/premiere-heartbeat`, { cache: "no-store" });
         const data = await res.json();
         if (cancelled) return;
-        if (typeof data?.count === "number") setViewerCount(data.count);
+        if (typeof data?.count === "number") setViewers({ filmId, count: data.count });
         // Stopped early by staff: reload the server data so the banner moves
         // on to its post-premiere phase (or disappears).
         if (data?.live === false) router.refresh();
@@ -99,42 +116,44 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
     }
 
     const progress = clock ? Math.min(100, (clock.elapsedSeconds / clock.totalSeconds) * 100) : 0;
+    const progressBar = clock && (
+      <span className={styles.progress} aria-hidden>
+        <span className={styles.progressFill} style={{ width: `${progress}%` }} />
+      </span>
+    );
+
     return (
-      <ImageBanner image={bannerImage} href={href} phase={phase}>
-        <div className={styles.content}>
-          <span className={`${styles.tag} ${styles.tagLive}`}>
+      <ImageBanner image={bannerImage} href={href} phase={phase} hero={hero}>
+        <div className={`${styles.content} ${styles.heroContent}`}>
+          <span className={`${styles.heroKicker} ${styles.heroKickerLive}`}>
             <span className={styles.liveDot} />
-            En direct
+            Avant-première en direct
           </span>
-          <h2 className={styles.heroTitle}>{title}</h2>
+          <TitleTag className={styles.heroTitle}>{title}</TitleTag>
+          <HeroMeta
+            items={[
+              clock && `${formatFull(clock.elapsedSeconds)} / ${formatFull(clock.totalSeconds)}`,
+              viewers,
+              film.seriesTitle ? "Série" : "Film",
+              film.category,
+            ]}
+          />
           <p className={styles.synopsis}>{film.synopsis}</p>
           <span className={styles.cta}>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden>
-              <path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z" />
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
+              <path d="M8 5v14l11-7z" />
             </svg>
             Rejoindre le direct
           </span>
         </div>
-        <div className={styles.side}>
-          {clock && (
-            <span className={styles.liveClock}>
-              {formatFull(clock.elapsedSeconds)} <span className={styles.muted}>/ {formatFull(clock.totalSeconds)}</span>
-            </span>
-          )}
-          {viewers && <span className={styles.viewers}>{viewers}</span>}
-        </div>
-        {clock && (
-          <span className={styles.progress} aria-hidden>
-            <span className={styles.progressFill} style={{ width: `${progress}%` }} />
-          </span>
-        )}
+        {progressBar}
       </ImageBanner>
     );
   }
 
   const targetIso = phase === "upcoming" ? film.premiereAt : film.releaseAt;
   const target = targetIso ? new Date(targetIso).getTime() : null;
-  const remaining = target !== null && isClient ? Math.max(0, target - Date.now()) : 0;
+  const remaining = target !== null && now !== null ? Math.max(0, target - now) : 0;
   // Rounded up, same as the waiting room, so both show the same second.
   const totalSeconds = Math.ceil(remaining / 1000);
   const days = Math.floor(totalSeconds / 86400);
@@ -169,23 +188,51 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
     [seconds, "sec", 60],
   ];
 
+  const countdown = target !== null && isClient && (
+    <div className={styles.countdown}>
+      {units.map(([value, unit, wrap]) => (
+        <span key={unit} className={styles.unit}>
+          <span className={styles.unitWindow}>
+            {/* Keyed on the value so each change replays the roll: the
+                new digit slides in from above, the old one out below. */}
+            <span key={value} className={styles.unitRoll}>
+              <span>{pad(value)}</span>
+              <span aria-hidden>{pad((value + 1) % wrap)}</span>
+            </span>
+          </span>
+          <span className={styles.unitLabel}>{unit}</span>
+        </span>
+      ))}
+    </div>
+  );
+  const countdownLabel = phase === "upcoming" ? "Début du direct dans" : "Disponible dans";
+
+  const date =
+    target !== null && isClient
+      ? new Date(target).toLocaleString("fr-FR", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : null;
+
+  // Laid out like the home page carousel, on the home page (hero) as on the
+  // visitors landing page.
   return (
-    <ImageBanner image={bannerImage} href={href} phase={phase}>
-      <div className={styles.content}>
-        <span className={styles.tag}>{phase === "upcoming" ? "Avant-première" : "Sortie officielle"}</span>
-        <h2 className={styles.heroTitle}>{title}</h2>
-        {target !== null && isClient && (
-          <p className={styles.date}>
-            {new Date(target).toLocaleString("fr-FR", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        )}
+    <ImageBanner image={bannerImage} href={href} phase={phase} hero={hero}>
+      <div className={`${styles.content} ${styles.heroContent}`}>
+        <span className={styles.heroKicker}>{phase === "upcoming" ? "Avant-première" : "Sortie officielle"}</span>
+        <TitleTag className={styles.heroTitle}>{title}</TitleTag>
+        <HeroMeta items={[date, film.seriesTitle ? "Série" : "Film", film.category]} />
         <p className={styles.synopsis}>{film.synopsis}</p>
+        {countdown && (
+          <div className={styles.heroCountdown}>
+            <span className={styles.countdownLabel}>{countdownLabel}</span>
+            {countdown}
+          </div>
+        )}
         <span className={styles.cta}>
           Rejoindre la salle d&apos;attente
           <svg className={styles.ctaArrow} viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -194,29 +241,22 @@ export default function PremiereBanner({ films }: { films: Film[] }) {
           </svg>
         </span>
       </div>
-      {target !== null && isClient && (
-        <div className={styles.side}>
-          <span className={styles.countdownLabel}>
-            {phase === "upcoming" ? "Début du direct dans" : "Disponible dans"}
-          </span>
-          <div className={styles.countdown}>
-            {units.map(([value, unit, wrap]) => (
-              <span key={unit} className={styles.unit}>
-                <span className={styles.unitWindow}>
-                  {/* Keyed on the value so each change replays the roll: the
-                      new digit slides in from above, the old one out below. */}
-                  <span key={value} className={styles.unitRoll}>
-                    <span>{pad(value)}</span>
-                    <span aria-hidden>{pad((value + 1) % wrap)}</span>
-                  </span>
-                </span>
-                <span className={styles.unitLabel}>{unit}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
     </ImageBanner>
+  );
+}
+
+// Info line under the hero title, "·"-separated like the carousel's.
+function HeroMeta({ items }: { items: (string | null | undefined | false)[] }) {
+  const shown = items.filter((i): i is string => !!i);
+  if (shown.length === 0) return null;
+  return (
+    <div className={styles.heroMeta}>
+      {shown.map((item) => (
+        <span key={item} className={styles.heroMetaItem}>
+          {item}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -228,15 +268,17 @@ function ImageBanner({
   image,
   href,
   phase,
+  hero,
   children,
 }: {
   image: string;
   href: string;
   phase: string;
+  hero: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} className={styles.imageWrap}>
+    <Link href={href} className={`${styles.imageWrap} ${hero ? styles.imageWrapHero : ""}`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={image} alt="" className={styles.image} />
       <span className={styles.shade} aria-hidden />

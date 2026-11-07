@@ -39,6 +39,10 @@
 
 .link {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
   font-size: 0.9rem;
   color: #a0a0a0;
   padding-bottom: 4px;
@@ -155,46 +159,6 @@
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.adminLink {
-  composes: navBtn;
-  color: #b3b3b3;
-}
-
-.adminLink:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.userName {
-  composes: navBtn;
-  color: #d2d2d2;
-}
-
-.userName:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.userIcon {
-  display: flex;
-  flex-shrink: 0;
-  color: #808080;
-}
-
-.userName:hover .userIcon {
-  color: #d2d2d2;
-}
-
-.logoutBtn {
-  composes: navBtn;
-  color: #a0a0a0;
-}
-
-.logoutBtn:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
 .mobileActions {
   display: none;
   align-items: center;
@@ -288,15 +252,15 @@
     top: 68px;
     left: 0;
     right: 0;
+    bottom: 0;
     z-index: 56;
-    max-height: calc(100vh - 68px);
     background: var(--background, #070707);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
-    padding: 0.5rem clamp(1rem, 4vw, 3.5rem) 1rem;
+    gap: 1rem;
+    padding: 0.25rem 1rem calc(1.25rem + env(safe-area-inset-bottom));
     overflow-y: auto;
+    overscroll-behavior: contain;
     transform: translateY(-8px);
     opacity: 0;
     visibility: hidden;
@@ -309,29 +273,340 @@
     visibility: visible;
   }
 
-  .mobileLink {
-    padding: 0.9rem 0.25rem 0.9rem 0.75rem;
-    font-size: 1.05rem;
-    color: #a0a0a0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    border-left: 2px solid transparent;
+  .navSearchMobile {
+    margin: 0.5rem 0 0;
   }
 
-  .mobileLink:last-child {
-    border-bottom: none;
+  .mobileLinks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .mobileLink {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.8rem 0.85rem;
+    border-radius: 12px;
+    font-size: 1.02rem;
+    font-weight: 600;
+    color: #b5b5b5;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .mobileLink:active {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .mobileIcon {
+    display: inline-flex;
+    color: #7a7a7a;
   }
 
   .mobileActive {
+    background: rgba(255, 255, 255, 0.07);
     color: #fff;
-    font-weight: 600;
-    border-left-color: var(--accent, #e50914);
+  }
+
+  .mobileActive .mobileIcon {
+    color: var(--accent, #e50914);
   }
 
   .mobileAccount {
     display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .mobileWho {
+    display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 1rem 0.25rem 0.5rem;
+    gap: 0.8rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #101010;
+    color: #7a7a7a;
+  }
+
+  .mobileWhoText {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mobileWhoHint {
+    font-size: 0.8rem;
+    color: #8a8a8a;
+  }
+
+  .mobileTiles {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 0.5rem;
+  }
+
+  .mobileTile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.8rem 0.4rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: #101010;
+    color: #cfcfcf;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .mobileTileActive {
+    border-color: rgba(229, 9, 20, 0.5);
+    color: #fff;
+  }
+
+  .mobileLogout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid rgba(229, 9, 20, 0.35);
+    background: rgba(229, 9, 20, 0.08);
+    color: #ff7a80;
+    font-family: inherit;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .mobileGuest {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .mobileGuest p {
+    font-size: 0.88rem;
+    color: #9a9a9a;
+    text-align: center;
+  }
+
+  .mobileGuestBtns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .mobileGuestBtns .loginLink,
+  .mobileGuestBtns .signupLink {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 44px;
   }
 }
+
+.linkIcon {
+  display: inline-flex;
+  color: #7a7a7a;
+  transition: color 0.15s ease;
+}
+
+.linkIcon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.link:hover .linkIcon {
+  color: #d5d5d5;
+}
+
+.active .linkIcon {
+  color: var(--accent, #e50914);
+}
+
+.dropdownItem svg {
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  color: #8a8a8a;
+}
+
+.dropdownItem:hover svg {
+  color: #fff;
+}
+
+.dropdownLogout svg,
+.dropdownLogout:hover svg {
+  color: #ff7a80;
+}
+
+/* Not enough room for the icons on mid-size screens */
+@media (max-width: 1100px) {
+  .linkIcon {
+    display: none;
+  }
+}
+
+/* ---------- Account menu ---------- */
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--accent, #e50914);
+  color: #fff;
+  font-weight: 700;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.userMenu {
+  position: relative;
+}
+
+.userBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 38px;
+  padding: 0 0.6rem 0 0.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #e5e5e5;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.userBtn:hover,
+.userBtnOpen {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.userBtnName {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  color: #9a9a9a;
+  transition: transform 0.15s ease;
+}
+
+.userBtnOpen .chevron {
+  transform: rotate(180deg);
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 80;
+  width: 240px;
+  padding: 0.4rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #141414;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdownHead {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.6rem 0.75rem;
+  margin-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dropdownWho {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dropdownName {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownEmail {
+  font-size: 0.74rem;
+  color: #8a8a8a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: #d5d5d5;
+  font-family: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdownItem:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+
+.dropdownSep {
+  height: 1px;
+  margin: 0.3rem 0;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dropdownLogout {
+  color: #ff7a80;
+}
+
+.dropdownLogout:hover {
+  color: #ff7a80;
+  background: rgba(229, 9, 20, 0.12);
+}
+
+
+

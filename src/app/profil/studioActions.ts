@@ -10,47 +10,47 @@ import {
   respondToStudioInvite,
 } from "@/db/queries";
 
-export async function inviteToStudioAction(studioId: string, artistId: string) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Non authentifié.");
+// Errors are returned rather than thrown: Next.js hides thrown messages in
+// production, and these ones are meant for the user.
+export type StudioActionResult = { error?: string };
 
-  await inviteToStudio(studioId, artistId, user.id);
-  revalidatePath("/profil");
+async function run(action: (userId: string) => Promise<string | void | null>): Promise<StudioActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Non authentifié." };
+  try {
+    const studioId = await action(user.id);
+    revalidatePath("/profil");
+    // Public studio pages are statically generated: refresh the one touched.
+    if (studioId) revalidatePath(`/studios/${studioId}`);
+    return {};
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Une erreur est survenue." };
+  }
+}
+
+export async function inviteToStudioAction(studioId: string, artistId: string) {
+  return run(async (userId) => {
+    await inviteToStudio(studioId, artistId, userId);
+  });
 }
 
 export async function respondToStudioInviteAction(memberId: string, accept: boolean) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Non authentifié.");
-
-  const result = await respondToStudioInvite(memberId, user.id, accept);
-  revalidatePath("/profil");
-  if (result) revalidatePath(`/studios/${result.studioId}`);
+  return run(async (userId) => (await respondToStudioInvite(memberId, userId, accept))?.studioId);
 }
 
 export async function respondToJoinRequestAction(memberId: string, accept: boolean) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Non authentifié.");
-
-  const result = await respondToJoinRequest(memberId, user.id, accept);
-  revalidatePath("/profil");
-  // The public studio page is statically generated (generateStaticParams),
-  // so an accepted member wouldn't show up there until this path is
-  // explicitly revalidated.
-  if (result) revalidatePath(`/studios/${result.studioId}`);
+  return run(async (userId) => (await respondToJoinRequest(memberId, userId, accept))?.studioId);
 }
 
-export async function removeStudioMembershipAction(memberId: string) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Non authentifié.");
-
-  await removeStudioMembership(memberId, user.id);
-  revalidatePath("/profil");
+export async function removeStudioMembershipAction(memberId: string, studioId?: string) {
+  return run(async (userId) => {
+    await removeStudioMembership(memberId, userId);
+    return studioId;
+  });
 }
 
 export async function deleteStudioAction(studioId: string) {
-  const user = await getCurrentUser();
-  if (!user) throw new Error("Non authentifié.");
-
-  await deleteStudio(studioId, user.id);
-  revalidatePath("/profil");
+  return run(async (userId) => {
+    await deleteStudio(studioId, userId);
+  });
 }

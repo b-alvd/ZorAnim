@@ -150,8 +150,7 @@
 }
 
 /* Staggered entrance: tag, title, date, synopsis, button one after the other. */
-.content > *,
-.side {
+.content > * {
   opacity: 0;
   animation: riseIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
@@ -171,8 +170,8 @@
 .content > :nth-child(5) {
   animation-delay: 0.5s;
 }
-.side {
-  animation-delay: 0.45s;
+.content > :nth-child(6) {
+  animation-delay: 0.6s;
 }
 
 @keyframes riseIn {
@@ -186,16 +185,6 @@
   }
 }
 
-.tagLive {
-  animation: riseIn 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.1s forwards, tagGlow 2s ease-in-out 0.8s infinite;
-}
-
-@keyframes tagGlow {
-  50% {
-    box-shadow: 0 0 18px rgba(229, 9, 20, 0.75);
-  }
-}
-
 .heroTitle {
   margin: 0;
   color: #fff;
@@ -204,17 +193,6 @@
   line-height: 1.05;
   letter-spacing: -0.01em;
   text-shadow: 0 3px 18px rgba(0, 0, 0, 0.6);
-}
-
-.date {
-  margin: 0;
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.date::first-letter {
-  text-transform: uppercase;
 }
 
 .synopsis {
@@ -257,14 +235,6 @@
 
 .imageWrap:hover .ctaArrow {
   transform: translateX(4px);
-}
-
-.side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.6rem;
-  flex-shrink: 0;
 }
 
 .countdownLabel {
@@ -339,28 +309,6 @@
   letter-spacing: 0.06em;
 }
 
-.liveClock {
-  color: #fff;
-  font-size: clamp(1.2rem, 2vw, 1.6rem);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.muted {
-  color: rgba(255, 255, 255, 0.55);
-  font-weight: 600;
-}
-
-.viewers {
-  padding: 0.35rem 0.8rem;
-  border-radius: 999px;
-  background: rgba(10, 10, 10, 0.55);
-  backdrop-filter: blur(8px);
-  color: #fff;
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
 .progress {
   position: absolute;
   inset: auto 0 0 0;
@@ -392,10 +340,6 @@
     max-width: none;
   }
 
-  .side {
-    align-items: flex-start;
-  }
-
   .unit {
     min-width: 3.4rem;
   }
@@ -403,13 +347,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .unitRoll,
-  .liveDot,
-  .tagLive {
+  .liveDot {
     animation: none;
   }
 
-  .content > *,
-  .side {
+  .content > * {
     opacity: 1;
     animation: none;
   }
@@ -417,8 +359,142 @@
 
 /* With the lighter shade, the small text needs its own shadow to stay
    readable over bright parts of the picture. */
-.date,
 .synopsis,
 .countdownLabel {
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+/* Shade of the carousel: dark on the left where the text sits, fading into
+   the page at the bottom. */
+.imageWrap .shade {
+  background:
+    linear-gradient(90deg, rgba(10, 10, 10, 0.8) 0%, rgba(10, 10, 10, 0.35) 45%, rgba(10, 10, 10, 0) 70%),
+    linear-gradient(0deg, #070707 0%, rgba(7, 7, 7, 0.6) 22%, rgba(7, 7, 7, 0) 50%);
+}
+
+/* Hero variant: the avant-première takes the top of the home page, at the
+   carousel's height. */
+.imageWrapHero {
+  margin: 0;
+}
+
+.imageWrapHero .image {
+  height: min(80vh, 780px);
+  min-height: 460px;
+  max-height: none;
+}
+
+/* Banner content, styled after the home carousel (Hero.module.css): red
+   kicker, big title, "·" info line, white button. The countdown sits in the
+   text column instead of the opposite corner. */
+.heroContent {
+  gap: 0;
+  max-width: 660px;
+}
+
+.heroKicker {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #ff7a80;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+.heroKickerLive .liveDot {
+  background: #ff7a80;
+}
+
+.heroContent .heroTitle {
+  margin-bottom: 0.9rem;
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  font-weight: 900;
+  text-shadow: none;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.heroMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0;
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+  color: #d5d5d5;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+}
+
+.heroMetaItem:first-child {
+  color: #fff;
+  font-weight: 700;
+}
+
+.heroMetaItem:first-child::first-letter {
+  text-transform: uppercase;
+}
+
+.heroMetaItem + .heroMetaItem::before {
+  content: "·";
+  margin: 0 0.55rem;
+  color: #7a7a7a;
+}
+
+.heroContent .synopsis {
+  margin-bottom: 1.4rem;
+  font-size: 1rem;
+  line-height: 1.55;
+  color: #e0e0e0;
+  -webkit-line-clamp: 3;
+}
+
+.heroCountdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.heroCountdown .unit {
+  min-width: 3.6rem;
+  padding: 0.5rem 0.45rem 0.4rem;
+  border-radius: 8px;
+}
+
+.heroCountdown .unitWindow {
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+}
+
+.heroContent .cta {
+  margin-top: 0;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.98rem;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.imageWrap:hover .heroContent .cta {
+  background: rgba(255, 255, 255, 0.82);
+  transform: scale(1.03);
+}
+
+.imageWrapHero .overlay {
+  padding-bottom: 2.75rem;
+}
+
+@media (max-width: 760px) {
+  .imageWrapHero .overlay {
+    padding-bottom: 3rem;
+  }
+
+  .heroContent .cta {
+    align-self: stretch;
+    justify-content: center;
+  }
 }

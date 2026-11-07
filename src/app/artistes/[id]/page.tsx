@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import ArtistProfile from "@/components/ArtistProfile/ArtistProfile";
 import {
+  getBanner,
   getArtist,
   getArtists,
   getArtistStudios,
@@ -41,6 +42,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const artist = await getArtist(id);
   if (!artist) notFound();
+  const banner = await getBanner("artist", artist.id);
 
   const [ownFilms, favoriteIds, watchedIds, artistStudios] = await Promise.all([
     getFilmsByArtist(artist.id),
@@ -54,6 +56,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
 
   return (
     <ArtistProfile
+      banner={banner}
       artist={artist}
       artistFilms={artistFilms}
       favoriteIds={favoriteIds}

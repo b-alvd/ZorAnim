@@ -23,7 +23,7 @@ function readUserId(formData: FormData): string {
 
 function revalidateArtist(id?: string) {
   revalidatePath("/admin/artistes");
-  revalidatePath("/artistes");
+  revalidatePath("/createurs");
   if (id) revalidatePath(`/artistes/${id}`);
 }
 

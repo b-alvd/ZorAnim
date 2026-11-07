@@ -15,7 +15,7 @@ export type StudioActionResult = { error?: string };
 
 function revalidateStudio(id?: string) {
   revalidatePath("/admin/studios");
-  revalidatePath("/studios");
+  revalidatePath("/createurs");
   if (id) revalidatePath(`/studios/${id}`);
 }
 

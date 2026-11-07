@@ -1,0 +1,388 @@
+.screen {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #050505;
+  animation: fadeIn 0.35s ease both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Backdrop and shade are fixed so they never overflow or scroll. */
+.backdrop {
+  position: fixed !important;
+  object-fit: cover;
+  filter: blur(28px) saturate(1.2);
+  transform: scale(1.15);
+  opacity: 0.4;
+}
+
+.shade {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 5, 5, 0.6) 0%, rgba(5, 5, 5, 0.85) 60%, #050505 100%);
+}
+
+/* Centered vertically: everything fits on one screen. */
+.inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1100px;
+  margin: auto;
+  padding: 4.5rem clamp(1.25rem, 5vw, 3rem) 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+}
+
+/* Header */
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem 2rem;
+  flex-wrap: wrap;
+}
+
+.headText {
+  min-width: 0;
+  flex: 1 1 420px;
+}
+
+.kicker,
+.label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.kicker {
+  color: #ff7a80;
+}
+
+.label {
+  color: #bdbdbd;
+}
+
+.title {
+  margin-top: 0.45rem;
+  font-size: clamp(1.5rem, 3.2vw, 2.2rem);
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+/* Episode name next to the series title, set apart by spacing and colour. */
+.titleEpisode {
+  margin-left: 0.6em;
+  font-weight: 600;
+  color: #8f8f8f;
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+  font-size: 0.95rem;
+  color: #d5d5d5;
+}
+
+.status svg {
+  flex-shrink: 0;
+  color: #4ade80;
+}
+
+.headActions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* Buttons */
+
+.primaryBtn,
+.ghostBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.7rem 1.2rem;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.primaryBtn {
+  border: none;
+  background: #fff;
+  color: #111;
+}
+
+.primaryBtn:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.ghostBtn {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.ghostBtn:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Next episode */
+
+.next {
+  display: grid;
+  grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+  gap: 1.75rem;
+  align-items: center;
+}
+
+.nextThumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.nextThumb img {
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.nextThumb:hover img {
+  transform: scale(1.04);
+}
+
+.nextPlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  color: #fff;
+  transform: translate(-50%, -50%);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.nextThumb:hover .nextPlay {
+  background: var(--accent, #e50914);
+  border-color: var(--accent, #e50914);
+}
+
+.nextBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.nextTitle {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.nextMeta {
+  font-size: 0.82rem;
+  color: #8a8a8a;
+}
+
+.nextSynopsis {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #c4c4c4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+/* Countdown ring inside the main button */
+
+.ring {
+  display: inline-flex;
+  transform: rotate(-90deg);
+}
+
+.ringTrack,
+.ringFill {
+  fill: none;
+  stroke-width: 4;
+}
+
+.ringTrack {
+  stroke: rgba(0, 0, 0, 0.15);
+}
+
+.ringFill {
+  stroke: var(--accent, #e50914);
+  stroke-linecap: round;
+  stroke-dasharray: 94.25;
+  stroke-dashoffset: 94.25;
+  animation-name: ringFill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes ringFill {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Single row: unwatched episodes or suggestions */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.item {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: inherit;
+}
+
+.thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 0.2rem;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.thumb img {
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.item:hover .thumb img {
+  transform: scale(1.05);
+}
+
+.itemTitle {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemMeta {
+  font-size: 0.76rem;
+  color: #8a8a8a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rating {
+  position: absolute;
+  top: 0.45rem;
+  left: 0.45rem;
+  padding: 0.12rem 0.4rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent, #e50914);
+}
+
+@media (max-width: 900px) {
+  .row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .next {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .inner {
+    gap: 1.5rem;
+  }
+
+  .headActions,
+  .actions {
+    width: 100%;
+  }
+
+  .headActions > *,
+  .actions > * {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ringFill {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

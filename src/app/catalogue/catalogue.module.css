@@ -20,9 +20,22 @@
   margin-bottom: 1.5rem;
 }
 
+.headerTop {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.headerTop .subtitle {
+  margin-bottom: 0;
+}
+
 .searchWrap {
   position: relative;
-  max-width: 420px;
+  width: min(100%, 380px);
 }
 
 .searchIcon {
@@ -38,8 +51,8 @@
   width: 100%;
   background: #1a1a1a;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-  padding: 0.7rem 0.9rem 0.7rem 2.4rem;
+  border-radius: 999px;
+  padding: 0.7rem 1rem 0.7rem 2.5rem;
   color: #fff;
   font-size: 0.95rem;
   font-family: inherit;
@@ -60,7 +73,119 @@
 }
 
 .filterField {
-  min-width: 180px;
+  min-width: 170px;
+}
+
+.sortField {
+  margin-left: auto;
+}
+
+/* Category pills */
+
+.pills {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.pills::-webkit-scrollbar {
+  display: none;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  padding: 0.5rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cfcfcf;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.pill:hover {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.pillActive,
+.pillActive:hover {
+  background: #fff;
+  border-color: #fff;
+  color: #0a0a0a;
+}
+
+.pillCount {
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.55;
+}
+
+/* Films / Séries switch */
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.segment {
+  padding: 0.42rem 0.9rem;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: #9a9a9a;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.segment:hover {
+  color: #fff;
+}
+
+.segmentActive {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.resultsHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin: 0 clamp(1rem, 4vw, 3.5rem) 1rem;
+}
+
+.resultsHead .sectionTitle {
+  margin: 0;
+}
+
+.resultsCount {
+  font-size: 0.85rem;
+  color: #8a8a8a;
+}
+
+.inlineLink {
+  color: #cfcfcf;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.inlineLink:hover {
+  color: #fff;
 }
 
 .filterClear {
@@ -108,5 +233,18 @@
 
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .searchWrap {
+    width: 100%;
+  }
+
+  .filterField {
+    min-width: 0;
+    flex: 1 1 140px;
+  }
+
+  .sortField {
+    margin-left: 0;
   }
 }

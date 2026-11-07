@@ -2,8 +2,8 @@
    22px pill centred on the back arrow's row, same type. */
 .wrap {
   position: absolute;
-  top: calc(1.25rem + 20px);
-  right: 1.25rem;
+  top: calc(1.75rem + 22px);
+  right: 1.75rem;
   transform: translateY(-50%);
   z-index: 5;
   display: flex;
@@ -25,8 +25,8 @@
 
 @media (max-width: 640px) {
   .wrap {
-    top: calc(0.75rem + 17px);
-    right: 0.75rem;
+    top: calc(1.1rem + 17px);
+    right: 1.1rem;
     height: 20px;
     padding: 0 8px;
     font-size: 0.6rem;

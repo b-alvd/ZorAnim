@@ -1,0 +1,269 @@
+.release {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.hint {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #8a8a8a;
+}
+
+.optional {
+  margin-left: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #7a7a7a;
+}
+
+.error {
+  font-size: 0.85rem;
+  color: #ff6b6b;
+}
+
+.addEpisode {
+  align-self: flex-start;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  background: none;
+  color: #e5e5e5;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addEpisode:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.removeEpisode {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ff7a80;
+  cursor: pointer;
+}
+
+.linkBtn {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #cfcfcf;
+  cursor: pointer;
+}
+
+.linkBtn:hover {
+  color: #fff;
+}
+
+/* Sent */
+
+.sent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.sent h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.sent p {
+  max-width: 420px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #a8a8a8;
+}
+
+.sentIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(74, 222, 128, 0.14);
+  color: #4ade80;
+}
+
+.sentActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* Pending proposals in the creator space */
+
+.pending {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.pendingHead {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.pendingTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.pendingCount {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 184, 77, 0.15);
+  color: #ffb84d;
+}
+
+.pendingList {
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0e0e0e;
+  overflow: hidden;
+}
+
+.pendingItem {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.7rem;
+}
+
+.pendingItem + .pendingItem {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pendingThumb {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.pendingThumb img {
+  object-fit: cover;
+}
+
+.pendingText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.pendingName {
+  font-size: 0.9rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pendingRelease {
+  font-size: 0.8rem;
+  color: #a8a8a8;
+}
+
+.pendingBadge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(255, 184, 77, 0.14);
+  color: #ffb84d;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .pendingItem {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+
+  .pendingBadge {
+    display: none;
+  }
+}
+
+/* Trailers of an announcement */
+.trailers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.trailer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.trailerHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.trailerHead input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* "Annoncer la série" switch */
+.announceSwitch {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.announceSwitch input {
+  margin-top: 0.2rem;
+  accent-color: var(--accent, #e50914);
+}
+
+.announceSwitch strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.presetNote {
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(124, 182, 255, 0.25);
+  background: rgba(124, 182, 255, 0.08);
+  color: #cfe2ff;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}

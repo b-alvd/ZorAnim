@@ -1,3 +1,4 @@
+import RefreshOnReturn from "@/components/RefreshOnReturn/RefreshOnReturn";
 import { redirect } from "next/navigation";
 import Card from "@/components/Card/Card";
 import {
@@ -28,6 +29,7 @@ export default async function HistoriquePage() {
 
   return (
     <main className={styles.page}>
+      <RefreshOnReturn />
       <div className={styles.header}>
         <h1 className={styles.title}>Historique</h1>
         <p className={styles.subtitle}>

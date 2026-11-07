@@ -295,7 +295,7 @@ export default function PremiereVideoPlayer({ film }: { film: Film }) {
         </svg>
       </button>
 
-      <div className={styles.liveTag}>
+      <div className={`${styles.liveTag} ${!controlsVisible ? styles.liveTagAlone : ""}`}>
         {segment === "ad"
           ? `Publicité · l'avant-première commence dans ${formatTimeFull(Math.max(0, adSeconds - current))}`
           : "Avant-première en direct"}

@@ -29,6 +29,7 @@ import { formatEpisodeTag, isReleased, splitComingSoon } from "@/lib/series";
 import { placeholderAvatar } from "@/lib/placeholder";
 import { seriesRatingSummary } from "@/lib/series-rating";
 import { getPremiereStatus, liveSeconds } from "@/lib/premiere";
+import { describeReleaseRequest, parseReleaseRequest, type ReleaseRequest } from "@/lib/release-request";
 
 const filmSelection = {
   id: films.id,
@@ -362,12 +363,6 @@ export async function getFilm(id: string): Promise<Film | undefined> {
   return withRating;
 }
 
-export async function getNewFilms(): Promise<Film[]> {
-  const rows = await filmsQuery();
-  const all = await attachRatingSummaries(rows.map(mapFilm).filter((f) => f.isNew));
-  return splitComingSoon(all).released;
-}
-
 export async function getFilmsByCategory(category: string): Promise<Film[]> {
   const rows = await filmsQuery().where(eq(films.category, category));
   return attachRatingSummaries(rows.map(mapFilm));
@@ -383,7 +378,9 @@ export async function getFilmsByStudio(studioId: string): Promise<Film[]> {
   return attachRatingSummaries(rows.map(mapFilm));
 }
 
-export async function getArtistStudios(artistId: string): Promise<{ id: string; name: string; isOwner: boolean }[]> {
+export async function getArtistStudios(
+  artistId: string
+): Promise<{ id: string; name: string; avatar: string; isOwner: boolean }[]> {
   const [artist] = await db.select({ userId: artists.userId }).from(artists).where(eq(artists.id, artistId));
   if (!artist?.userId) return [];
 
@@ -393,16 +390,16 @@ export async function getArtistStudios(artistId: string): Promise<{ id: string; 
   ]);
 
   const seen = new Set<string>();
-  const result: { id: string; name: string; isOwner: boolean }[] = [];
+  const result: { id: string; name: string; avatar: string; isOwner: boolean }[] = [];
   for (const s of owned) {
     if (seen.has(s.id)) continue;
     seen.add(s.id);
-    result.push({ id: s.id, name: s.name, isOwner: true });
+    result.push({ id: s.id, name: s.name, avatar: s.avatar, isOwner: true });
   }
   for (const s of memberOf) {
     if (seen.has(s.id)) continue;
     seen.add(s.id);
-    result.push({ id: s.id, name: s.name, isOwner: false });
+    result.push({ id: s.id, name: s.name, avatar: s.avatar, isOwner: false });
   }
   return result;
 }
@@ -989,7 +986,11 @@ export async function getPendingBanAppeals(): Promise<PendingBanAppeal[]> {
   return rows as PendingBanAppeal[];
 }
 
-export type AdminFilmRequest = FilmSubmission & { accountName: string | null; accountEmail: string | null };
+export type AdminFilmRequest = FilmSubmission & {
+  accountName: string | null;
+  accountEmail: string | null;
+  releaseRequest: ReleaseRequest;
+};
 export type AdminArtistRequest = ArtistSubmission & { accountName: string | null; accountEmail: string | null };
 export type AdminBanAppeal = BanAppeal & {
   userName: string;
@@ -1033,8 +1034,14 @@ export async function getAdminRequests(): Promise<{
       .innerJoin(users, eq(banAppeals.userId, users.id))
       .orderBy(desc(banAppeals.createdAt)),
   ]);
+  const releases = await getReleaseRequests(filmRows.map((r) => r.s.id));
   return {
-    films: filmRows.map((r) => ({ ...r.s, accountName: r.accountName, accountEmail: r.accountEmail })),
+    films: filmRows.map((r) => ({
+      ...r.s,
+      accountName: r.accountName,
+      accountEmail: r.accountEmail,
+      releaseRequest: releases.get(r.s.id) ?? parseReleaseRequest(null),
+    })),
     artists: artistRows.map((r) => ({ ...r.s, accountName: r.accountName, accountEmail: r.accountEmail })),
     appeals: appealRows as AdminBanAppeal[],
   };
@@ -1082,7 +1089,15 @@ export async function acceptFilmSubmission(id: string, identity?: { id: string; 
   const resolvedStudioId = identity ? (identity.isStudio ? identity.id : null) : submission.studioId;
   if (!resolvedArtistId && !resolvedStudioId) return;
 
-  await createFilm({
+  // Release asked for by the creator, possibly changed by the admin.
+  const release = (await getReleaseRequests([id])).get(id) ?? parseReleaseRequest(null);
+  const isAnnouncementRequest = release.mode === "announcement";
+
+  // Content proposed for an announcement fiche: the fiche becomes the film.
+  const replaced = release.replacesId ? await getFilm(release.replacesId) : undefined;
+  const fillsAnnouncement = !!replaced && replaced.episodeKind === "announcement" && !isAnnouncementRequest;
+
+  const input: FilmInput = {
     title: submission.title,
     synopsis: submission.synopsis,
     year: submission.year,
@@ -1097,18 +1112,52 @@ export async function acceptFilmSubmission(id: string, identity?: { id: string; 
     seriesTitle: submission.seriesTitle,
     seasonNumber: submission.seasonNumber,
     episodeNumber: submission.episodeNumber,
-    episodeKind: toEpisodeKind(submission.episodeKind),
+    episodeKind: isAnnouncementRequest ? "announcement" : toEpisodeKind(submission.episodeKind),
     teaserVideoUrl: submission.teaserVideoUrl,
-  });
+    premiereAt: release.premiereAt,
+    releaseAt: release.releaseAt,
+    premiereBanner: release.premiereBanner ?? null,
+    releaseBanner: release.releaseBanner ?? null,
+    premiereAdUrl: release.premiereAdUrl ?? null,
+    premiereAdDurationSeconds: release.premiereAdDurationSeconds ?? null,
+  };
+  let filmId: string;
+  if (fillsAnnouncement) {
+    filmId = replaced!.id;
+    await updateFilm(filmId, input);
+  } else {
+    filmId = await createFilm(input);
+  }
+
+  // An announced series carries its trailers and synopsis at series level;
+  // an announced film carries them itself.
+  if (isAnnouncementRequest) {
+    if (submission.seriesTitle) {
+      if (release.trailers?.length) await setTrailers({ seriesTitle: submission.seriesTitle }, release.trailers);
+      if (submission.synopsis.trim()) await setSeriesSynopsis(submission.seriesTitle, submission.synopsis);
+    } else if (release.trailers?.length) {
+      await setTrailers({ filmId }, release.trailers);
+    }
+  }
 
   await db.update(filmSubmissions).set({ status: "accepted" }).where(eq(filmSubmissions.id, id));
 
   if (submission.userId) {
+    const name =
+      submission.seriesTitle && !isAnnouncementRequest
+        ? `${submission.seriesTitle} · ${submission.title}`
+        : (submission.seriesTitle ?? submission.title);
+    const when =
+      release.mode === "now"
+        ? "Il est en ligne."
+        : isAnnouncementRequest
+          ? "L'annonce est visible dans « Bientôt sur ZorAnim »."
+          : `${describeReleaseRequest(release)}.`;
     await createNotification(
       submission.userId,
       "film_submission_accepted",
-      `Ton film "${submission.title}" a été accepté et ajouté au catalogue.`,
-      "/profil"
+      `« ${name} » a été accepté. ${when}`,
+      "/mon-espace"
     );
   }
 }
@@ -1567,7 +1616,7 @@ export async function getStudioMembershipStatus(
   return (member?.status as "active" | "invited" | "requested" | undefined) ?? null;
 }
 
-export type StudioMemberInfo = { id: string; name: string; email: string; status: string };
+export type StudioMemberInfo = { id: string; name: string; email: string; status: string; avatar: string | null };
 
 export async function getStudioMembers(studioId: string): Promise<StudioMemberInfo[]> {
   const rows = await db
@@ -1577,41 +1626,71 @@ export async function getStudioMembers(studioId: string): Promise<StudioMemberIn
       userName: users.name,
       userEmail: users.email,
       artistName: artists.name,
+      artistAvatar: artists.avatar,
+      userAvatar: users.avatarUrl,
     })
     .from(studioMembers)
     .innerJoin(users, eq(studioMembers.userId, users.id))
     .leftJoin(artists, eq(artists.userId, studioMembers.userId))
     .where(eq(studioMembers.studioId, studioId));
-  return rows.map((r) => ({ id: r.id, name: r.artistName ?? r.userName, email: r.userEmail, status: r.status }));
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.artistName ?? r.userName,
+    email: r.userEmail,
+    status: r.status,
+    avatar: r.artistAvatar || r.userAvatar || null,
+  }));
 }
 
 export async function getStudioTeamDisplay(
   studioId: string
-): Promise<{ name: string; isOwner: boolean; artistId: string | null }[]> {
+): Promise<{ name: string; isOwner: boolean; artistId: string | null; avatar: string | null }[]> {
   const [studio] = await db.select({ ownerId: studios.ownerId }).from(studios).where(eq(studios.id, studioId));
 
-  const result: { name: string; isOwner: boolean; artistId: string | null }[] = [];
+  const result: { name: string; isOwner: boolean; artistId: string | null; avatar: string | null }[] = [];
 
   if (studio?.ownerId) {
     const [ownerRow] = await db
-      .select({ userName: users.name, artistId: artists.id, artistName: artists.name })
+      .select({
+        userName: users.name,
+        artistId: artists.id,
+        artistName: artists.name,
+        artistAvatar: artists.avatar,
+        userAvatar: users.avatarUrl,
+      })
       .from(users)
       .leftJoin(artists, eq(artists.userId, users.id))
       .where(eq(users.id, studio.ownerId));
     if (ownerRow) {
-      result.push({ name: ownerRow.artistName ?? ownerRow.userName, isOwner: true, artistId: ownerRow.artistId ?? null });
+      result.push({
+        name: ownerRow.artistName ?? ownerRow.userName,
+        isOwner: true,
+        artistId: ownerRow.artistId ?? null,
+        avatar: ownerRow.artistAvatar || ownerRow.userAvatar || null,
+      });
     }
   }
 
   const memberRows = await db
-    .select({ userName: users.name, artistId: artists.id, artistName: artists.name })
+    .select({
+      userName: users.name,
+      artistId: artists.id,
+      artistName: artists.name,
+      artistAvatar: artists.avatar,
+      userAvatar: users.avatarUrl,
+    })
     .from(studioMembers)
     .innerJoin(users, eq(studioMembers.userId, users.id))
     .leftJoin(artists, eq(artists.userId, studioMembers.userId))
     .where(and(eq(studioMembers.studioId, studioId), eq(studioMembers.status, "active")));
 
   for (const r of memberRows) {
-    result.push({ name: r.artistName ?? r.userName, isOwner: false, artistId: r.artistId ?? null });
+    result.push({
+      name: r.artistName ?? r.userName,
+      isOwner: false,
+      artistId: r.artistId ?? null,
+      avatar: r.artistAvatar || r.userAvatar || null,
+    });
   }
 
   return result;
@@ -2620,4 +2699,197 @@ export async function updateSiteSettings(input: Partial<SiteSettings>): Promise<
       ...input,
     });
   }
+}
+
+export type UserProfileStats = {
+  watchedCount: number;
+  watchMinutes: number;
+  favoritesCount: number;
+  commentsCount: number;
+  ratingsCount: number;
+  avgRatingGiven: number | null;
+};
+
+// Activity totals shown at the top of the profile page.
+export async function getUserProfileStats(userId: string): Promise<UserProfileStats> {
+  const [[watched], [favs], [comms], [rates]] = await Promise.all([
+    db
+      .select({
+        count: sql<number>`count(*)`,
+        minutes: sql<number>`coalesce(sum(coalesce(${films.videoDurationSeconds} / 60.0, ${films.durationMinutes})), 0)`,
+      })
+      .from(watchHistory)
+      .innerJoin(films, eq(films.id, watchHistory.filmId))
+      .where(eq(watchHistory.userId, userId)),
+    db.select({ count: sql<number>`count(*)` }).from(favorites).where(eq(favorites.userId, userId)),
+    db.select({ count: sql<number>`count(*)` }).from(comments).where(eq(comments.userId, userId)),
+    db
+      .select({ count: sql<number>`count(*)`, avg: sql<number | null>`avg(${filmRatings.value})` })
+      .from(filmRatings)
+      .where(eq(filmRatings.userId, userId)),
+  ]);
+  return {
+    watchedCount: Number(watched?.count ?? 0),
+    watchMinutes: Math.round(Number(watched?.minutes ?? 0)),
+    favoritesCount: Number(favs?.count ?? 0),
+    commentsCount: Number(comms?.count ?? 0),
+    ratingsCount: Number(rates?.count ?? 0),
+    avgRatingGiven: rates?.avg == null ? null : Number(rates.avg),
+  };
+}
+
+// When each content reached the catalogue: its scheduled release or premiere
+// if any, its creation otherwise. ISO strings, keyed by film id.
+export async function getFilmAddedDates(): Promise<Map<string, string>> {
+  const rows = await db
+    .select({
+      id: films.id,
+      createdAt: films.createdAt,
+      releaseAt: films.releaseAt,
+      premiereAt: films.premiereAt,
+    })
+    .from(films);
+  const toIso = (value: string) => (value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
+  return new Map(rows.map((r) => [r.id, toIso(r.releaseAt ?? r.premiereAt ?? r.createdAt)]));
+}
+
+// When the user last watched each content (ISO string), keyed by film id.
+export async function getWatchActivity(userId: string): Promise<Map<string, string>> {
+  const rows = await db
+    .select({ filmId: watchHistory.filmId, watchedAt: watchHistory.watchedAt })
+    .from(watchHistory)
+    .where(eq(watchHistory.userId, userId));
+  const toIso = (value: string) => (value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
+  return new Map(rows.map((r) => [r.filmId, toIso(r.watchedAt)]));
+}
+
+// When each content was added to the user's list (ISO string), keyed by film id.
+export async function getFavoriteDates(userId: string): Promise<Map<string, string>> {
+  const rows = await db
+    .select({ filmId: favorites.filmId, createdAt: favorites.createdAt })
+    .from(favorites)
+    .where(eq(favorites.userId, userId));
+  const toIso = (value: string) => (value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
+  return new Map(rows.map((r) => [r.filmId, toIso(r.createdAt)]));
+}
+
+export type WatchEntry = {
+  // Last time the user watched it (ISO).
+  at: string;
+  // Where they stopped, in seconds; 0 when finished or barely started.
+  position: number;
+};
+
+// The user's viewing history with stopping points, keyed by film id.
+export async function getWatchEntries(userId: string): Promise<Map<string, WatchEntry>> {
+  const rows = await db
+    .select({ filmId: watchHistory.filmId, watchedAt: watchHistory.watchedAt, position: watchHistory.positionSeconds })
+    .from(watchHistory)
+    .where(eq(watchHistory.userId, userId));
+  const toIso = (value: string) => (value.includes("T") ? value : `${value.replace(" ", "T")}Z`);
+  return new Map(rows.map((r) => [r.filmId, { at: toIso(r.watchedAt), position: r.position ?? 0 }]));
+}
+
+export async function getWatchPosition(userId: string, filmId: string): Promise<number> {
+  const [row] = await db
+    .select({ position: watchHistory.positionSeconds })
+    .from(watchHistory)
+    .where(and(eq(watchHistory.userId, userId), eq(watchHistory.filmId, filmId)));
+  return row?.position ?? 0;
+}
+
+// Stores where the user stopped (0 once finished) and bumps the activity date
+// so the content comes first in "Reprendre".
+export async function saveWatchPosition(userId: string, filmId: string, position: number): Promise<void> {
+  const value = Math.max(0, Math.round(position));
+  const now = new Date().toISOString();
+  const [existing] = await db
+    .select({ id: watchHistory.id })
+    .from(watchHistory)
+    .where(and(eq(watchHistory.userId, userId), eq(watchHistory.filmId, filmId)));
+  if (existing) {
+    await db.update(watchHistory).set({ positionSeconds: value, watchedAt: now }).where(eq(watchHistory.id, existing.id));
+  } else {
+    await db.insert(watchHistory).values({ id: randomUUID(), userId, filmId, positionSeconds: value, watchedAt: now });
+  }
+}
+
+// ----- Banners of artists and studios (migration 0043) -----
+// The banner column is read and written with raw SQL, outside the Drizzle
+// schema: before the migration runs, pages show no banner and saving one
+// returns a clear error instead of breaking the site.
+
+export const BANNER_MIGRATION_MESSAGE =
+  "Les bannières ne sont pas encore activées : lance la migration 0043 (scripts/apply-0043.ts).";
+
+export async function getBanner(kind: "artist" | "studio", id: string): Promise<string | null> {
+  try {
+    const rows =
+      kind === "artist"
+        ? await db.all<{ banner: string | null }>(sql`SELECT banner FROM artists WHERE id = ${id}`)
+        : await db.all<{ banner: string | null }>(sql`SELECT banner FROM studios WHERE id = ${id}`);
+    return rows[0]?.banner || null;
+  } catch (e) {
+    if (!isMissingColumn(e)) throw e;
+    return null;
+  }
+}
+
+export async function setBanner(kind: "artist" | "studio", id: string, banner: string | null): Promise<void> {
+  const value = banner?.trim() || null;
+  try {
+    if (kind === "artist") await db.run(sql`UPDATE artists SET banner = ${value} WHERE id = ${id}`);
+    else await db.run(sql`UPDATE studios SET banner = ${value} WHERE id = ${id}`);
+  } catch (e) {
+    if (isMissingColumn(e)) throw new Error(BANNER_MIGRATION_MESSAGE);
+    throw e;
+  }
+}
+
+// ----- Release requested in submissions (migration 0044) -----
+// Read and written with raw SQL, outside the Drizzle schema: before the
+// migration runs, every submission reads as "immediate release".
+
+export const RELEASE_REQUEST_MIGRATION_MESSAGE =
+  "Le choix de la date de sortie n'est pas encore activé : lance la migration 0044 (scripts/apply-0044.ts).";
+
+export async function getReleaseRequests(ids: string[]): Promise<Map<string, ReleaseRequest>> {
+  const map = new Map<string, ReleaseRequest>();
+  if (ids.length === 0) return map;
+  try {
+    const rows = await db.all<{ id: string; release_request: string | null }>(
+      sql`SELECT id, release_request FROM film_submissions WHERE id IN (${sql.join(
+        ids.map((id) => sql`${id}`),
+        sql`, `
+      )})`
+    );
+    for (const r of rows) map.set(r.id, parseReleaseRequest(r.release_request));
+  } catch (e) {
+    if (!isMissingColumn(e)) throw e;
+  }
+  return map;
+}
+
+export async function setReleaseRequest(id: string, request: ReleaseRequest): Promise<void> {
+  try {
+    await db.run(sql`UPDATE film_submissions SET release_request = ${JSON.stringify(request)} WHERE id = ${id}`);
+  } catch (e) {
+    if (!isMissingColumn(e)) throw e;
+    // Without the column only an immediate release without message can be kept.
+    if (request.mode !== "now" || request.note) throw new Error(RELEASE_REQUEST_MIGRATION_MESSAGE);
+  }
+}
+
+export type PendingSubmission = FilmSubmission & { releaseRequest: ReleaseRequest };
+
+export async function getPendingSubmissionsWithRelease(userId: string): Promise<PendingSubmission[]> {
+  const rows = await getPendingFilmSubmissionsByUser(userId);
+  const releases = await getReleaseRequests(rows.map((r) => r.id));
+  return rows
+    .map((r) => ({ ...r, releaseRequest: releases.get(r.id) ?? parseReleaseRequest(null) }))
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function deleteFilmSubmission(id: string): Promise<void> {
+  await db.delete(filmSubmissions).where(eq(filmSubmissions.id, id));
 }

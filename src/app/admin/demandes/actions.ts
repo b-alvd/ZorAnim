@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   acceptArtistSubmission,
   acceptFilmSubmission,
+  getReleaseRequests,
+  setReleaseRequest,
   refuseArtistSubmission,
   refuseFilmSubmission,
   resolveBanAppeal,
@@ -13,6 +15,7 @@ import {
   type ArtistSubmissionInput,
   type FilmSubmissionInput,
 } from "@/db/queries";
+import { parseReleaseRequest, validateReleaseRequest } from "@/lib/release-request";
 
 function readFilmSubmissionInput(formData: FormData): FilmSubmissionInput {
   return {
@@ -29,10 +32,26 @@ function readFilmSubmissionInput(formData: FormData): FilmSubmissionInput {
   };
 }
 
-export async function updateFilmSubmissionAction(id: string, formData: FormData) {
+// The admin can change everything the creator asked for, release included.
+// Returned rather than thrown: Next.js hides thrown messages in production.
+export async function updateFilmSubmissionAction(id: string, formData: FormData): Promise<RequestActionResult> {
   await requireAdmin();
-  await updateFilmSubmission(id, readFilmSubmissionInput(formData));
+  try {
+    const raw = formData.get("releaseRequest");
+    if (raw !== null) {
+      const previous = (await getReleaseRequests([id])).get(id);
+      const release = { ...parseReleaseRequest(String(raw)), note: previous?.note ?? null };
+      // Dates may be in the past for the admin; only their consistency is checked.
+      const problem = validateReleaseRequest(release, Number.NEGATIVE_INFINITY);
+      if (problem) return { error: problem };
+      await setReleaseRequest(id, release);
+    }
+    await updateFilmSubmission(id, readFilmSubmissionInput(formData));
+  } catch (e) {
+    return errorOf(e);
+  }
   revalidatePath("/admin/demandes");
+  return {};
 }
 
 // Returned rather than thrown: Next.js hides thrown messages in production.

@@ -2,40 +2,93 @@
   padding-bottom: 4rem;
 }
 
-.header {
+/* ---------- Hero ---------- */
+
+.hero {
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(229, 9, 20, 0.16), transparent 55%),
+    linear-gradient(180deg, #101010, #0a0a0a);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.heroInner {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 2.5rem clamp(1rem, 4vw, 3.5rem) 2rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2.75rem clamp(1rem, 4vw, 3.5rem) 2.25rem;
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .identity {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
 }
+
+.name {
+  font-size: clamp(1.4rem, 3vw, 1.9rem);
+  font-weight: 800;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.email {
+  margin-top: 0.2rem;
+  font-size: 0.88rem;
+  color: #9a9a9a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+}
+
+.chip {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #cfcfcf;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  padding: 0.28rem 0.7rem;
+  white-space: nowrap;
+}
+
+.chipAccent {
+  color: #ffb3b6;
+  background: rgba(229, 9, 20, 0.14);
+  border-color: rgba(229, 9, 20, 0.25);
+}
+
+/* Avatar (AvatarUpload) */
 
 .avatarBlock {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 
 .avatarBtn {
   position: relative;
-  width: 68px;
-  height: 68px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  border: none;
+  border: 3px solid rgba(255, 255, 255, 0.08);
   padding: 0;
   cursor: pointer;
   background: var(--accent, #e50914);
   color: #fff;
   overflow: hidden;
   flex: 0 0 auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 .avatarBtn:disabled {
@@ -54,8 +107,8 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.9rem;
+  font-weight: 800;
 }
 
 .avatarOverlay {
@@ -66,13 +119,14 @@
   justify-content: center;
   background: rgba(0, 0, 0, 0.55);
   color: #fff;
-  font-size: 0.62rem;
+  font-size: 0.72rem;
   font-weight: 600;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
 
-.avatarBtn:hover .avatarOverlay {
+.avatarBtn:hover .avatarOverlay,
+.avatarBtn:focus-visible .avatarOverlay {
   opacity: 1;
 }
 
@@ -84,117 +138,352 @@
   margin-top: 0.4rem;
   font-size: 0.72rem;
   color: #ff6b6b;
-  max-width: 68px;
-}
-
-.name {
-  font-size: 1.2rem;
-  font-weight: 800;
-  margin-bottom: 0.15rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.email {
-  font-size: 0.85rem;
-  color: #a0a0a0;
-  margin-bottom: 0.4rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.joinedBadge {
-  display: inline-block;
-  font-size: 0.72rem;
-  color: #d2d2d2;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  padding: 0.25rem 0.7rem;
-}
-
-.quickLinks {
-  flex: 0 0 auto;
-  display: flex;
-  gap: 0.6rem;
-}
-
-.quickLink {
-  padding: 0.6rem 1.1rem;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #d2d2d2;
-  font-weight: 600;
-  font-size: 0.85rem;
-  white-space: nowrap;
-  transition: color 0.15s ease, border-color 0.15s ease;
-}
-
-.quickLink:hover {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
+  max-width: 120px;
+  text-align: center;
 }
 
 .logoutBtn {
   flex: 0 0 auto;
-  padding: 0.6rem 1.1rem;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: none;
-  color: #d2d2d2;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cfcfcf;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
+  font-family: inherit;
   cursor: pointer;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
   white-space: nowrap;
 }
 
 .logoutBtn:hover {
   color: #fff;
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.settingsWrap {
+/* ---------- Body ---------- */
+
+.container {
   max-width: 1100px;
-  margin: 2rem auto 0;
+  margin: 0 auto;
   padding: 0 clamp(1rem, 4vw, 3.5rem);
 }
 
-.settingsTitle {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin-bottom: 1.25rem;
+.stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.75rem;
+  margin-top: -1.1rem;
+  position: relative;
 }
 
-.grid {
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.95rem 1.1rem;
+  background: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.statLink {
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.statLink:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: #161616;
+}
+
+.statValue {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.statUnit {
+  margin-left: 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #8a8a8a;
+}
+
+.statLabel {
+  font-size: 0.74rem;
+  color: #8a8a8a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tabs */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.8rem 1rem;
+  background: none;
+  border: none;
+  color: #8a8a8a;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease;
+}
+
+.tab:hover {
+  color: #e5e5e5;
+}
+
+.tabActive {
+  color: #fff;
+}
+
+.tabActive::after {
+  content: "";
+  position: absolute;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent, #e50914);
+}
+
+.tabBadge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent, #e50914);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panel {
+  padding-top: 1.75rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.seeAll {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #9a9a9a;
+  transition: color 0.15s ease;
+}
+
+.seeAll:hover {
+  color: #fff;
+}
+
+.recentGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.25rem;
+  gap: 0.9rem;
 }
 
-.pairRow {
-  grid-column: 1 / -1;
+.emptyBox {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
+  padding: 1.5rem;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: #9a9a9a;
+  font-size: 0.9rem;
+}
+
+.primaryLink {
+  padding: 0.55rem 1.1rem;
+  border-radius: 8px;
+  background: var(--accent, #e50914);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.pair {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.25rem;
 }
 
+.box {
+  padding: 1.25rem;
+  background: #0e0e0e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.creatorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(229, 9, 20, 0.25);
+  background: linear-gradient(90deg, rgba(229, 9, 20, 0.14), rgba(229, 9, 20, 0.03));
+  color: #fff;
+  transition: border-color 0.15s ease;
+}
+
+.creatorBanner:hover {
+  border-color: rgba(229, 9, 20, 0.5);
+}
+
+.creatorBanner strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.creatorBannerText {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.8rem;
+  color: #a8a8a8;
+}
+
+/* Account settings rows */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: #0e0e0e;
+  overflow: hidden;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 2rem;
+  padding: 1.5rem;
+}
+
+.row + .row {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.rowDanger {
+  background: rgba(229, 9, 20, 0.04);
+}
+
+.rowDanger .rowTitle {
+  color: #ff6b6b;
+}
+
+.rowText {
+  min-width: 0;
+}
+
+.rowTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.rowDesc {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #8a8a8a;
+  max-width: 34ch;
+}
+
+.rowBody {
+  min-width: 0;
+}
+
+/* ---------- Responsive ---------- */
+
 @media (max-width: 900px) {
-  .grid {
+  .stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .recentGrid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
+@media (max-width: 720px) {
+  .pair,
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  .row {
+    gap: 1rem;
+  }
+}
+
 @media (max-width: 640px) {
-  .header {
+  .heroInner {
     flex-wrap: wrap;
-    row-gap: 1rem;
+    gap: 1rem;
+  }
+
+  .avatarBtn {
+    width: 76px;
+    height: 76px;
   }
 
   .identity {
-    flex-basis: 100%;
-    overflow: visible;
+    flex-basis: calc(100% - 92px);
   }
 
   .name,
@@ -203,15 +492,25 @@
     overflow-wrap: anywhere;
   }
 
-  .quickLinks {
-    flex-wrap: wrap;
+  .logoutBtn {
+    order: 3;
   }
 
-  .grid {
-    grid-template-columns: 1fr;
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+    margin-top: 1rem;
   }
 
-  .pairRow {
+  .stat {
+    padding: 0.75rem 0.9rem;
+  }
+
+  .stat:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .recentGrid {
     grid-template-columns: 1fr;
   }
 }

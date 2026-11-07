@@ -32,7 +32,7 @@ export default async function AdminArtistesPage() {
 
   const linkedArtistByUser = new Map(rows.filter((a) => a.userId).map((a) => [a.userId!, a.name]));
   const accounts: AccountChoice[] = users
-    .map((u) => ({ id: u.id, label: `${u.name} — ${u.email}`, artistName: linkedArtistByUser.get(u.id) ?? null }))
+    .map((u) => ({ id: u.id, label: `${u.name} · ${u.email}`, artistName: linkedArtistByUser.get(u.id) ?? null }))
     .sort((a, b) => a.label.localeCompare(b.label, "fr"));
 
   return (

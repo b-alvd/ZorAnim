@@ -13,9 +13,7 @@ const columns = [
       { label: "Accueil", href: "/" },
       { label: "Catalogue", href: "/catalogue" },
       { label: "Nouveautés", href: "/nouveautes" },
-      { label: "Catégories", href: "/categories" },
-      { label: "Artistes", href: "/artistes" },
-      { label: "Studios", href: "/studios" },
+      { label: "Créateurs", href: "/createurs" },
       { label: "Ma liste", href: "/ma-liste" },
       { label: "Historique", href: "/historique" },
     ],
@@ -25,7 +23,7 @@ const columns = [
     links: [
       { label: "Devenir artiste", href: "/devenir-artiste" },
       { label: "Créer un studio", href: "/creer-un-studio" },
-      { label: "Soumettre un film ou une série", href: "/soumettre-un-film" },
+      { label: "Proposer un film ou une série", href: "/soumettre-un-film" },
     ],
   },
   {

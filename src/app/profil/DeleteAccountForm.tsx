@@ -39,10 +39,6 @@ export default function DeleteAccountForm() {
   if (!confirming) {
     return (
       <div className={styles.dangerZone}>
-        <p className={styles.dangerText}>
-          Cette action est définitive : ton compte et tes données seront supprimés sans possibilité
-          de retour en arrière.
-        </p>
         <button type="button" className={styles.dangerBtn} onClick={() => setConfirming(true)}>
           Supprimer mon compte
         </button>

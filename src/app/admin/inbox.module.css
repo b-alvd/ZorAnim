@@ -153,6 +153,42 @@
   overflow: hidden;
 }
 
+/* Release requested in a film submission */
+.releaseLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  color: #e5e5e5;
+  font-size: 0.84rem;
+}
+
+.releaseMode {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: rgba(255, 255, 255, 0.08);
+  color: #c8c8c8;
+}
+
+.release_scheduled {
+  background: rgba(124, 182, 255, 0.14);
+  color: #7cb6ff;
+}
+
+.release_announcement {
+  background: rgba(255, 184, 77, 0.15);
+  color: #ffb84d;
+}
+
+.release_premiere {
+  background: rgba(229, 9, 20, 0.16);
+  color: #ff7a80;
+}
+
 .quote {
   padding: 10px 12px;
   border-radius: 8px;

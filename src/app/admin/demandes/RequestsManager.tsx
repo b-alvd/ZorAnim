@@ -20,6 +20,7 @@ import {
 import { Avatar, CheckIcon, ConfirmButton, CrossIcon, formatAgo, formatDay } from "../inbox-parts";
 import { plural } from "../ContentList";
 import type { Artist } from "@/data/types";
+import { describeReleaseRequest } from "@/lib/release-request";
 import type { AdminArtistRequest, AdminBanAppeal, AdminFilmRequest } from "@/db/queries";
 import shared from "../shared.module.css";
 import list from "../films/films.module.css";
@@ -56,8 +57,16 @@ function Side({ request, now }: { request: Request; now: number }) {
   );
 }
 
+const RELEASE_LABEL: Record<AdminFilmRequest["releaseRequest"]["mode"], string> = {
+  now: "Sortie",
+  scheduled: "Date demandée",
+  premiere: "Avant-première demandée",
+  announcement: "Annonce",
+};
+
 function filmLabel(s: AdminFilmRequest) {
   if (!s.seriesTitle) return s.title;
+  if (s.releaseRequest.mode === "announcement") return `${s.seriesTitle} · annonce de la série`;
   return `${s.seriesTitle} · S${s.seasonNumber ?? 1}E${s.episodeNumber ?? 1} « ${s.title} »`;
 }
 
@@ -77,6 +86,7 @@ function FilmRequest({
   const [acceptOpen, setAcceptOpen] = useState(false);
   const [identityId, setIdentityId] = useState(s.artistId ?? s.studioId ?? identities[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [expanded, setExpanded] = useState(false);
   const identityLabel = (a: Artist) => (a.isStudio ? `${a.name} (studio)` : a.name);
@@ -89,10 +99,18 @@ function FilmRequest({
         <div className={styles.main}>
           <span className={styles.title}>{filmLabel(s)}</span>
           <span className={styles.meta}>
-            <span className={styles.tag}>{s.seriesTitle ? "Épisode" : "Film"}</span>
+            <span className={styles.tag}>
+              {s.releaseRequest.mode === "announcement"
+                ? s.seriesTitle
+                  ? "Annonce de série"
+                  : "Annonce de film"
+                : s.seriesTitle
+                  ? "Épisode"
+                  : "Film"}
+            </span>
             <span>{s.category}</span>
             <span>{s.year}</span>
-            <span>{s.durationMinutes} min</span>
+            {s.durationMinutes > 0 && <span>{s.durationMinutes} min</span>}
             <span>{s.rating}</span>
           </span>
           <span className={styles.meta}>
@@ -108,6 +126,22 @@ function FilmRequest({
 
       <p className={`${styles.body} ${expanded ? "" : styles.clamp}`}>{s.synopsis}</p>
 
+      <div className={styles.releaseLine}>
+        <span className={`${styles.releaseMode} ${styles[`release_${s.releaseRequest.mode}`]}`}>
+          {RELEASE_LABEL[s.releaseRequest.mode]}
+        </span>
+        <span>{describeReleaseRequest(s.releaseRequest)}</span>
+        {s.releaseRequest.replacesId && (
+          <span className={styles.tag}>Vidéo d&apos;une annonce déjà publiée : la fiche deviendra le film</span>
+        )}
+      </div>
+      {s.releaseRequest.note && (
+        <div className={styles.quote}>
+          <span className={styles.quoteLabel}>Message de {s.artistName}</span>
+          <p className={styles.body}>{s.releaseRequest.note}</p>
+        </div>
+      )}
+
       <div className={styles.footer}>
         <div className={styles.footerInfo}>
           {s.synopsis.length > 220 && (
@@ -115,9 +149,16 @@ function FilmRequest({
               {expanded ? "Réduire" : "Lire tout"}
             </button>
           )}
-          <a className={styles.linkBtn} href={s.videoUrl} target="_blank" rel="noreferrer">
-            Voir la vidéo
-          </a>
+          {s.videoUrl && (
+            <a className={styles.linkBtn} href={s.videoUrl} target="_blank" rel="noreferrer">
+              Voir la vidéo
+            </a>
+          )}
+          {(s.releaseRequest.trailers ?? []).map((t, i) => (
+            <a key={i} className={styles.linkBtn} href={t.videoUrl} target="_blank" rel="noreferrer">
+              {t.title}
+            </a>
+          ))}
         </div>
         {request.status === "pending" && (
           <div className={styles.actions}>
@@ -155,10 +196,15 @@ function FilmRequest({
           categories={categories}
           initial={s}
           pending={isPending}
+          error={editError}
           onSubmit={(formData) =>
             startTransition(async () => {
-              await updateFilmSubmissionAction(s.id, formData);
-              setEditOpen(false);
+              const result = await updateFilmSubmissionAction(s.id, formData);
+              if (result.error) setEditError(result.error);
+              else {
+                setEditError(null);
+                setEditOpen(false);
+              }
             })
           }
         />
@@ -166,6 +212,10 @@ function FilmRequest({
       <Modal open={acceptOpen} onClose={() => setAcceptOpen(false)} title={`Accepter « ${s.title} »`}>
         <p className={shared.confirmText}>
           À quel artiste ou studio attribuer ce contenu ? Il sera ajouté au catalogue et la personne sera prévenue.
+        </p>
+        <p className={shared.confirmText}>
+          <strong>Sortie :</strong> {describeReleaseRequest(s.releaseRequest)}. Pour la changer, utilise « Modifier »
+          avant d&apos;accepter.
         </p>
         <div className={shared.field} style={{ marginBottom: 20 }}>
           <Dropdown

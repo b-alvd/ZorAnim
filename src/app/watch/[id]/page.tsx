@@ -3,13 +3,17 @@ import { notFound } from "next/navigation";
 import {
   getFilm,
   getSeriesEpisodes,
-  getSuggestions,
+  getFilms,
+  getWatchEntries,
+  getWatchPosition,
   incrementGuestView,
   incrementTrailerView,
   markWatched,
 } from "@/db/queries";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getPremiereStatus, getPremiereUnlockAt } from "@/lib/premiere";
+import { collapseSeries, isReleased, splitComingSoon } from "@/lib/series";
+import type { Film } from "@/data/types";
 import VideoPlayer from "@/components/VideoPlayer/VideoPlayer";
 import PremiereVideoPlayer from "@/components/PremiereVideoPlayer/PremiereVideoPlayer";
 import PremiereLock from "@/components/PremiereLock/PremiereLock";
@@ -31,6 +35,27 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       type: "video.other",
     },
   };
+}
+
+const SUGGESTION_COUNT = 4;
+
+// What to watch after a film: released contents, other series than the one
+// just watched, same category first, then the best rated.
+async function loadSuggestions(film: Film) {
+  const { released } = splitComingSoon(await getFilms());
+  return collapseSeries(released)
+    .filter((f) => f.id !== film.id && (!film.seriesTitle || f.seriesTitle !== film.seriesTitle))
+    .sort(
+      (a, b) =>
+        Number(b.category === film.category) - Number(a.category === film.category) ||
+        (b.avgRating ?? -1) - (a.avgRating ?? -1)
+    )
+    .slice(0, SUGGESTION_COUNT);
+}
+
+// Outside the component: reading the clock there is fine.
+function premiereHasAired(premiereAt: string | null): boolean {
+  return !!premiereAt && new Date(premiereAt).getTime() <= Date.now();
 }
 
 export default async function WatchPage({
@@ -66,7 +91,7 @@ export default async function WatchPage({
   if (film.episodeKind === "announcement") notFound();
 
   if (getPremiereStatus(film) === "locked" && user?.role !== "admin") {
-    const hasAired = !!film.premiereAt && new Date(film.premiereAt).getTime() <= Date.now();
+    const hasAired = premiereHasAired(film.premiereAt);
     return (
       <main className={styles.page}>
         <PremiereLock film={film} unlockAt={getPremiereUnlockAt(film)} hasAired={hasAired} />
@@ -85,13 +110,21 @@ export default async function WatchPage({
     );
   }
 
-  const [suggestions, episodes] = await Promise.all([
-    getSuggestions(film.id),
+  const [suggestions, episodes, resumeAt, entries] = await Promise.all([
+    loadSuggestions(film),
     film.seriesTitle
       ? getSeriesEpisodes(film.seriesTitle).then((list) => list.filter((ep) => ep.episodeKind !== "announcement"))
       : Promise.resolve([]),
-    user ? markWatched(user.id, film.id) : incrementGuestView(film.id),
+    // Read before markWatched, which only touches the date.
+    user ? getWatchPosition(user.id, film.id) : Promise.resolve(0),
+    user ? getWatchEntries(user.id) : Promise.resolve(new Map<string, { at: string; position: number }>()),
   ]);
+  // Per episode: absent = not watched, 0 = finished, > 0 = stopped there.
+  const episodeProgress = Object.fromEntries(
+    episodes.filter((ep) => entries.has(ep.id)).map((ep) => [ep.id, entries.get(ep.id)!.position])
+  );
+  const lockedEpisodeIds = episodes.filter((ep) => !isReleased(ep)).map((ep) => ep.id);
+  await (user ? markWatched(user.id, film.id) : incrementGuestView(film.id));
 
   return (
     <main className={styles.page}>
@@ -100,6 +133,10 @@ export default async function WatchPage({
         suggestions={suggestions}
         episodes={episodes}
         autoplay={autoplay === "1"}
+        resumeAt={resumeAt}
+        trackProgress={!!user}
+        episodeProgress={episodeProgress}
+        lockedEpisodeIds={lockedEpisodeIds}
       />
     </main>
   );

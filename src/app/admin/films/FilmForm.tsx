@@ -57,6 +57,8 @@ export default function FilmForm({
   allowSeries = true,
   seasonOptions,
   showRelease = true,
+  multiTrailers = true,
+  allowVideo = true,
 }: {
   onSubmit: (formData: FormData) => void;
   artists: Artist[];
@@ -68,6 +70,11 @@ export default function FilmForm({
   seasonOptions?: string[];
   // Premiere / scheduled release settings; only the admin can set them.
   showRelease?: boolean;
+  // List of trailers (saved in the trailers table) rather than the legacy single field.
+  multiTrailers?: boolean;
+  // false: the video can't be set here (a creator's announcement becomes a
+  // film only through a proposal checked by the team).
+  allowVideo?: boolean;
 }) {
   const [rating, setRating] = useState(initial?.rating || RATING_OPTIONS[0]);
   const [category, setCategory] = useState(initial?.category ?? categories[0]);
@@ -78,14 +85,11 @@ export default function FilmForm({
   const [durationMinutes, setDurationMinutes] = useState(initial?.durationMinutes || "");
   const [durationDetected, setDurationDetected] = useState(false);
   const [teaserVideoUrl, setTeaserVideoUrl] = useState(initial?.teaserVideoUrl ?? "");
-  // The admin manages a list of trailers; the creator space keeps the single
-  // legacy trailer field.
-  const multiTrailers = showRelease;
   const [trailers, setTrailers] = useState<TrailerDraft[]>(() =>
     toTrailerDrafts(
       initial?.trailers ??
-        (initial?.teaserVideoUrl ? [{ title: "Bande-annonce", videoUrl: initial.teaserVideoUrl }] : [])
-    )
+        (initial?.teaserVideoUrl ? [{ title: "Bande-annonce", videoUrl: initial.teaserVideoUrl }] : []),
+    ),
   );
   const [release, setRelease] = useState<ReleaseValue>({
     premiereAt: toDatetimeLocal(initial?.premiereAt),
@@ -270,34 +274,42 @@ export default function FilmForm({
             preview
           />
         </div>
-        <div className={styles.field}>
-          <label>{allowAnnouncement ? "Vidéo (facultatif)" : "Vidéo"}</label>
-          <input type="hidden" name="videoDurationSeconds" value={videoDurationSeconds ?? ""} />
-          <FileUpload
-            allowUrl
-            name="videoUrl"
-            label="Choisir une vidéo"
-            accept="video/*"
-            value={videoUrl}
-            onChange={(url) => {
-              setVideoUrl(url);
-              setVideoDurationSeconds(null);
-            }}
-            onDurationChange={(seconds) => {
-              setVideoDurationSeconds(Math.round(seconds));
-              setDurationMinutes(minutesFromSeconds(seconds));
-              setDurationDetected(true);
-            }}
-            maxSizeMB={100}
-          />
-          {allowAnnouncement && (
-            <span className={formStyles.formHint}>
-              {isAnnouncement
-                ? "Sans vidéo, c'est une annonce : seules les bandes-annonces sont visibles, dans « Bientôt sur ZorAnim »."
-                : "Pas encore sorti ? Programme la sortie dans « Diffusion » : il restera dans « Bientôt » jusque-là."}
-            </span>
-          )}
-        </div>
+        {!allowVideo && (
+          <p className={formStyles.formHint}>
+            C&apos;est une annonce : pour mettre le film en ligne, utilise « Proposer la vidéo » dans ton Espace
+            créateur. L&apos;équipe le vérifie avant sa sortie.
+          </p>
+        )}
+        {allowVideo && (
+          <div className={styles.field}>
+            <label>{allowAnnouncement ? "Vidéo (facultatif)" : "Vidéo"}</label>
+            <input type="hidden" name="videoDurationSeconds" value={videoDurationSeconds ?? ""} />
+            <FileUpload
+              allowUrl
+              name="videoUrl"
+              label="Choisir une vidéo"
+              accept="video/*"
+              value={videoUrl}
+              onChange={(url) => {
+                setVideoUrl(url);
+                setVideoDurationSeconds(null);
+              }}
+              onDurationChange={(seconds) => {
+                setVideoDurationSeconds(Math.round(seconds));
+                setDurationMinutes(minutesFromSeconds(seconds));
+                setDurationDetected(true);
+              }}
+              maxSizeMB={100}
+            />
+            {allowAnnouncement && (
+              <span className={formStyles.formHint}>
+                {isAnnouncement
+                  ? "Sans vidéo, c'est une annonce : seules les bandes-annonces sont visibles, dans « Bientôt sur ZorAnim »."
+                  : "Pas encore sorti ? Programme la sortie dans « Diffusion » : il restera dans « Bientôt » jusque-là."}
+              </span>
+            )}
+          </div>
+        )}
         {!isSeries && (
           <>
             {multiTrailers && (
@@ -338,13 +350,20 @@ export default function FilmForm({
         </FormSection>
       )}
 
-      <label className={styles.customCheckbox}>
-        <input type="checkbox" name="isNew" defaultChecked={initial?.isNew} />
-        <span className={styles.checkboxBox} />
-        Afficher le badge « Nouveau » (7 jours)
-      </label>
+      {/* Admin only, like the release settings. */}
+      {showRelease && (
+        <label className={styles.customCheckbox}>
+          <input type="checkbox" name="isNew" defaultChecked={initial?.isNew} />
+          <span className={styles.checkboxBox} />
+          Afficher le badge « Nouveau » (7 jours)
+        </label>
+      )}
 
-      <button type="submit" className={styles.submitBtn} disabled={pending || !valid || !poster || (!videoUrl && !allowAnnouncement)}>
+      <button
+        type="submit"
+        className={styles.submitBtn}
+        disabled={pending || !valid || !poster || (!videoUrl && !allowAnnouncement)}
+      >
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>
     </form>
