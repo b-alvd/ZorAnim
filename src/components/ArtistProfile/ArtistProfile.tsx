@@ -65,6 +65,7 @@ export default async function ArtistProfile({
   studios = [],
   joinButton,
   banner = null,
+  portfolioUrl = null,
 }: {
   artist: Artist;
   artistFilms: Film[];
@@ -74,6 +75,8 @@ export default async function ArtistProfile({
   joinButton?: React.ReactNode;
   // Optional banner image; without it the blurred avatar tints the header.
   banner?: string | null;
+  // Link to the creator's work elsewhere (site, ArtStation…).
+  portfolioUrl?: string | null;
 }) {
   const team = artist.isStudio ? await getStudioTeamDisplay(artist.id) : [];
   const { released, comingSoon } = splitComingSoon(artistFilms);
@@ -151,6 +154,14 @@ export default async function ArtistProfile({
             <span className={styles.kind}>{artist.isStudio ? "Studio" : "Artiste"}</span>
             <h1 className={styles.name}>{artist.name}</h1>
             {artist.bio && <p className={styles.bio}>{artist.bio}</p>}
+            {portfolioUrl && (
+              <a href={portfolioUrl} target="_blank" rel="noopener noreferrer nofollow" className={styles.portfolio}>
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                  <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+                </svg>
+                Portfolio
+              </a>
+            )}
             {joinButton && <div className={styles.join}>{joinButton}</div>}
           </div>
         </div>

@@ -418,27 +418,36 @@ function SeriesInfoForm({
 function ProfileForm({
   identity,
   initialBanner,
+  initialPortfolioUrl,
   pending,
   error,
   onSubmit,
 }: {
   identity: Artist;
   initialBanner: string | null;
+  initialPortfolioUrl: string | null;
   pending: boolean;
   error: string | null;
-  onSubmit: (input: { name: string; bio: string; avatar: string; banner: string | null }) => void;
+  onSubmit: (input: {
+    name: string;
+    bio: string;
+    avatar: string;
+    banner: string | null;
+    portfolioUrl: string | null;
+  }) => void;
 }) {
   const [name, setName] = useState(identity.name);
   const [bio, setBio] = useState(identity.bio);
   const [avatar, setAvatar] = useState(identity.avatar);
   const [banner, setBannerUrl] = useState(initialBanner ?? "");
+  const [portfolioUrl, setPortfolioUrl] = useState(initialPortfolioUrl ?? "");
 
   return (
     <form
       className={adminStyles.form}
       onSubmit={(e) => {
         e.preventDefault();
-        onSubmit({ name, bio, avatar, banner: banner || null });
+        onSubmit({ name, bio, avatar, banner: banner || null, portfolioUrl: portfolioUrl.trim() || null });
       }}
     >
       <div className={adminStyles.field}>
@@ -475,6 +484,21 @@ function ProfileForm({
           onChange={setBannerUrl}
           maxSizeMB={15}
           preview
+        />
+      </div>
+      <div className={adminStyles.field}>
+        <label htmlFor="portfolioUrl">
+          Portfolio <span className={styles.optional}>facultatif</span>
+        </label>
+        <p className={styles.fieldHint}>
+          Lien vers ton travail (site, ArtStation, Instagram…), affiché sur ta page publique.
+        </p>
+        <input
+          id="portfolioUrl"
+          inputMode="url"
+          placeholder="https://..."
+          value={portfolioUrl}
+          onChange={(e) => setPortfolioUrl(e.target.value)}
         />
       </div>
       {error && <p className={styles.error}>{error}</p>}
@@ -724,6 +748,7 @@ export default function IdentitySection({
         <ProfileForm
           identity={identity}
           initialBanner={data.banner}
+          initialPortfolioUrl={data.portfolioUrl}
           pending={action.isPending}
           error={action.error}
           onSubmit={(input) =>

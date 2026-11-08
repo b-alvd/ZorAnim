@@ -8,6 +8,7 @@ import {
   getIdentityOwnership,
   getUserIdentities,
   setBanner,
+  setPortfolioUrl,
   setSeriesSynopsis,
   setTrailers,
   updateArtist,
@@ -156,15 +157,16 @@ export async function deleteOwnFilmAction(filmId: string): Promise<CreatorAction
 
 export async function updateOwnProfileAction(
   identityId: string,
-  input: ArtistInput & { banner: string | null }
+  input: ArtistInput & { banner: string | null; portfolioUrl: string | null }
 ): Promise<CreatorActionResult> {
   return run(async (userId) => {
     await assertOwnsIdentity(userId, identityId);
     const ownership = await getIdentityOwnership(identityId);
-    const { banner, ...profile } = input;
+    const { banner, portfolioUrl, ...profile } = input;
     const kind = ownership?.isStudio ? "studio" : "artist";
     // Banner first: if its migration hasn't run, nothing is half-saved.
     await setBanner(kind, identityId, banner);
+    await setPortfolioUrl(kind, identityId, portfolioUrl);
     if (kind === "studio") await updateStudio(identityId, profile);
     else await updateArtist(identityId, profile);
   });

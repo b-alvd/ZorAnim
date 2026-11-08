@@ -4,6 +4,7 @@ import ArtistProfile from "@/components/ArtistProfile/ArtistProfile";
 import RequestToJoinButton from "@/components/RequestToJoinButton/RequestToJoinButton";
 import {
   getBanner,
+  getPortfolioUrl,
   getArtistByUserId,
   getFavoriteFilmIds,
   getFilmsByStudio,
@@ -43,7 +44,10 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const studio = await getStudio(id);
   if (!studio) notFound();
-  const banner = await getBanner("studio", studio.id);
+  const [banner, portfolioUrl] = await Promise.all([
+    getBanner("studio", studio.id),
+    getPortfolioUrl("studio", studio.id),
+  ]);
 
   const [studioFilms, favoriteIds, watchedIds, personalArtist, membershipStatus] = await Promise.all([
     getFilmsByStudio(studio.id),
@@ -56,6 +60,7 @@ export default async function StudioPage({ params }: { params: Promise<{ id: str
   return (
     <ArtistProfile
       banner={banner}
+      portfolioUrl={portfolioUrl}
       artist={studio}
       artistFilms={studioFilms}
       favoriteIds={favoriteIds}

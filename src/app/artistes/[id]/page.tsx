@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import ArtistProfile from "@/components/ArtistProfile/ArtistProfile";
 import {
   getBanner,
+  getPortfolioUrl,
   getArtist,
   getArtists,
   getArtistStudios,
@@ -42,7 +43,10 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const artist = await getArtist(id);
   if (!artist) notFound();
-  const banner = await getBanner("artist", artist.id);
+  const [banner, portfolioUrl] = await Promise.all([
+    getBanner("artist", artist.id),
+    getPortfolioUrl("artist", artist.id),
+  ]);
 
   const [ownFilms, favoriteIds, watchedIds, artistStudios] = await Promise.all([
     getFilmsByArtist(artist.id),
@@ -57,6 +61,7 @@ export default async function ArtistPage({ params }: { params: Promise<{ id: str
   return (
     <ArtistProfile
       banner={banner}
+      portfolioUrl={portfolioUrl}
       artist={artist}
       artistFilms={artistFilms}
       favoriteIds={favoriteIds}

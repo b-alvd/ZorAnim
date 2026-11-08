@@ -1211,7 +1211,7 @@ export async function acceptArtistSubmission(id: string): Promise<void> {
   // An artist profile always belongs to an account.
   if (!submission.userId) throw new Error("Le compte à l'origine de cette demande n'existe plus.");
 
-  await createArtist(
+  const artistId = await createArtist(
     {
       name: submission.name,
       bio: submission.bio,
@@ -1219,6 +1219,11 @@ export async function acceptArtistSubmission(id: string): Promise<void> {
     },
     submission.userId
   );
+  // The link given in the request goes on the profile (skipped quietly if
+  // migration 0045 hasn't run yet or the link isn't valid).
+  if (submission.portfolioUrl) {
+    await setPortfolioUrl("artist", artistId, submission.portfolioUrl).catch(() => {});
+  }
 
   await db.update(artistSubmissions).set({ status: "accepted" }).where(eq(artistSubmissions.id, id));
 
@@ -2869,6 +2874,52 @@ export async function setBanner(kind: "artist" | "studio", id: string, banner: s
     else await db.run(sql`UPDATE studios SET banner = ${value} WHERE id = ${id}`);
   } catch (e) {
     if (isMissingColumn(e)) throw new Error(BANNER_MIGRATION_MESSAGE);
+    throw e;
+  }
+}
+
+// ----- Portfolio link of artists and studios (migration 0045) -----
+// Same approach as the banner: raw SQL outside the Drizzle schema, so pages
+// simply show no link before the migration runs.
+
+const PORTFOLIO_MIGRATION_MESSAGE =
+  "Le lien portfolio n'est pas encore activé : lance la migration 0045 (scripts/apply-0045.ts).";
+
+// Only http(s) links are kept; a bare domain gets https:// in front.
+function normalizePortfolioUrl(value: string | null | undefined): string | null {
+  const raw = value?.trim();
+  if (!raw) return null;
+  const withScheme = /^[a-z][a-z0-9+.-]*:/i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const url = new URL(withScheme);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getPortfolioUrl(kind: "artist" | "studio", id: string): Promise<string | null> {
+  try {
+    const rows =
+      kind === "artist"
+        ? await db.all<{ url: string | null }>(sql`SELECT portfolio_url AS url FROM artists WHERE id = ${id}`)
+        : await db.all<{ url: string | null }>(sql`SELECT portfolio_url AS url FROM studios WHERE id = ${id}`);
+    return normalizePortfolioUrl(rows[0]?.url);
+  } catch (e) {
+    if (!isMissingColumn(e)) throw e;
+    return null;
+  }
+}
+
+export async function setPortfolioUrl(kind: "artist" | "studio", id: string, url: string | null): Promise<void> {
+  const raw = url?.trim() || null;
+  const value = normalizePortfolioUrl(raw);
+  if (raw && !value) throw new Error("Le lien portfolio n'est pas une adresse valide.");
+  try {
+    if (kind === "artist") await db.run(sql`UPDATE artists SET portfolio_url = ${value} WHERE id = ${id}`);
+    else await db.run(sql`UPDATE studios SET portfolio_url = ${value} WHERE id = ${id}`);
+  } catch (e) {
+    if (isMissingColumn(e)) throw new Error(PORTFOLIO_MIGRATION_MESSAGE);
     throw e;
   }
 }

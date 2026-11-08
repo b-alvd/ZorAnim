@@ -19,6 +19,7 @@ export type IdentityData = {
   engagement: Record<string, Engagement>;
   status: Record<string, ContentStatus>;
   banner: string | null;
+  portfolioUrl: string | null;
 };
 
 // Films plus series (a series counts once, whatever its episode count).

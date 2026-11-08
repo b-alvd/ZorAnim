@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import {
   getBanner,
+  getPortfolioUrl,
   getCategories,
   getFilmEngagement,
   getFilmsByArtist,
@@ -56,15 +57,18 @@ export default async function MonEspacePage({
   const data: IdentityData[] = await Promise.all(
     identities.map(async (identity) => {
       const films = identity.isStudio ? await getFilmsByStudio(identity.id) : await getFilmsByArtist(identity.id);
-      const [engagement, banner] = await Promise.all([
+      const kind = identity.isStudio ? "studio" : "artist";
+      const [engagement, banner, portfolioUrl] = await Promise.all([
         getFilmEngagement(films.map((f) => f.id)),
-        getBanner(identity.isStudio ? "studio" : "artist", identity.id),
+        getBanner(kind, identity.id),
+        getPortfolioUrl(kind, identity.id),
       ]);
       return {
         identity,
         films,
         engagement: Object.fromEntries(engagement),
         banner,
+        portfolioUrl,
         status: Object.fromEntries(films.map((f) => [f.id, statusOf(f)])),
       };
     }),
